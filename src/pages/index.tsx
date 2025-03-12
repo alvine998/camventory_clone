@@ -1,6 +1,7 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 import { COLOR } from "@/utils/color";
+import { CheckIcon } from "lucide-react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,16 +9,24 @@ import React, { useState } from "react";
 
 export default function Home() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [checked, setChecked] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>();
 
   const onSubmit = (e: any) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const payload = {
         username: e.target.username.value,
         password: e.target.password.value,
       };
-    } catch (error) {
+      console.log(payload);
+      setLoading(false);
+    } catch (error: any) {
       console.log(error);
+      setErrorMessage(error?.response?.data?.error_message);
+      setLoading(false);
     }
   };
   return (
@@ -70,17 +79,40 @@ export default function Home() {
                 showPassword={showPassword}
                 setShowPassword={setShowPassword}
               />
-              <div className="flex flex-row justify-between items-center">
-                <div className="flex flex-row gap-2">
-                  <input type="checkbox" />
+              <div className="flex flex-row justify-between items-center mt-2">
+                <div className="flex flex-row gap-2 items-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setChecked(!checked);
+                    }}
+                    className={`border rounded w-5 h-5 ${
+                      checked
+                        ? "bg-orange-500 flex items-center justify-center border-orange-700"
+                        : "bg-transparent border-gray-800"
+                    }`}
+                  >
+                    {checked ? (
+                      <CheckIcon className="text-white w-4 h-4 font-bold" />
+                    ) : (
+                      ""
+                    )}
+                  </button>
                   <span className="text-xs">Remember me</span>
                 </div>
                 <Link href={"forgot-password"} className="text-xs text-red-500">
                   Forgot Password
                 </Link>
               </div>
-              <Button variant="custom-color" className="bg-orange-500 mt-4">
-                Login
+              {errorMessage && (
+                <p className="my-1 text-sm text-red-500">{errorMessage}</p>
+              )}
+              <Button
+                variant="custom-color"
+                disabled={loading}
+                className="bg-orange-500 mt-4"
+              >
+                {loading ? "Loading..." : "Login"}
               </Button>
             </form>
           </div>
