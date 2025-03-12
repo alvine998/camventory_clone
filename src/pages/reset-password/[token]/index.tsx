@@ -5,25 +5,25 @@ import { ArrowLeftIcon, CheckIcon } from "lucide-react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>();
-  const [emailStatus, setEmailStatus] = useState<string>("waiting");
-  const [email, setEmail] = useState<string>("");
+  const router = useRouter();
 
   const onSubmit = (e: any) => {
     e.preventDefault();
     setLoading(true);
     try {
       const payload = {
-        email: e.target.email.value,
+        password: e.target.password.value,
+        confirm_password: e.target.confirm_password.value,
       };
       console.log(payload);
-      setEmail(payload?.email);
-      setEmailStatus("success");
       setLoading(false);
+      router.push("/")
     } catch (error: any) {
       console.log(error);
       setErrorMessage(error?.response?.data?.error_message);
