@@ -5,13 +5,17 @@ import { CheckIcon } from "lucide-react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import React, { useState } from "react";
+import Swal from "sweetalert2";
 
 export default function Home() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [checked, setChecked] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>();
+
+  const router = useRouter();
 
   const onSubmit = (e: any) => {
     e.preventDefault();
@@ -21,7 +25,13 @@ export default function Home() {
         username: e.target.username.value,
         password: e.target.password.value,
       };
-      console.log(payload);
+      Swal.fire({
+        icon: "success",
+        title: "Login Success",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+      router.push("/main/dashboard");
       setLoading(false);
     } catch (error: any) {
       console.log(error);
@@ -47,10 +57,10 @@ export default function Home() {
       <div className="flex lg:flex-row flex-col justify-between items-center w-full z-30">
         <div className="w-1/2 lg:block hidden">
           <h1 className="text-4xl font-bold text-white">
-            Kamu Sedang Mencari Kamera?
+            Are you looking for a camera?
           </h1>
           <h3 className="text-2xl font-bold text-white mt-4">
-            Temukan berbagai pilihan berkualitas dengan harga terbaik hanya di
+            Find a variety of quality options at the best prices only at
             Camventory!
           </h3>
         </div>

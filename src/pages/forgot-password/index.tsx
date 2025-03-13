@@ -47,25 +47,21 @@ export default function ForgotPasswordPage() {
       />
       <div className="flex lg:flex-row flex-col justify-between items-center w-full z-30">
         <div className="w-1/2 lg:block hidden">
-          <h1 className="text-4xl font-bold text-white">
-            Atur Ulang Kata Sandi Anda
-          </h1>
+          <h1 className="text-4xl font-bold text-white">Reset Your Password</h1>
           <h3 className="text-2xl font-bold text-white mt-4">
-            Atur ulang kata sandi Anda, agar Anda dapat terus menggunakan
-            aplikasi Camventory
+            Reset your password, so you can continue using the Camventory App.
           </h3>
         </div>
         <div className=" lg:mt-0 mt-5 lg:w-1/2 w-full lg:ml-40 ml-0 lg:mr-20 mr-0 lg:px-0 px-5">
           <div className="bg-white rounded-lg shadow lg:px-10 px-4 lg:py-20 py-6">
             <h5 className={`text-center font-bold text-xl text-orange-500`}>
-              Lupa Kata Sandi
+              Forgot Password
             </h5>
             <form onSubmit={onSubmit} className="flex flex-col gap-2 mt-5">
               {emailStatus === "waiting" ? (
                 <>
                   <p className="text-center text-gray-500 mt-2">
-                    Jangan khawatir kami akan mengirimkan instruksi untuk
-                    mengatur ulang
+                    Don't worry, we will send you instructions to reset it.
                   </p>
                   <Input
                     name="email"
@@ -82,14 +78,13 @@ export default function ForgotPasswordPage() {
                     disabled={loading}
                     className="bg-orange-500 mt-4"
                   >
-                    {loading ? "Loading..." : "Reset Kata Sandi"}
+                    {loading ? "Loading..." : "Reset Password"}
                   </Button>
                 </>
               ) : (
                 <>
                   <p className="text-center text-gray-500">
-                    Kami telah mengirimkan email untuk reset kata sandi ke
-                    emailmu
+                    We’ve sent a password reset link to your email
                   </p>
                   <p className="text-center font-bold text-black">{email}</p>
                   <Button
@@ -97,7 +92,7 @@ export default function ForgotPasswordPage() {
                     disabled={loading}
                     className="bg-orange-500 mt-4"
                   >
-                    {loading ? "Loading..." : "Kirim Ulang"}
+                    {loading ? "Loading..." : "Resend Link"}
                   </Button>
                 </>
               )}
@@ -109,7 +104,7 @@ export default function ForgotPasswordPage() {
                   className="flex justify-center items-center gap-2 w-full"
                 >
                   <ArrowLeftIcon className="text-orange-500 w-5" />
-                  Kembali
+                  Back
                 </Button>
               </Link>
             </form>

@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
       };
       console.log(payload);
       setLoading(false);
-      router.push("/")
+      router.push("/");
     } catch (error: any) {
       console.log(error);
       setErrorMessage(error?.response?.data?.error_message);
@@ -47,21 +47,18 @@ export default function ForgotPasswordPage() {
       />
       <div className="flex lg:flex-row flex-col justify-between items-center w-full z-30">
         <div className="w-1/2 lg:block hidden">
-          <h1 className="text-4xl font-bold text-white">
-            Atur Ulang Kata Sandi Anda
-          </h1>
+          <h1 className="text-4xl font-bold text-white">Reset Your Password</h1>
           <h3 className="text-2xl font-bold text-white mt-4">
-            Atur ulang kata sandi Anda, agar Anda dapat terus menggunakan
-            aplikasi Camventory
+            Reset your password, so you can continue using the Camventory App.
           </h3>
         </div>
         <div className=" lg:mt-0 mt-5 lg:w-1/2 w-full lg:ml-40 ml-0 lg:mr-20 mr-0 lg:px-0 px-5">
           <div className="bg-white rounded-lg shadow lg:px-10 px-4 lg:py-20 py-6">
             <h5 className={`text-center font-bold text-xl text-orange-500`}>
-              Masukkan Kata Sandi Baru
+              Set a New Password
             </h5>
             <p className="text-center text-gray-500 mt-2">
-              Kata sandi baru harus berbeda dari kata sandi sebelumnya!
+              New password must be different from your previous password
             </p>
             <form onSubmit={onSubmit} className="flex flex-col gap-2 mt-5">
               <Input
@@ -86,7 +83,7 @@ export default function ForgotPasswordPage() {
                 disabled={loading}
                 className="bg-orange-500 mt-4"
               >
-                {loading ? "Loading..." : "Reset Kata Sandi"}
+                {loading ? "Loading..." : "Reset Password"}
               </Button>
             </form>
           </div>
