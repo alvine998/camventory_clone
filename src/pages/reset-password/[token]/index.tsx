@@ -1,10 +1,7 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
-import { COLOR } from "@/utils/color";
-import { ArrowLeftIcon, CheckIcon } from "lucide-react";
 import Head from "next/head";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
@@ -13,21 +10,36 @@ export default function ForgotPasswordPage() {
   const [errorMessage, setErrorMessage] = useState<string>();
   const router = useRouter();
 
-  const onSubmit = (e: any) => {
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     try {
       const payload = {
-        password: e.target.password.value,
-        confirm_password: e.target.confirm_password.value,
+        password: (e.target as HTMLFormElement).password.value,
+        confirm_password: (e.target as HTMLFormElement).confirm_password.value,
       };
       console.log(payload);
       setLoading(false);
       router.push("/");
-    } catch (error: any) {
-      console.log(error);
-      setErrorMessage(error?.response?.data?.error_message);
-      setLoading(false);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.log(error);
+        if (
+          "response" in error &&
+          error.response &&
+          typeof error.response === "object"
+        ) {
+          const response = error.response as {
+            data?: { error_message?: string };
+          };
+          setErrorMessage(response.data?.error_message);
+        } else {
+          setErrorMessage("An unexpected error occurred");
+        }
+        setLoading(false);
+      } else {
+        console.error("An unknown error occurred");
+      }
     }
   };
   return (

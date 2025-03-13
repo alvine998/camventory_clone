@@ -6,7 +6,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   required?: boolean;
   showPassword?: boolean;
-  setShowPassword?: any;
+  setShowPassword?: (show: boolean) => void;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -47,7 +47,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               <button
                 type="button"
                 onClick={() => {
-                  setShowPassword(!showPassword);
+                  if (setShowPassword) {
+                    setShowPassword(!showPassword);
+                  }
                 }}
               >
                 {showPassword ? (

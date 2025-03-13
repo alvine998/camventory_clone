@@ -4,7 +4,7 @@ import React from "react";
 
 interface Props {
   isWide: boolean;
-  setIsWide: any;
+  setIsWide: (any: boolean) => void;
 }
 
 export default function Topbar({ isWide, setIsWide }: Props) {

@@ -2,7 +2,6 @@ import { INavigation } from "@/types/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import path from "path/win32";
 import React from "react";
 
 interface Props {

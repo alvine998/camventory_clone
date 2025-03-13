@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { ReactNode, useState } from "react";
 import Sidebar from "./Sidebar";
 import { NAVIGATIONS } from "@/constants/navigation";
 import Head from "next/head";
 import Topbar from "./Topbar";
 
 interface Props {
-  children: any;
+  children: ReactNode;
 }
 
 export default function Layout({ children }: Props) {

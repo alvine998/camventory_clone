@@ -1,7 +1,6 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
-import { COLOR } from "@/utils/color";
-import { ArrowLeftIcon, CheckIcon } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,21 +12,31 @@ export default function ForgotPasswordPage() {
   const [emailStatus, setEmailStatus] = useState<string>("waiting");
   const [email, setEmail] = useState<string>("");
 
-  const onSubmit = (e: any) => {
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     try {
       const payload = {
-        email: e.target.email.value,
+        email: (e.target as HTMLFormElement).email.value,
       };
       console.log(payload);
       setEmail(payload?.email);
       setEmailStatus("success");
       setLoading(false);
-    } catch (error: any) {
-      console.log(error);
-      setErrorMessage(error?.response?.data?.error_message);
-      setLoading(false);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.log(error);
+        if ('response' in error && error.response && typeof error.response === 'object') {
+          const response = error.response as { data?: { error_message?: string } };
+          setErrorMessage(response.data?.error_message);
+        } else {
+          setErrorMessage("An unexpected error occurred");
+        }
+        setLoading(false);
+        setEmailStatus("error");
+      } else {
+        console.error("An unknown error occurred");
+      }
     }
   };
   return (
@@ -61,7 +70,7 @@ export default function ForgotPasswordPage() {
               {emailStatus === "waiting" ? (
                 <>
                   <p className="text-center text-gray-500 mt-2">
-                    Don't worry, we will send you instructions to reset it.
+                    Don&apos;t worry, we will send you instructions to reset it.
                   </p>
                   <Input
                     name="email"
