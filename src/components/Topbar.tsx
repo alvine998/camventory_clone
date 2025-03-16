@@ -60,7 +60,7 @@ export default function Topbar({
       </div>
 
       {/* Mobile Menu */}
-      <div>
+      <div className="lg:hidden block">
         <button type="button" onClick={() => setShowMenu(!showMenu)}>
           <MenuIcon className="text-black" />
         </button>

@@ -17,7 +17,7 @@ export default function Layout({ children }: Props) {
       <Head>
         <title>Camventory</title>
       </Head>
-      <div className="flex flex-row h-screen">
+      <div className="flex flex-row h-screen overflow-hidden">
         <div
           className={`bg-black ${
             isWide ? "w-1/4" : "w-[90px]"
@@ -37,7 +37,7 @@ export default function Layout({ children }: Props) {
             <MobileMenu navigations={NAVIGATIONS} showMenu={showMenu} setShowMenu={setShowMenu} />
           </div>
 
-          <main className="p-4">{children}</main>
+          <main className="p-4 overflow-auto">{children}</main>
         </div>
       </div>
     </div>
