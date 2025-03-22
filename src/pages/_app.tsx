@@ -6,13 +6,11 @@ import { useEffect, useState } from "react";
 
 export default function App({ Component, pageProps }: AppProps) {
   const pathname = usePathname();
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [currentPath, setCurrentPath] = useState<string | null>(null);
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setIsHydrated(true);
-    }
-  }, []);
-  if (pathname?.includes("/main") && isHydrated) {
+    setCurrentPath(pathname); // Update after component mounts
+  }, [pathname]);
+  if (currentPath?.includes("/main")) {
     return <Layout>{<Component {...pageProps} />}</Layout>;
   }
   return <Component {...pageProps} />;
