@@ -135,7 +135,7 @@ export default function Home() {
               <Button
                 variant="custom-color"
                 disabled={loading}
-                className="bg-orange-500 mt-4"
+                className="bg-orange-500 text-white mt-4"
               >
                 {loading ? "Loading..." : "Login"}
               </Button>

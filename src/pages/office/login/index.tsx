@@ -3,7 +3,6 @@ import Input from "@/components/Input";
 import { CheckIcon } from "lucide-react";
 import Head from "next/head";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
 import Swal from "sweetalert2";
@@ -31,7 +30,7 @@ export default function Home() {
         showConfirmButton: false,
         timer: 1500,
       });
-      router.push("/main/dashboard");
+      router.push("/office/main/administrator");
       setLoading(false);
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -116,9 +115,9 @@ export default function Home() {
                   </button>
                   <span className="text-xs">Remember me</span>
                 </div>
-                <Link href={"forgot-password"} className="text-xs text-red-500">
+                {/* <Link href={"forgot-password"} className="text-xs text-red-500">
                   Forgot Password
-                </Link>
+                </Link> */}
               </div>
               {errorMessage && (
                 <p className="my-1 text-sm text-red-500">{errorMessage}</p>
@@ -126,7 +125,7 @@ export default function Home() {
               <Button
                 variant="custom-color"
                 disabled={loading}
-                className="bg-orange-500 mt-4"
+                className="bg-orange-500 text-white mt-4"
               >
                 {loading ? "Loading..." : "Login"}
               </Button>

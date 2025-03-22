@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
                   <Button
                     variant="custom-color"
                     disabled={loading}
-                    className="bg-orange-500 mt-4"
+                    className="bg-orange-500 text-white mt-4"
                   >
                     {loading ? "Loading..." : "Resend Link"}
                   </Button>

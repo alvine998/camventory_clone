@@ -35,3 +35,11 @@ export const NAVIGATIONS = [
         icon: "/icons/document-text.svg",
     },
 ];
+
+export const OFFICE_NAVIGATIONS = [
+    {
+        title: "Administrator",
+        href: "/main/administrator",
+        icon: "/icons/graph.svg",
+    },
+]
