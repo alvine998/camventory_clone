@@ -1,10 +1,11 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
+import axios from "axios";
 import { CheckIcon } from "lucide-react";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 export default function Home() {
@@ -15,7 +16,7 @@ export default function Home() {
 
   const router = useRouter();
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -23,7 +24,7 @@ export default function Home() {
         username: (e.target as HTMLFormElement).username.value,
         password: (e.target as HTMLFormElement).password.value,
       };
-      console.log(payload);
+      await axios.post("/api/office/auth/login", payload);
       Swal.fire({
         icon: "success",
         title: "Login Success",
@@ -41,9 +42,11 @@ export default function Home() {
           typeof error.response === "object"
         ) {
           const response = error.response as {
-            data?: { error_message?: string };
+            data?: {
+              message?: { code: number; message: string; status: boolean };
+            };
           };
-          setErrorMessage(response.data?.error_message);
+          setErrorMessage(response?.data?.message?.message);
         } else {
           setErrorMessage("An unexpected error occurred");
         }
@@ -53,8 +56,16 @@ export default function Home() {
       }
     }
   };
+
+  useEffect(() => {
+    if (errorMessage) {
+      setTimeout(() => {
+        setErrorMessage("");
+      }, 3000);
+    }
+  }, [errorMessage]);
   return (
-    <div className='bg-cover bg-center h-screen lg:p-10 flex flex-col items-center justify-center z-0'>
+    <div className="bg-cover bg-center h-screen lg:p-10 flex flex-col items-center justify-center z-0">
       <Head>
         <title>Backoffice Login</title>
       </Head>
@@ -120,7 +131,7 @@ export default function Home() {
                 </Link> */}
               </div>
               {errorMessage && (
-                <p className="my-1 text-sm text-red-500">{errorMessage}</p>
+                <p className="my-1 text-xs text-red-500">{errorMessage}</p>
               )}
               <Button
                 variant="custom-color"

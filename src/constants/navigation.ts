@@ -39,7 +39,7 @@ export const NAVIGATIONS = [
 export const OFFICE_NAVIGATIONS = [
     {
         title: "Administrator",
-        href: "/main/administrator",
+        href: "/office/main/administrator",
         icon: "/icons/graph.svg",
     },
 ]
