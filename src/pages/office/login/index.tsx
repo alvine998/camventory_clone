@@ -1,5 +1,6 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
+import { useAuthStore } from "@/stores/useAuthStore";
 import axios from "axios";
 import { CheckIcon } from "lucide-react";
 import Head from "next/head";
@@ -24,13 +25,17 @@ export default function Home() {
         username: (e.target as HTMLFormElement).username.value,
         password: (e.target as HTMLFormElement).password.value,
       };
-      await axios.post("/api/office/auth/login", payload);
+      const result = await axios.post("/api/office/auth/login", payload);
       Swal.fire({
         icon: "success",
         title: "Login Success",
         showConfirmButton: false,
         timer: 1500,
       });
+
+      // Set user login data
+      useAuthStore.getState().login(result?.data?.payload?.token, result.data?.payload?.user);
+
       router.push("/office/main/administrator");
       setLoading(false);
     } catch (error: unknown) {

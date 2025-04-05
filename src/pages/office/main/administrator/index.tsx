@@ -5,12 +5,31 @@ import AdminCreateModal from "@/components/modals/administrator/create";
 import AdminDeleteModal from "@/components/modals/administrator/delete";
 import AdminUpdateModal from "@/components/modals/administrator/update";
 import { ColumnAdministrator } from "@/constants/column_administrator";
+import { parse } from "cookie";
 import { PencilLineIcon, TrashIcon } from "lucide-react";
+import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
 
-export default function AdministratorPage() {
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const cookies = parse(ctx.req.headers.cookie || "");
+  const token = cookies.token;
+
+  if (!token) {
+    return {
+      redirect: {
+        destination: "/office/login",
+        permanent: false,
+      },
+    };
+  }
+
+  // Optionally validate token...
+  return { props: { user: "yes" } };
+};
+
+export default function AdministratorPage({ user }: any) {
   const [show, setShow] = useState<boolean>(false);
   const [modal, setModal] = useState<useModal>();
   const router = useRouter();
@@ -90,11 +109,12 @@ export default function AdministratorPage() {
   useEffect(() => {
     const queryFilter = new URLSearchParams(filter).toString();
     router.push(`?${queryFilter}`);
-  }, [filter, router]);
+  }, [filter]);
   return (
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">
         <h1 className="text-2xl font-bold">List Admin Camventory</h1>
+        <h1 className="hidden">{user}</h1>
       </div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between mt-4">
         <Input
