@@ -3,6 +3,7 @@ import Input from "@/components/Input";
 import Modal from "@/components/Modal";
 import Select from "@/components/Select";
 import { queryToUrlSearchParams } from "@/utils";
+import axios from "axios";
 import { XIcon } from "lucide-react";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
@@ -18,7 +19,7 @@ export default function AdminCreateModal({ open, setOpen }: Props) {
   const [loading, setLoading] = useState<boolean>(false);
   const params = queryToUrlSearchParams(router?.query)?.toString();
 
-  const onSubmit = (e: any) => {
+  const onSubmit = async (e: any) => {
     e.preventDefault();
     setLoading(true);
     const formData = Object.fromEntries(new FormData(e.target));
@@ -26,7 +27,7 @@ export default function AdminCreateModal({ open, setOpen }: Props) {
       const payload = {
         ...formData,
       };
-      console.log(payload);
+      await axios.post("/api/office/administrator", payload);
       Swal.fire({
         icon: "success",
         title: "User Created Successfully",
@@ -40,8 +41,13 @@ export default function AdminCreateModal({ open, setOpen }: Props) {
       console.log(error);
       Swal.fire({
         icon: "error",
-        title: error?.response?.data?.error_message || "Error creating user",
+        title: error?.response?.data?.message?.message || "Error creating user",
       });
+      if (error?.response?.data?.message?.code === 401) {
+        router.push("/office/login");
+        setLoading(false);
+        return
+      }
       setLoading(false);
     }
   };
@@ -86,14 +92,14 @@ export default function AdminCreateModal({ open, setOpen }: Props) {
           />
           <Select
             options={[
-              { value: "All", label: "All" },
-              { value: "Cipadung", label: "Cipadung" },
-              { value: "Dipatiukur", label: "Dipatiukur" },
+              { value: "all", label: "All" },
+              { value: "cipadung", label: "Cipadung" },
+              { value: "dipatiukur", label: "Dipatiukur" },
             ]}
             label="Placement"
             required={true}
             placeholder="Choose Placement"
-            name="placement"
+            name="location"
           />
           <Select
             options={[
@@ -117,12 +123,12 @@ export default function AdminCreateModal({ open, setOpen }: Props) {
             placeholder="Choose Status"
             name="status"
           />
-          <Input
+          {/* <Input
             label="Address"
             required={true}
             placeholder="Enter Address"
             name="address"
-          />
+          /> */}
           <div className="w-full flex justify-end gap-2 border-t-2 border-t-gray-200 pt-4 mt-2">
             <Button
               variant="custom-color"

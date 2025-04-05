@@ -3,9 +3,11 @@ import Input from "@/components/Input";
 import Modal from "@/components/Modal";
 import Select from "@/components/Select";
 import { queryToUrlSearchParams } from "@/utils";
+import axios from "axios";
 import { XIcon } from "lucide-react";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
+import Swal from "sweetalert2";
 
 interface Props {
   open: boolean;
@@ -18,7 +20,7 @@ export default function AdminUpdateModal({ open, setOpen, data }: Props) {
   const [loading, setLoading] = useState<boolean>(false);
   const params = queryToUrlSearchParams(router?.query)?.toString();
 
-  const onSubmit = (e: any) => {
+  const onSubmit = async (e: any) => {
     e.preventDefault();
     setLoading(true);
     const formData = Object.fromEntries(new FormData(e.target));
@@ -26,12 +28,27 @@ export default function AdminUpdateModal({ open, setOpen, data }: Props) {
       const payload = {
         ...formData,
       };
-      console.log(payload);
+      await axios.patch("/api/office/administrator", payload);
+      Swal.fire({
+        icon: "success",
+        title: "User Updated Successfully",
+        showConfirmButton: false,
+        timer: 1500,
+      });
       setLoading(false);
       setOpen();
       router.push(`?${params}`);
     } catch (error: any) {
       console.log(error);
+      Swal.fire({
+        icon: "error",
+        title: error?.response?.data?.message?.message || "Error updating user",
+      });
+      if (error?.response?.data?.message?.code === 401) {
+        router.push("/office/login");
+        setLoading(false);
+        return;
+      }
       setLoading(false);
     }
   };
@@ -47,6 +64,7 @@ export default function AdminUpdateModal({ open, setOpen, data }: Props) {
           </button>
         </div>
         <form className="mt-4 flex flex-col gap-2" onSubmit={onSubmit}>
+          <input type="hidden" name="id" value={data.id} />
           <Input
             label="Name"
             required={true}
@@ -64,7 +82,6 @@ export default function AdminUpdateModal({ open, setOpen, data }: Props) {
           />
           <Input
             label="Password"
-            required={true}
             placeholder="Enter Password"
             name="password"
             type="password"
@@ -79,21 +96,21 @@ export default function AdminUpdateModal({ open, setOpen, data }: Props) {
           />
           <Select
             options={[
-              { value: "All", label: "All" },
-              { value: "Cipadung", label: "Cipadung" },
-              { value: "Dipatiukur", label: "Dipatiukur" },
+              { value: "all", label: "All" },
+              { value: "cipadung", label: "Cipadung" },
+              { value: "dipatiukur", label: "Dipatiukur" },
             ]}
             label="Placement"
             required={true}
             placeholder="Choose Placement"
-            name="placement"
-            defaultValue={data.placement}
+            name="location"
+            defaultValue={data.location}
           />
           <Select
             options={[
-              { value: "Admin", label: "Admin" },
-              { value: "Staff", label: "Staff" },
-              { value: "Head Staff", label: "Head Staff" },
+              { value: "ADMIN", label: "Admin" },
+              { value: "STAFF", label: "Staff" },
+              { value: "HEAD_STAFF", label: "Head Staff" },
             ]}
             label="Role"
             required={true}
@@ -103,9 +120,9 @@ export default function AdminUpdateModal({ open, setOpen, data }: Props) {
           />
           <Select
             options={[
-              { value: "Active", label: "Active" },
-              { value: "Inactive", label: "Inactive" },
-              { value: "Suspend", label: "Suspend" },
+              { value: "ACTIVE", label: "Active" },
+              { value: "INACTIVE", label: "Inactive" },
+              { value: "SUSPEND", label: "Suspend" },
             ]}
             label="Status"
             required={true}
@@ -113,13 +130,13 @@ export default function AdminUpdateModal({ open, setOpen, data }: Props) {
             name="status"
             defaultValue={data.status}
           />
-          <Input
+          {/* <Input
             label="Address"
             required={true}
             placeholder="Enter Address"
             name="address"
             defaultValue={data.address}
-          />
+          /> */}
           <div className="w-full flex justify-end gap-2 border-t-2 border-t-gray-200 pt-4 mt-2">
             <Button
               variant="custom-color"

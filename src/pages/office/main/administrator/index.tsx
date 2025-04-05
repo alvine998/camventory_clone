@@ -4,7 +4,9 @@ import { useModal } from "@/components/Modal";
 import AdminCreateModal from "@/components/modals/administrator/create";
 import AdminDeleteModal from "@/components/modals/administrator/delete";
 import AdminUpdateModal from "@/components/modals/administrator/update";
+import { CONFIG } from "@/config";
 import { ColumnAdministrator } from "@/constants/column_administrator";
+import axios from "axios";
 import { parse } from "cookie";
 import { PencilLineIcon, TrashIcon } from "lucide-react";
 import { GetServerSideProps } from "next";
@@ -13,23 +15,61 @@ import React, { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const cookies = parse(ctx.req.headers.cookie || "");
+  const { query, req } = ctx;
+  const cookies = parse(req.headers.cookie || "");
   const token = cookies.token;
 
-  if (!token) {
+  try {
+    if (!token) {
+      return {
+        redirect: {
+          destination: "/office/login",
+          permanent: false,
+        },
+      };
+    }
+    const filters = {
+      page: query.page || 1,
+      limit: query.limit || 10,
+    };
+
+    const table = await axios.get(
+      `${CONFIG.API_URL}/accounts/v1/users/all?page=${filters.page}&limit=${filters.limit}`,
+      {
+        headers: {
+          Authorization: `${token}`,
+        },
+      }
+    );
+
+    if (table?.status === 401) {
+      return {
+        redirect: {
+          destination: "/office/login",
+          permanent: false,
+        },
+      };
+    }
+
+    // Optionally validate token...
+    return { props: { table: table?.data?.data } };
+  } catch (error: any) {
+    console.log(error);
+    if (error?.response?.status === 401) {
+      return {
+        redirect: {
+          destination: "/office/login",
+          permanent: false,
+        },
+      };
+    }
     return {
-      redirect: {
-        destination: "/office/login",
-        permanent: false,
-      },
+      props: { table: [] },
     };
   }
-
-  // Optionally validate token...
-  return { props: { user: "yes" } };
 };
 
-export default function AdministratorPage({ user }: any) {
+export default function AdministratorPage({ table }: any) {
   const [show, setShow] = useState<boolean>(false);
   const [modal, setModal] = useState<useModal>();
   const router = useRouter();
@@ -39,38 +79,7 @@ export default function AdministratorPage({ user }: any) {
       setShow(true);
     }
   }, []);
-  const dummyData = [
-    {
-      id: 1,
-      name: "Alvine",
-      email: "alvine@gmail.com",
-      phone: "08998888888",
-      placement: "Cipadung",
-      address: "Cipadung",
-      role: "Admin",
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Fadhil",
-      email: "fadhil@gmail.com",
-      phone: "08998888888",
-      placement: "All",
-      address: "All",
-      role: "Admin",
-      status: "Active",
-    },
-    {
-      id: 3,
-      name: "Raka",
-      email: "raka@gmail.com",
-      phone: "08998888888",
-      address: "Dipatiukur",
-      placement: "Dipatiukur",
-      role: "Admin",
-      status: "Suspend",
-    },
-  ].map((item, index) => ({
+  const data = [...table].map((item, index) => ({
     ...item,
     action: (
       <div key={index} className="flex gap-2">
@@ -114,7 +123,6 @@ export default function AdministratorPage({ user }: any) {
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">
         <h1 className="text-2xl font-bold">List Admin Camventory</h1>
-        <h1 className="hidden">{user}</h1>
       </div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between mt-4">
         <Input
@@ -136,7 +144,7 @@ export default function AdministratorPage({ user }: any) {
           <div className="mt-4">
             <DataTable
               columns={ColumnAdministrator}
-              data={dummyData}
+              data={data}
               pagination
               highlightOnHover
               responsive

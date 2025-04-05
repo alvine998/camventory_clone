@@ -1,37 +1,34 @@
+import { IUsers } from "@/types/user";
+
 export const ColumnAdministrator = [
     {
         name: "Name",
-        selector: (row: any) => row.name,
+        selector: (row: IUsers) => row.name,
         sortable: true
     },
     {
         name: "Email",
-        selector: (row: any) => row.email,
+        selector: (row: IUsers) => row.email,
         sortable: true
     },
     {
         name: "Phone Number",
-        selector: (row: any) => row.phone,
+        selector: (row: IUsers) => row.phone,
         sortable: true
     },
     {
         name: "Placement",
-        selector: (row: any) => row.placement,
-        sortable: true
-    },
-    {
-        name: "Address",
-        selector: (row: any) => row.address,
+        selector: (row: IUsers) => row.location.toUpperCase(),
         sortable: true
     },
     {
         name: "Role",
-        selector: (row: any) => row.role,
+        selector: (row: IUsers) => row.role,
         sortable: true
     },
     {
         name: "Status",
-        selector: (row: any) => row.status,
+        selector: (row: IUsers) => row.status,
         sortable: true
     },
     {

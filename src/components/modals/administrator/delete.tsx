@@ -1,10 +1,12 @@
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import { queryToUrlSearchParams } from "@/utils";
+import axios from "axios";
 import { XIcon } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
+import Swal from "sweetalert2";
 interface Props {
   open: boolean;
   setOpen: any;
@@ -15,7 +17,7 @@ export default function AdminDeleteModal({ open, setOpen, data }: Props) {
   const [loading, setLoading] = useState<boolean>(false);
   const params = queryToUrlSearchParams(router?.query)?.toString();
 
-  const onSubmit = (e: any) => {
+  const onSubmit = async (e: any) => {
     e.preventDefault();
     setLoading(true);
     const formData = Object.fromEntries(new FormData(e.target));
@@ -23,12 +25,27 @@ export default function AdminDeleteModal({ open, setOpen, data }: Props) {
       const payload = {
         ...formData,
       };
-      console.log(payload);
+      await axios.delete("/api/office/administrator", { data: payload });
+      Swal.fire({
+        icon: "success",
+        title: "User Deleted Successfully",
+        showConfirmButton: false,
+        timer: 1500,
+      });
       setLoading(false);
       setOpen();
       router.push(`?${params}`);
     } catch (error: any) {
       console.log(error);
+      Swal.fire({
+        icon: "error",
+        title: error?.response?.data?.message?.message || "Error deleting user",
+      });
+      if (error?.response?.data?.message?.code === 401) {
+        router.push("/office/login");
+        setLoading(false);
+        return;
+      }
       setLoading(false);
     }
   };
@@ -51,6 +68,7 @@ export default function AdminDeleteModal({ open, setOpen, data }: Props) {
         />
         <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-2">
           <input type="hidden" name="id" value={data.id} />
+          <input type="hidden" name="data" value={JSON.stringify(data)} />
           <p className="text-center text-gray-600">
             Are you sure you want to delete {data.name} ?
           </p>
