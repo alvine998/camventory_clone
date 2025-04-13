@@ -14,7 +14,7 @@ interface Props {
   setOpen: any;
 }
 
-export default function AdminCreateModal({ open, setOpen }: Props) {
+export default function CustomerCreateModal({ open, setOpen }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(false);
   const params = queryToUrlSearchParams(router?.query)?.toString();
@@ -27,10 +27,10 @@ export default function AdminCreateModal({ open, setOpen }: Props) {
       const payload = {
         ...formData,
       };
-      await axios.post("/api/office/administrator", payload);
+      await axios.post("/api/customer", payload);
       Swal.fire({
         icon: "success",
-        title: "User Created Successfully",
+        title: "Customer Created Successfully",
         showConfirmButton: false,
         timer: 1500,
       });
@@ -44,9 +44,9 @@ export default function AdminCreateModal({ open, setOpen }: Props) {
         title: error?.response?.data?.message?.message || "Error creating user",
       });
       if (error?.response?.data?.message?.code === 401) {
-        router.push("/office/login");
+        router.push("/");
         setLoading(false);
-        return
+        return;
       }
       setLoading(false);
     }
@@ -56,7 +56,7 @@ export default function AdminCreateModal({ open, setOpen }: Props) {
       <Modal open={open} setOpen={setOpen}>
         <div className="border-b-2 border-gray-200 pb-4 flex justify-between gap-2">
           <h1 className="text-center font-bold text-xl text-orange-500">
-            Add User
+            Add Customer
           </h1>
           <button type="button" onClick={setOpen}>
             <XIcon className="w-6 h-6 text-orange-500" />
@@ -64,71 +64,50 @@ export default function AdminCreateModal({ open, setOpen }: Props) {
         </div>
         <form className="mt-4 flex flex-col gap-2" onSubmit={onSubmit}>
           <Input
-            label="Name"
+            label="Customer Name"
             required={true}
-            placeholder="Enter Name"
+            placeholder="Enter Customer Name"
             name="name"
           />
           <Input
-            label="Email"
+            label="NIK"
             required={true}
-            placeholder="Enter Email"
-            name="email"
-            type="email"
-          />
-          <Input
-            label="Password"
-            required={true}
-            placeholder="Enter Password"
-            name="password"
-            type="password"
+            placeholder="Enter NIK"
+            name="nik"
+            type="number"
           />
           <Input
             label="Phone Number"
             required={true}
             placeholder="Enter Phone Number"
-            name="phone"
-            type="number"
-          />
-          <Select
-            options={[
-              { value: "all", label: "All" },
-              { value: "cipadung", label: "Cipadung" },
-              { value: "dipatiukur", label: "Dipatiukur" },
-            ]}
-            label="Placement"
-            required={true}
-            placeholder="Choose Placement"
-            name="location"
-          />
-          <Select
-            options={[
-              { value: "Admin", label: "Admin" },
-              { value: "Staff", label: "Staff" },
-              { value: "Head Staff", label: "Head Staff" },
-            ]}
-            label="Role"
-            required={true}
-            placeholder="Choose Role"
-            name="role"
-          />
-          <Select
-            options={[
-              { value: "Active", label: "Active" },
-              { value: "Inactive", label: "Inactive" },
-              { value: "Suspend", label: "Suspend" },
-            ]}
-            label="Status"
-            required={true}
-            placeholder="Choose Status"
-            name="status"
+            name="phone_number"
           />
           <Input
-            label="Address"
+            label="Member No"
             required={true}
-            placeholder="Enter Address"
-            name="address"
+            placeholder="Enter Member No"
+            name="member_no"
           />
+          <Input
+            label="Join Date"
+            required={true}
+            placeholder="Enter Join Date"
+            name="join_date"
+            type="date"
+          />
+          <Input
+            label="Instagram Account"
+            required={true}
+            placeholder="Enter Instagram Account"
+            name="instagram_acc"
+          />
+          <Input
+            label="Customer ID Card Photo"
+            placeholder="Enter Customer ID Card Photo"
+            name="path_ktp"
+            type="file"
+          />
+
           <div className="w-full flex justify-end gap-2 border-t-2 border-t-gray-200 pt-4 mt-2">
             <Button
               variant="custom-color"

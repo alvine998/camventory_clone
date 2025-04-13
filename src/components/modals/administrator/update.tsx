@@ -130,13 +130,13 @@ export default function AdminUpdateModal({ open, setOpen, data }: Props) {
             name="status"
             defaultValue={data.status}
           />
-          {/* <Input
+          <Input
             label="Address"
             required={true}
             placeholder="Enter Address"
             name="address"
             defaultValue={data.address}
-          /> */}
+          />
           <div className="w-full flex justify-end gap-2 border-t-2 border-t-gray-200 pt-4 mt-2">
             <Button
               variant="custom-color"
