@@ -17,7 +17,7 @@ type Data = {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
     try {
-        const { nik, name, phone_number, instagram_acc, path_ktp, id, data } = req.body
+        const { nik, name, phone_number, instagram_acc, path_ktp, id } = req.body
         const requiredBody = ["nik", "name", "phone_number", "instagram_acc", "path_ktp"];
 
         if (req.method === 'POST') {

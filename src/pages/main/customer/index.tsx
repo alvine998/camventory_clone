@@ -1,12 +1,10 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 import { useModal } from "@/components/Modal";
-import AdminCreateModal from "@/components/modals/administrator/create";
 import AdminDeleteModal from "@/components/modals/administrator/delete";
 import AdminUpdateModal from "@/components/modals/administrator/update";
 import CustomerCreateModal from "@/components/modals/customer/create";
 import { CONFIG } from "@/config";
-import { ColumnAdministrator } from "@/constants/column_administrator";
 import { ColumnCustomer } from "@/constants/column_customer";
 import axios from "axios";
 import { parse } from "cookie";
