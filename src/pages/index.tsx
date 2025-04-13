@@ -1,11 +1,13 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
+import { useAuthStore } from "@/stores/useAuthStore";
+import axios from "axios";
 import { CheckIcon } from "lucide-react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 export default function Home() {
@@ -16,7 +18,7 @@ export default function Home() {
 
   const router = useRouter();
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -24,13 +26,19 @@ export default function Home() {
         username: (e.target as HTMLFormElement).username.value,
         password: (e.target as HTMLFormElement).password.value,
       };
-      console.log(payload);
+      const result = await axios.post("/api/auth/login", payload);
       Swal.fire({
         icon: "success",
         title: "Login Success",
         showConfirmButton: false,
         timer: 1500,
       });
+
+      // Set user login data
+      useAuthStore
+        .getState()
+        .login(result?.data?.payload?.token, result.data?.payload?.user);
+
       router.push("/main/dashboard");
       setLoading(false);
     } catch (error: unknown) {
@@ -42,9 +50,11 @@ export default function Home() {
           typeof error.response === "object"
         ) {
           const response = error.response as {
-            data?: { error_message?: string };
+            data?: {
+              message?: { code: number; message: string; status: boolean };
+            };
           };
-          setErrorMessage(response.data?.error_message);
+          setErrorMessage(response?.data?.message?.message);
         } else {
           setErrorMessage("An unexpected error occurred");
         }
@@ -54,6 +64,14 @@ export default function Home() {
       }
     }
   };
+
+  useEffect(() => {
+    if (errorMessage) {
+      setTimeout(() => {
+        setErrorMessage("");
+      }, 3000);
+    }
+  }, [errorMessage]);
   return (
     <div className='bg-[url("/images/bg-login.png")] bg-cover bg-center h-screen lg:p-10 flex flex-col items-center justify-center z-0'>
       <Head>
