@@ -36,7 +36,7 @@ export default function AdminDeleteModal({ open, setOpen, data }: Props) {
       setOpen();
       router.push(`?${params}`);
     } catch (error: any) {
-      console.log(error);
+      console.log(error, "error");
       Swal.fire({
         icon: "error",
         title: error?.response?.data?.message?.message || "Error deleting user",

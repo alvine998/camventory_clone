@@ -9,6 +9,7 @@ type Data = {
         name: string;
         phone: string;
         password?: string;
+        address?: string;
         id?: string;
         location: string;
         role: string;
@@ -19,7 +20,7 @@ type Data = {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
     try {
-        const { email, name, phone, location, role, status, password } = req.body
+        const { email, name, phone, location, role, status, password, data, id, address } = req.body
         const requiredBody = ["email", "name", "phone", "location", "role", "status"];
 
         if (req.method === 'POST') {
@@ -33,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             }
 
             const result = await axios.post(CONFIG.API_URL + '/accounts/v1/users', {
-                email, full_name: name, phone, location, role: role.toUpperCase(), status: status.toUpperCase(), password
+                email, full_name: name, phone, location, role: role.toUpperCase(), status: status.toUpperCase(), password, address
             }, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -47,60 +48,60 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
             return res.status(201).json({
                 message: 'User created successfully',
-                payload: { email, name, phone, location, role, status },
+                payload: { email, name, phone, location, role, status, address },
             })
         }
 
-        // if (req.method === 'PATCH') {
+        if (req.method === 'PATCH') {
 
-        //     // Simulate user creation (normally, you’d interact with DB here)
-        //     for (let index = 0; index < requiredBody.length; index++) {
-        //         const element = requiredBody[index];
-        //         if (!element) {
-        //             return res.status(400).json({ message: `${element} are required` })
-        //         }
-        //     }
+            // Simulate user creation (normally, you’d interact with DB here)
+            for (let index = 0; index < requiredBody.length; index++) {
+                const element = requiredBody[index];
+                if (!element) {
+                    return res.status(400).json({ message: `${element} are required` })
+                }
+            }
 
-        //     const result = await axios.patch(CONFIG.API_URL + '/accounts/v1/users/profile', {
-        //         email, full_name: name, phone, location, role: role.toUpperCase(), status: status.toUpperCase(), password: password || null, id
-        //     }, {
-        //         headers: {
-        //             'Content-Type': 'application/json',
-        //             Authorization: `${req.cookies.token}`
-        //         }
-        //     });
+            const result = await axios.patch(CONFIG.API_URL + '/accounts/v1/users/profile', {
+                email, full_name: name, phone, location, role: role.toUpperCase(), status: status.toUpperCase(), password: password || null, id, address
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `${req.cookies.token}`
+                }
+            });
 
-        //     if (result.status !== 201) {
-        //         return res.status(400).json({ message: result?.data?.error })
-        //     }
+            if (result.status !== 201) {
+                return res.status(400).json({ message: result?.data?.error })
+            }
 
-        //     return res.status(201).json({
-        //         message: 'User updated successfully',
-        //         payload: { email, name, phone, location, role, status, id },
-        //     })
-        // }
+            return res.status(201).json({
+                message: 'User updated successfully',
+                payload: { email, name, phone, location, role, status, id, address },
+            })
+        }
 
-        // if (req.method === 'DELETE') {
+        if (req.method === 'DELETE') {
 
-        //     const result = await axios.delete(CONFIG.API_URL + '/accounts/v1/users', {
-        //         data: {
-        //             ...JSON.parse(data)
-        //         },
-        //         headers: {
-        //             'Content-Type': 'application/json',
-        //             Authorization: `${req.cookies.token}`
-        //         }
-        //     });
+            await axios.delete(CONFIG.API_URL + '/accounts/v1/users', {
+                data: {
+                    ...JSON.parse(data)
+                },
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `${req.cookies.token}`
+                }
+            });
 
-        //     if (result.status !== 201) {
-        //         return res.status(400).json({ message: result?.data?.error })
-        //     }
+            // if (result.status !== 201) {
+            //     return res.status(400).json({ message: result?.data?.error })
+            // }
 
-        //     return res.status(201).json({
-        //         message: 'User deleted successfully',
-        //         payload: { email, name, phone, location, role, status, id, data },
-        //     })
-        // }
+            return res.status(200).json({
+                message: 'User deleted successfully',
+                payload: { email, name, phone, location, role, status, id, data},
+            })
+        }
 
         return res.status(405).json({ message: 'Method Not Allowed' })
     } catch (error: any) {

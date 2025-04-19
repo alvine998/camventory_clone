@@ -10,13 +10,14 @@ type Data = {
         password: string;
         user: any;
         token: string;
+        is_remember: boolean;
     }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
     try {
         if (req.method === 'POST') {
-            const { username, password, login_for = "BO" } = req.body
+            const { username, password, login_for = "BO", is_remember } = req.body
 
             // Simulate user creation (normally, you’d interact with DB here)
             if (!username || !password) {
@@ -29,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                 login_for
             });
 
-            const token = result.data?.data?.access_token;
+            const token = is_remember ? result.data?.data?.refresh_token : result.data?.data?.access_token;
 
             const user = await axios.get(CONFIG.API_URL + "/accounts/v1/back-office", {
                 headers: {
@@ -37,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                 },
             });
 
-            const serialized = serialize('token', result.data?.data?.access_token, {
+            const serialized = serialize('token', token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'strict',
@@ -49,7 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
             return res.status(201).json({
                 message: 'Admin login successfully',
-                payload: { username, password, user: user?.data?.data, token: token },
+                payload: { username, password, user: user?.data?.data, token: token, is_remember: is_remember },
             })
         }
 

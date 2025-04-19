@@ -125,7 +125,6 @@ export default function AdminCreateModal({ open, setOpen }: Props) {
           />
           <Input
             label="Address"
-            required={true}
             placeholder="Enter Address"
             name="address"
           />

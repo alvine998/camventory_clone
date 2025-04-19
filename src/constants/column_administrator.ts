@@ -17,6 +17,12 @@ export const ColumnAdministrator = [
         sortable: true
     },
     {
+        name: "Address",
+        width:"200px",
+        selector: (row: IUsers) => row.address || "-",
+        sortable: true
+    },
+    {
         name: "Placement",
         selector: (row: IUsers) => row.location.toUpperCase(),
         sortable: true

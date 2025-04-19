@@ -22,7 +22,6 @@ export default function Topbar({
   const router = useRouter();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const { user } = useAuthStore();
-  console.log(user,'user');
 
   const handleLogout = async (e: any) => {
     e.preventDefault();

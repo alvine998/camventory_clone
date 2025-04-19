@@ -2,7 +2,7 @@ import { ICustomer } from "@/types/customer";
 
 export const ColumnCustomer = [
     {
-        name: "KTP",
+        name: "Customer's ID Card Photo",
         selector: (row: any) => row.ktp,
         sortable: true
     },

@@ -25,6 +25,7 @@ export default function Home() {
       const payload = {
         username: (e.target as HTMLFormElement).username.value,
         password: (e.target as HTMLFormElement).password.value,
+        is_remember: checked,
       };
       const result = await axios.post("/api/auth/login", payload);
       Swal.fire({

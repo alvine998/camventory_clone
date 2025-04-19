@@ -4,6 +4,7 @@ import Modal from "@/components/Modal";
 import { queryToUrlSearchParams } from "@/utils";
 import axios from "axios";
 import { XIcon } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
 import Swal from "sweetalert2";
@@ -16,7 +17,34 @@ interface Props {
 export default function CustomerCreateModal({ open, setOpen }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(false);
+  const [metaFile, setMetaFile] = useState<any>({
+    file: null,
+    path: null,
+  });
+  const [nik, setNik] = useState<string>("");
+  const [phone, setPhone] = useState<string>("");
   const params = queryToUrlSearchParams(router?.query)?.toString();
+
+  const onUpload = async (file: any) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("category", "customer_ktp");
+    try {
+      const response = await axios.post("/api/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      const { message } = response.data.payload;
+      setMetaFile({
+        file: file,
+        path: message,
+        preview: URL.createObjectURL(file),
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const onSubmit = async (e: any) => {
     e.preventDefault();
@@ -25,6 +53,7 @@ export default function CustomerCreateModal({ open, setOpen }: Props) {
     try {
       const payload = {
         ...formData,
+        path_ktp: metaFile?.path,
       };
       await axios.post("/api/customer", payload);
       Swal.fire({
@@ -40,7 +69,7 @@ export default function CustomerCreateModal({ open, setOpen }: Props) {
       console.log(error);
       Swal.fire({
         icon: "error",
-        title: error?.response?.data?.message?.message || "Error creating user",
+        title: error?.response?.data?.message?.message || "Error creating customer",
       });
       if (error?.response?.data?.message?.code === 401) {
         router.push("/");
@@ -73,26 +102,31 @@ export default function CustomerCreateModal({ open, setOpen }: Props) {
             required={true}
             placeholder="Enter NIK"
             name="nik"
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="\d*"
+            value={nik}
+            minLength={16}
+            maxLength={16}
+            onChange={(e) => {
+              const onlyNums = e.target.value.replace(/[^0-9]/g, "");
+              setNik(onlyNums);
+            }}
           />
           <Input
             label="Phone Number"
             required={true}
             placeholder="Enter Phone Number"
             name="phone_number"
-          />
-          <Input
-            label="Member No"
-            required={true}
-            placeholder="Enter Member No"
-            name="member_no"
-          />
-          <Input
-            label="Join Date"
-            required={true}
-            placeholder="Enter Join Date"
-            name="join_date"
-            type="date"
+            type="text"
+            inputMode="numeric"
+            pattern="\d*"
+            value={phone}
+            maxLength={13}
+            onChange={(e) => {
+              const onlyNums = e.target.value.replace(/[^0-9]/g, "");
+              setPhone(onlyNums);
+            }}
           />
           <Input
             label="Instagram Account"
@@ -105,7 +139,20 @@ export default function CustomerCreateModal({ open, setOpen }: Props) {
             placeholder="Enter Customer ID Card Photo"
             name="path_ktp"
             type="file"
+            onChange={(e: any) => {
+              onUpload(e.target.files[0]);
+            }}
           />
+          {metaFile.path && (
+            <Image
+              src={metaFile.preview}
+              alt="image"
+              width={200}
+              height={150}
+              className="w-auto h-auto"
+              layout="responsive"
+            />
+          )}
 
           <div className="w-full flex justify-end gap-2 border-t-2 border-t-gray-200 pt-4 mt-2">
             <Button

@@ -59,8 +59,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                 }
             }
 
-            const result = await axios.patch(CONFIG.API_URL + '/accounts/v1/users/profile', {
-                nik, name, phone_number, instagram_acc, path_ktp, id
+            const result = await axios.patch(CONFIG.API_URL + '/v1/customers' + `/${id}`, {
+                nik, name, phone_number, instagram_acc, path_ktp
             }, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -73,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             }
 
             return res.status(201).json({
-                message: 'User updated successfully',
+                message: 'Customer updated successfully',
                 payload: { nik, name, phone_number, instagram_acc, path_ktp, id },
             })
         }

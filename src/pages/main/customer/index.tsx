@@ -2,14 +2,16 @@ import Button from "@/components/Button";
 import Input from "@/components/Input";
 import { useModal } from "@/components/Modal";
 import AdminDeleteModal from "@/components/modals/administrator/delete";
-import AdminUpdateModal from "@/components/modals/administrator/update";
 import CustomerCreateModal from "@/components/modals/customer/create";
+import CustomerUpdateModal from "@/components/modals/customer/update";
 import { CONFIG } from "@/config";
 import { ColumnCustomer } from "@/constants/column_customer";
 import axios from "axios";
 import { parse } from "cookie";
 import { PencilLineIcon, TrashIcon } from "lucide-react";
 import { GetServerSideProps } from "next";
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
@@ -81,6 +83,18 @@ export default function AdministratorPage({ table }: any) {
   }, []);
   const data = [...table].map((item, index) => ({
     ...item,
+    ktp: (
+      <div className="flex gap-2 items-center">
+        <Image src={item.full_path_ktp} alt="ktp" width={50} height={50} />
+        <Link
+          className="text-blue-500"
+          href={item.full_path_ktp}
+          target="_blank"
+        >
+          See
+        </Link>
+      </div>
+    ),
     action: (
       <div key={index} className="flex gap-2">
         <Button
@@ -171,7 +185,7 @@ export default function AdministratorPage({ table }: any) {
         <CustomerCreateModal open={modal?.open} setOpen={setModal} />
       )}
       {modal?.key == "update" && (
-        <AdminUpdateModal
+        <CustomerUpdateModal
           open={modal?.open}
           setOpen={setModal}
           data={modal?.data}
