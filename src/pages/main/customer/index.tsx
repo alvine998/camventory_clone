@@ -1,8 +1,8 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 import { useModal } from "@/components/Modal";
-import AdminDeleteModal from "@/components/modals/administrator/delete";
 import CustomerCreateModal from "@/components/modals/customer/create";
+import CustomerDeleteModal from "@/components/modals/customer/delete";
 import CustomerUpdateModal from "@/components/modals/customer/update";
 import { CONFIG } from "@/config";
 import { ColumnCustomer } from "@/constants/column_customer";
@@ -30,13 +30,19 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const filters = {
-      page: query.page || 1,
-      limit: query.limit || 10,
-    };
+    const { page = 1, limit = 10, search = "" } = query;
+
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+
+    if (typeof search === "string" && search.trim() !== "") {
+      params.set("search", search);
+    }
 
     const table = await axios.get(
-      `${CONFIG.API_URL}/v1/customers?page=${filters.page}&limit=${filters.limit}`,
+      `${CONFIG.API_URL}/v1/customers?${params.toString()}`,
       {
         headers: {
           Authorization: `${token}`,
@@ -91,7 +97,7 @@ export default function AdministratorPage({ table }: any) {
           href={item.full_path_ktp}
           target="_blank"
         >
-          See
+          View
         </Link>
       </div>
     ),
@@ -192,7 +198,7 @@ export default function AdministratorPage({ table }: any) {
         />
       )}
       {modal?.key == "delete" && (
-        <AdminDeleteModal
+        <CustomerDeleteModal
           open={modal?.open}
           setOpen={setModal}
           data={modal?.data}

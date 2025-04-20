@@ -68,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                 }
             });
 
-            if (result.status !== 201) {
+            if (result.status === 400) {
                 return res.status(400).json({ message: result?.data?.error })
             }
 
@@ -78,27 +78,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             })
         }
 
-        // if (req.method === 'DELETE') {
+        if (req.method === 'DELETE') {
 
-        //     const result = await axios.delete(CONFIG.API_URL + '/accounts/v1/users', {
-        //         data: {
-        //             ...JSON.parse(data)
-        //         },
-        //         headers: {
-        //             'Content-Type': 'application/json',
-        //             Authorization: `${req.cookies.token}`
-        //         }
-        //     });
+            await axios.delete(CONFIG.API_URL + '/v1/customers' + `/${id}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `${req.cookies.token}`
+                }
+            });
 
-        //     if (result.status !== 201) {
-        //         return res.status(400).json({ message: result?.data?.error })
-        //     }
-
-        //     return res.status(201).json({
-        //         message: 'User deleted successfully',
-        //         payload: { email, name, phone, location, role, status, id, data },
-        //     })
-        // }
+            return res.status(201).json({
+                message: 'Customer deleted successfully',
+            })
+        }
 
         return res.status(405).json({ message: 'Method Not Allowed' })
     } catch (error: any) {

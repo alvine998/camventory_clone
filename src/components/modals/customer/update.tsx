@@ -55,7 +55,7 @@ export default function CustomerUpdateModal({ open, setOpen, data }: Props) {
     try {
       const payload = {
         ...formData,
-        path_ktp: metaFile?.path,
+        path_ktp: metaFile?.preview ? metaFile?.path : data.path_ktp,
         id: data.id
       };
       await axios.patch("/api/customer", payload);
