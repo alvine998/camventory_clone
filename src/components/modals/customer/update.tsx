@@ -28,6 +28,7 @@ export default function CustomerUpdateModal({ open, setOpen, data }: Props) {
   const params = queryToUrlSearchParams(router?.query)?.toString();
 
   const onUpload = async (file: any) => {
+    setLoading(true)
     const formData = new FormData();
     formData.append("file", file);
     formData.append("category", "customer_ktp");
@@ -43,8 +44,10 @@ export default function CustomerUpdateModal({ open, setOpen, data }: Props) {
         path: message,
         preview: URL.createObjectURL(file),
       });
+      setLoading(false)
     } catch (error) {
       console.log(error);
+      setLoading(false)
     }
   };
 
