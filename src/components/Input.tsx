@@ -7,6 +7,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   required?: boolean;
   showPassword?: boolean;
   setShowPassword?: (show: boolean) => void;
+  fullWidth?: boolean;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -18,12 +19,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       showPassword = false,
       setShowPassword,
       className,
+      fullWidth = false,
       ...props
     },
     ref
   ) => {
     return (
-      <div className="flex flex-col">
+      <div className={"flex flex-col" + (fullWidth ? " w-full" : "")}>
         {label && (
           <label className="mb-1 text-sm font-medium">
             {label}
@@ -85,7 +87,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               <Image
                 alt="eye"
                 src={"/icons/search-normal.svg"}
-                className="w-6 h-6"
+                className="w-5 h-5"
                 width={15}
                 height={15}
                 layout="relative"

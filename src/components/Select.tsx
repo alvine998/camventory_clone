@@ -20,6 +20,7 @@ interface SelectComponentProps {
   required?: boolean;
   name?: string;
   defaultValue?: any;
+  fullWidth?: boolean;
 }
 
 const Select: React.FC<SelectComponentProps> = ({
@@ -34,9 +35,10 @@ const Select: React.FC<SelectComponentProps> = ({
   required = false,
   name,
   defaultValue,
+  fullWidth = false,
 }) => {
   return (
-    <div>
+    <div className={`flex flex-col ${fullWidth ? "w-full" : ""}`}>
       {label && (
         <label className="mb-1 text-sm font-medium">
           {label}
@@ -55,7 +57,7 @@ const Select: React.FC<SelectComponentProps> = ({
         isMulti={isMulti}
         isClearable={isClearable}
         isDisabled={isDisabled}
-        className="w-full text-xs"
+        className={"w-full text-xs"}
         classNamePrefix="custom-select"
         name={name}
         defaultValue={
