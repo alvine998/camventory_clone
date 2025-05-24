@@ -4,7 +4,7 @@ import { useModal } from "@/components/Modal";
 import CustomerDeleteModal from "@/components/modals/customer/delete";
 import Select from "@/components/Select";
 import { CONFIG } from "@/config";
-import { ColumnCustomer } from "@/constants/column_customer";
+import { ColumnItems } from "@/constants/column_items";
 import axios from "axios";
 import { parse } from "cookie";
 import { EyeIcon } from "lucide-react";
@@ -161,7 +161,7 @@ export default function AdministratorPage({ table }: any) {
         {show && (
           <div className="mt-4">
             <DataTable
-              columns={ColumnCustomer}
+              columns={ColumnItems}
               data={data}
               pagination
               highlightOnHover

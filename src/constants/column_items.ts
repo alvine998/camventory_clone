@@ -1,5 +1,5 @@
 
-export const ColumnCustomer = [
+export const ColumnItems = [
   {
     name: "No",
     selector: (row: any) => row.id,

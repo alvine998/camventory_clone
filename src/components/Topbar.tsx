@@ -54,7 +54,7 @@ export default function Topbar({
           />
         </button>
         <h2 className="font-bold lg:text-xl text-md uppercase text-black">
-          {pathname.split("/")[2]}
+          {pathname?.split("/")[2] || ""}
         </h2>
       </div>
 
