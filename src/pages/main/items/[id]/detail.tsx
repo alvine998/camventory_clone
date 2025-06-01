@@ -2,23 +2,52 @@ import Button from "@/components/Button";
 import Header from "@/components/detail-item/Header";
 import Tabs, { Tab } from "@/components/Tabs";
 import Toggle from "@/components/Toggle";
-import {
-  MinusCircleIcon,
-  PlusCircleIcon,
-  TrashIcon,
-} from "lucide-react";
+import { parse } from "cookie";
+import { MinusCircleIcon, PlusCircleIcon, TrashIcon } from "lucide-react";
+import { GetServerSideProps } from "next";
 import Image from "next/image";
 import React, { useState } from "react";
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const { req, params } = ctx;
+  const cookies = parse(req.headers.cookie || "");
+  const token = cookies.token;
 
-export default function Detail() {
-  const tabs: Tab[] = [
-    { label: "Information", href: "/detail" },
-    { label: "Dashboard", href: "/dashboard" },
-    { label: "Depreciation", href: "/depreciation" },
-    { label: "Reservations", href: "/reservations" },
-    { label: "Check-outs", href: "/checkouts" },
-  ];
+  try {
+    if (!token) {
+      return {
+        redirect: {
+          destination: "/",
+          permanent: false,
+        },
+      };
+    }
 
+    // Optionally validate token...
+    return { props: { params } };
+  } catch (error: any) {
+    console.log(error);
+    if (error?.response?.status === 401) {
+      return {
+        redirect: {
+          destination: "/",
+          permanent: false,
+        },
+      };
+    }
+    return {
+      props: { table: [] },
+    };
+  }
+};
+
+export const itemTabs = (id: string): Tab[] => [
+  { label: "Information", href: `/main/items/${id}/detail` },
+  { label: "Dashboard", href: `/main/items/${id}/dashboard` },
+  { label: "Depreciation", href: `/main/items/${id}/depreciation` },
+  { label: "Reservations", href: `/main/items/${id}/reservations` },
+  { label: "Check-outs", href: `/main/items/${id}/checkouts` },
+];
+export default function Detail({ params }: any) {
   const itemInformation = [
     {
       label: "Item Name",
@@ -97,7 +126,7 @@ export default function Detail() {
     <div className="p-2">
       <Header />
       <div className="mt-4">
-        <Tabs tabs={tabs} />
+        <Tabs tabs={itemTabs(params?.id)} />
       </div>
 
       <div className="flex gap-5 mt-4">

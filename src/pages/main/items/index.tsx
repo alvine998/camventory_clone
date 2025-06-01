@@ -40,7 +40,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
 
     const table = await axios.get(
-      `${CONFIG.API_URL}/v1/items?${params.toString()}`,
+      `${CONFIG.API_URL}/v1/single-items?${params.toString()}`,
       {
         headers: {
           Authorization: `${token}`,
@@ -106,7 +106,7 @@ export default function AdministratorPage({ table }: any) {
           className="bg-orange-200 text-orange-500"
           variant="custom-color"
           type="button"
-          onClick={() => {}}
+          onClick={() => {router.push(`/main/items/${item.id}/detail`)}}
         >
           <EyeIcon className="w-4 h-4" />
         </Button>

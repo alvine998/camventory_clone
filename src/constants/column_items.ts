@@ -1,3 +1,4 @@
+import { toMoney } from "@/utils";
 
 export const ColumnItems = [
   {
@@ -12,22 +13,22 @@ export const ColumnItems = [
   },
   {
     name: "Brand",
-    selector: (row: any) => row.brand,
+    selector: (row: any) => row.brand?.name || "-",
     sortable: true,
   },
   {
     name: "Category",
-    selector: (row: any) => row.category,
+    selector: (row: any) => row.category?.name || "-",
     sortable: true,
   },
   {
     name: "Rate Daily",
-    selector: (row: any) => row.rate,
+    selector: (row: any) => "Rp " + toMoney(row.rate_day),
     sortable: true,
   },
   {
     name: "Flag Status",
-    selector: (row: any) => row.status,
+    selector: (row: any) => row.status_booking,
     sortable: true,
   },
   {

@@ -19,7 +19,7 @@ export default function Layout({ children }: Props) {
       <Head>
         <title>Camventory</title>
       </Head>
-      <div className="flex flex-row h-screen overflow-hidden">
+      <div className="flex flex-row max-h-screen h-screen">
         <div
           className={`bg-black ${
             isWide ? "w-1/4" : "w-[90px]"
@@ -32,7 +32,7 @@ export default function Layout({ children }: Props) {
             isWide={isWide}
           />
         </div>
-        <div className="w-full">
+        <div className="w-full flex flex-col h-full">
           <Topbar
             isWide={isWide}
             setIsWide={setIsWide}
