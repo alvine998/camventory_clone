@@ -56,7 +56,7 @@ export default function Reservations({ params }: any) {
       </div>
 
       <div className="flex md:flex-row flex-col gap-4 mt-5">
-        <div className="border border-gray-300 rounded p-4 w-full">
+        <div className="border border-gray-300 rounded p-4 w-full h-[45vh]">
           <div className="flex items-center justify-between gap-2">
             <h1 className="text-lg font-bold">Order Item</h1>
             <div className="flex gap-2 items-center">
