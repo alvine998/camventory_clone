@@ -17,8 +17,7 @@ export default function Tabs({ tabs }: TabsProps) {
   return (
     <div className="flex space-x-4 border-b border-gray-300">
       {tabs.map((tab) => {
-        const isActive = router.asPath.includes(tab.href);
-
+        const isActive = router.asPath === tab.href;
         return (
           <Link
             key={tab.href}

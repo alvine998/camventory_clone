@@ -5,7 +5,7 @@ import CustomerDeleteModal from "@/components/modals/customer/delete";
 import Select from "@/components/Select";
 import Tabs from "@/components/Tabs";
 import { CONFIG } from "@/config";
-import { ColumnItems } from "@/constants/column_items";
+import { ColumnBulkItems } from "@/constants/column_items";
 import axios from "axios";
 import { parse } from "cookie";
 import { EyeIcon } from "lucide-react";
@@ -41,7 +41,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
 
     const table = await axios.get(
-      `${CONFIG.API_URL}/v1/single-items?${params.toString()}`,
+      `${CONFIG.API_URL}/v1/bulk-items?${params.toString()}`,
       {
         headers: {
           Authorization: `${token}`,
@@ -90,7 +90,13 @@ export default function AdministratorPage({ table }: any) {
     ...item,
     item_name: (
       <div className="flex gap-2 items-center">
-        <Image src={item.full_path_image} alt="image" width={50} height={50} className="p-2" />
+        <Image
+          src={item.full_path_image}
+          alt="image"
+          width={50}
+          height={50}
+          className="p-2"
+        />
         <div>
           <h5 className="text-black">{item.name}</h5>
           <div>
@@ -116,12 +122,10 @@ export default function AdministratorPage({ table }: any) {
       </div>
     ),
   }));
-
   const itemTabs = [
     { label: "Individual Item", href: `/main/items` },
     { label: "Bulk Item", href: `/main/items/bulk` },
   ];
-
   useEffect(() => {
     const queryFilter = new URLSearchParams(filter).toString();
     router.push(`?${queryFilter}`);
@@ -129,7 +133,7 @@ export default function AdministratorPage({ table }: any) {
   return (
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">
-        <h1 className="text-2xl font-bold">List Items</h1>
+        <h1 className="text-2xl font-bold">List Bulk Items</h1>
       </div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between mt-4">
         <div className="flex gap-2 items-center">
@@ -174,7 +178,7 @@ export default function AdministratorPage({ table }: any) {
         {show && (
           <div className="mt-4">
             <DataTable
-              columns={ColumnItems}
+              columns={ColumnBulkItems}
               data={data}
               pagination
               highlightOnHover
