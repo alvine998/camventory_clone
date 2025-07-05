@@ -33,27 +33,27 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     if (typeof search === "string" && search.trim() !== "") {
       params.set("search", search);
     }
-
-    const table = await axios.get(
-      `${CONFIG.API_URL}/v1/items?${params.toString()}`,
+    const categories = await axios.get(
+      `${CONFIG.API_URL}/v1/master/categories`,
       {
         headers: {
           Authorization: `${token}`,
         },
       }
     );
-
-    if (table?.status === 401) {
-      return {
-        redirect: {
-          destination: "/",
-          permanent: false,
-        },
-      };
-    }
+    const brands = await axios.get(`${CONFIG.API_URL}/v1/master/brands`, {
+      headers: {
+        Authorization: `${token}`,
+      },
+    });
 
     // Optionally validate token...
-    return { props: { table: table?.data?.data } };
+    return {
+      props: {
+        categories: categories?.data?.data || [],
+        brands: brands?.data?.data || [],
+      },
+    };
   } catch (error: any) {
     console.log(error);
     if (error?.response?.status === 401) {
@@ -70,7 +70,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   }
 };
 
-export default function AdministratorPage() {
+interface Props {
+  categories: any;
+  brands: any;
+}
+
+export default function AdministratorPage({ brands, categories }: Props) {
   const [type, setType] = useState<string>("individual");
   const router = useRouter();
   const [filter, setFilter] = useState<any>(router.query);
@@ -109,23 +114,28 @@ export default function AdministratorPage() {
               ]}
             />
           </div>
-          <div className="mt-6">
+          <div className="mt-6 mb-20">
             <h5 className="text-orange-500 font-bold">Item Details</h5>
             <form action="">
               <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
                 <Select
-                  options={[]}
+                  options={brands?.map((item: any) => ({
+                    label: item.name,
+                    value: item.id,
+                  }))}
                   placeholder="Brand"
                   label="Brand"
                   fullWidth
-                  onChange={(e) => setFilter({ brand: e })}
+                  onChange={(e) => setFilter({ ...filter, brand: e })}
                 />
-                <Select
-                  options={[]}
+                <Input
                   placeholder="Model"
                   label="Model"
+                  name="model"
                   fullWidth
-                  // onChange={(e) => setFilter({ brand: e })}
+                  onChange={(e) =>
+                    setFilter({ ...filter, model: e.target.value })
+                  }
                 />
               </div>
               <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
@@ -134,17 +144,41 @@ export default function AdministratorPage() {
                   label="Item Name"
                   name="name"
                   fullWidth
+                  disabled
+                  value={`${filter?.brand?.label || ""} ${filter?.model || ""}`}
                 />
                 <Select
-                  options={[]}
-                  placeholder="Category"
-                  label="Category"
+                  options={[
+                    {
+                      label: "Dipatiukur",
+                      value: "dipatiukur",
+                    },
+                    {
+                      label: "Cipadung",
+                      value: "cipadung",
+                    },
+                  ]}
+                  placeholder="Location"
+                  label="Location"
                   fullWidth
                   // onChange={(e) => setFilter({ brand: e })}
                 />
               </div>
               <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
                 <Input
+                  placeholder="Completeness"
+                  label="Completeness"
+                  name="completeness"
+                  fullWidth
+                />
+                <Input
+                  placeholder="Rate/Day"
+                  label="Rate/Day"
+                  name="rate"
+                  fullWidth
+                  type="number"
+                />
+                {/* <Input
                   placeholder="Purchase Date"
                   label="Purchase Date"
                   name="purchase_date"
@@ -157,31 +191,40 @@ export default function AdministratorPage() {
                   name="warranty_date"
                   fullWidth
                   type="date"
-                />
+                /> */}
               </div>
               <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
-                <Select
-                  options={[]}
-                  placeholder="Location"
-                  label="Location"
-                  fullWidth
-                  // onChange={(e) => setFilter({ brand: e })}
-                />
+                {type === "individual" ? (
+                  <Select
+                    options={categories?.map((item: any) => ({
+                      label: item.name,
+                      value: item.id,
+                    }))}
+                    placeholder="Category"
+                    label="Category Items"
+                    fullWidth
+                    // onChange={(e) => setFilter({ brand: e })}
+                  />
+                ) : (
+                  <Input
+                    placeholder="0"
+                    label="QTY"
+                    name="qty"
+                    fullWidth
+                    type="number"
+                  />
+                )}
+
                 <Input
-                  placeholder="Completeness"
-                  label="Completeness"
-                  name="completeness"
+                  placeholder="Image"
+                  label="Image"
+                  name="image"
                   fullWidth
+                  type="file"
                 />
               </div>
-              <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
-                <Input
-                  placeholder="Rate/Day"
-                  label="Rate/Day"
-                  name="rate"
-                  fullWidth
-                  type="number"
-                />
+              {/* <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
+               
                 <Input
                   placeholder="Serial Number"
                   label="Serial Number"
@@ -190,20 +233,14 @@ export default function AdministratorPage() {
                 />
               </div>
               <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
-                <Input
-                  placeholder="Image"
-                  label="Image"
-                  name="image"
-                  fullWidth
-                  type="file"
-                />
+                
                 <Input
                   placeholder="Barcode"
                   label="Barcode"
                   name="barcode"
                   fullWidth
                 />
-              </div>
+              </div> */}
               <div className="flex flex-row gap-4 justify-end items-center mt-4">
                 <Button
                   variant="white"

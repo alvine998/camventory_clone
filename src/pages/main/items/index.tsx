@@ -118,8 +118,8 @@ export default function AdministratorPage({ table }: any) {
   }));
 
   const itemTabs = [
-    { label: "Individual Item", href: `/main/items` },
-    { label: "Bulk Item", href: `/main/items/bulk` },
+    { label: "Individual Item", href: `/main/items?` },
+    { label: "Bulk Item", href: `/main/items/bulk?` },
   ];
 
   useEffect(() => {
