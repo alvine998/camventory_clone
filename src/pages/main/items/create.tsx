@@ -5,9 +5,11 @@ import Select from "@/components/Select";
 import { CONFIG } from "@/config";
 import axios from "axios";
 import { parse } from "cookie";
+import { XCircleIcon, XIcon } from "lucide-react";
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -79,11 +81,58 @@ export default function AdministratorPage({ brands, categories }: Props) {
   const [type, setType] = useState<string>("individual");
   const router = useRouter();
   const [filter, setFilter] = useState<any>(router.query);
+  const [images, setImages] = useState<any>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const handleImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    let arrImage: any[] = [];
+
+    // const formData = new FormData();
+    Array.from(files).forEach((file) => {
+      const previewImage = URL.createObjectURL(file);
+      arrImage.push(previewImage);
+      // formData.append("files", file); // Note: same field name "files"
+    });
+
+    // const res = await fetch("/api/upload", {
+    //   method: "POST",
+    //   body: formData,
+    // });
+
+    // const data = await res.json();
+    console.log(arrImage, "slssl");
+    setImages(arrImage);
+  };
 
   useEffect(() => {
     const queryFilter = new URLSearchParams(filter).toString();
     router.push(`?${queryFilter}`);
   }, [filter]);
+
+  const onSubmit = async (e: any) => {
+    e.preventDefault();
+    setLoading(true);
+    const formData = Object.fromEntries(new FormData(e.target));
+    try {
+      const payload = {
+        ...formData,
+      };
+      await axios.post("/api/item", payload);
+      Swal.fire({
+        icon: "success",
+        title: "User Created Successfully",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+      setLoading(false);
+      router.push(`/main/items`);
+    } catch (error: any) {
+      console.log(error);
+      setLoading(false);
+    }
+  };
   return (
     <div>
       <div className="">
@@ -116,7 +165,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
           </div>
           <div className="mt-6 mb-20">
             <h5 className="text-orange-500 font-bold">Item Details</h5>
-            <form action="">
+            <form onSubmit={onSubmit}>
               <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
                 <Select
                   options={brands?.map((item: any) => ({
@@ -126,6 +175,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   placeholder="Brand"
                   label="Brand"
                   fullWidth
+                  required
                   onChange={(e) => setFilter({ ...filter, brand: e })}
                 />
                 <Input
@@ -133,6 +183,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   label="Model"
                   name="model"
                   fullWidth
+                  required
                   onChange={(e) =>
                     setFilter({ ...filter, model: e.target.value })
                   }
@@ -145,7 +196,10 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   name="name"
                   fullWidth
                   disabled
-                  value={`${filter?.brand?.label || ""} ${filter?.model || ""}`}
+                  required
+                  value={`${filter?.brand?.label || "Item Name"} ${
+                    filter?.model || ""
+                  }`}
                 />
                 <Select
                   options={[
@@ -161,6 +215,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   placeholder="Location"
                   label="Location"
                   fullWidth
+                  required
                   // onChange={(e) => setFilter({ brand: e })}
                 />
               </div>
@@ -170,6 +225,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   label="Completeness"
                   name="completeness"
                   fullWidth
+                  required
                 />
                 <Input
                   placeholder="Rate/Day"
@@ -177,6 +233,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   name="rate"
                   fullWidth
                   type="number"
+                  required
                 />
                 {/* <Input
                   placeholder="Purchase Date"
@@ -203,6 +260,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                     placeholder="Category"
                     label="Category Items"
                     fullWidth
+                    required
                     // onChange={(e) => setFilter({ brand: e })}
                   />
                 ) : (
@@ -211,6 +269,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                     label="QTY"
                     name="qty"
                     fullWidth
+                    required
                     type="number"
                   />
                 )}
@@ -219,10 +278,38 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   placeholder="Image"
                   label="Image"
                   name="image"
+                  accept="image/*"
                   fullWidth
                   type="file"
+                  onChange={handleImage}
+                  multiple
+                  required
                 />
               </div>
+              <div className="flex sm:flex-row flex-col gap-4 mt-4">
+                {images.map((url: any, i: number) => (
+                  <div className="relative" key={i}>
+                    <button
+                      type="button"
+                      className="absolute top-1 right-1 bg-red-500 rounded-full p-1"
+                      onClick={() =>
+                        setImages(
+                          images.filter((_: any, index: number) => index !== i)
+                        )
+                      }
+                    >
+                      <XIcon className="w-4 h-4" color="white" />
+                    </button>
+                    <img
+                      src={url}
+                      alt={`Uploaded ${i}`}
+                      width={150}
+                      className="rounded"
+                    />
+                  </div>
+                ))}
+              </div>
+
               {/* <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
                
                 <Input
