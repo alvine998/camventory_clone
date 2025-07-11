@@ -5,7 +5,7 @@ import Select from "@/components/Select";
 import { CONFIG } from "@/config";
 import axios from "axios";
 import { parse } from "cookie";
-import { XCircleIcon, XIcon } from "lucide-react";
+import { XIcon } from "lucide-react";
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
@@ -102,7 +102,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
   const handleImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    let arrImage: any[] = [];
+    const arrImage: any[] = [];
 
     // const formData = new FormData();
     Array.from(files).forEach((file) => {
@@ -149,7 +149,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
         timer: 1500,
       });
       setLoading(false);
-      router.push(`/main/items`);
+      router.push(`/main/items${type === "bulk" ? "/bulk" : ""}`);
     } catch (error: any) {
       console.log(error);
       setLoading(false);
@@ -199,7 +199,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   fullWidth
                   required
                   name="brandID"
-                  // onChange={(e) => setFilter({ ...filter, brand: e })}
+                  onChange={(e) => setFilter({ ...filter, brand: e })}
                 />
                 <Input
                   placeholder="Model"
@@ -277,20 +277,20 @@ export default function AdministratorPage({ brands, categories }: Props) {
                 /> */}
               </div>
               <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
-                {type === "individual" ? (
-                  <Select
-                    options={categories?.map((item: any) => ({
-                      label: item.name,
-                      value: item.id,
-                    }))}
-                    placeholder="Category"
-                    label="Category Items"
-                    fullWidth
-                    required
-                    name="categoryID"
-                    // onChange={(e) => setFilter({ brand: e })}
-                  />
-                ) : (
+                <Select
+                  options={categories?.map((item: any) => ({
+                    label: item.name,
+                    value: item.id,
+                  }))}
+                  placeholder="Category"
+                  label="Category Items"
+                  fullWidth
+                  required
+                  name="categoryID"
+                  // onChange={(e) => setFilter({ brand: e })}
+                />
+
+                {type === "bulk" ? (
                   <Input
                     placeholder="0"
                     label="QTY"
@@ -299,20 +299,35 @@ export default function AdministratorPage({ brands, categories }: Props) {
                     required
                     type="number"
                   />
+                ) : (
+                  <Input
+                    placeholder="Image"
+                    label="Image"
+                    name="image"
+                    accept="image/*"
+                    fullWidth
+                    type="file"
+                    onChange={handleImage}
+                    multiple
+                    required
+                  />
                 )}
-
-                <Input
-                  placeholder="Image"
-                  label="Image"
-                  name="image"
-                  accept="image/*"
-                  fullWidth
-                  type="file"
-                  onChange={handleImage}
-                  multiple
-                  required
-                />
               </div>
+              {type === "bulk" && (
+                <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
+                  <Input
+                    placeholder="Image"
+                    label="Image"
+                    name="image"
+                    accept="image/*"
+                    fullWidth
+                    type="file"
+                    onChange={handleImage}
+                    multiple
+                    required
+                  />
+                </div>
+              )}
               <div className="flex sm:flex-row flex-col gap-4 mt-4">
                 {images.map((url: any, i: number) => (
                   <div className="relative" key={i}>
@@ -365,8 +380,8 @@ export default function AdministratorPage({ brands, categories }: Props) {
                 >
                   Cancel
                 </Button>
-                <Button variant="primary" type="submit">
-                  Add Item
+                <Button disabled={loading} variant="primary" type="submit">
+                  {loading ? "Loading..." : "Add Item"}
                 </Button>
               </div>
             </form>
