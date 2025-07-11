@@ -82,7 +82,22 @@ export default function AdministratorPage({ brands, categories }: Props) {
   const router = useRouter();
   const [filter, setFilter] = useState<any>(router.query);
   const [images, setImages] = useState<any>([]);
+  const [image, setImage] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [value, setValue] = useState("");
+
+  // Format number with thousand separator
+  const formatNumber = (input: string) => {
+    const numeric = input.replace(/\D/g, ""); // Remove non-digit characters
+    if (!numeric) return "";
+    return parseInt(numeric, 10).toLocaleString("id-ID"); // "1234567" => "1,234,567"
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    const formatted = formatNumber(raw);
+    setValue(formatted);
+  };
 
   const handleImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -91,6 +106,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
 
     // const formData = new FormData();
     Array.from(files).forEach((file) => {
+      setImage(files[0]?.name);
       const previewImage = URL.createObjectURL(file);
       arrImage.push(previewImage);
       // formData.append("files", file); // Note: same field name "files"
@@ -102,7 +118,6 @@ export default function AdministratorPage({ brands, categories }: Props) {
     // });
 
     // const data = await res.json();
-    console.log(arrImage, "slssl");
     setImages(arrImage);
   };
 
@@ -118,8 +133,15 @@ export default function AdministratorPage({ brands, categories }: Props) {
     try {
       const payload = {
         ...formData,
+        image_path: "items/" + image,
+        rate_day: Number(value?.replaceAll(".", "")),
+        qty: Number(formData?.qty) || null,
       };
-      await axios.post("/api/item", payload);
+      if (type === "bulk") {
+        await axios.post("/api/items/bulk", payload);
+      } else {
+        await axios.post("/api/items/single", payload);
+      }
       Swal.fire({
         icon: "success",
         title: "User Created Successfully",
@@ -176,7 +198,8 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   label="Brand"
                   fullWidth
                   required
-                  onChange={(e) => setFilter({ ...filter, brand: e })}
+                  name="brandID"
+                  // onChange={(e) => setFilter({ ...filter, brand: e })}
                 />
                 <Input
                   placeholder="Model"
@@ -195,7 +218,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   label="Item Name"
                   name="name"
                   fullWidth
-                  disabled
+                  readOnly
                   required
                   value={`${filter?.brand?.label || "Item Name"} ${
                     filter?.model || ""
@@ -216,6 +239,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   label="Location"
                   fullWidth
                   required
+                  name="location"
                   // onChange={(e) => setFilter({ brand: e })}
                 />
               </div>
@@ -230,10 +254,12 @@ export default function AdministratorPage({ brands, categories }: Props) {
                 <Input
                   placeholder="Rate/Day"
                   label="Rate/Day"
-                  name="rate"
+                  name="rate_day"
                   fullWidth
-                  type="number"
+                  type="text"
+                  onChange={handleChange}
                   required
+                  value={value}
                 />
                 {/* <Input
                   placeholder="Purchase Date"
@@ -261,6 +287,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                     label="Category Items"
                     fullWidth
                     required
+                    name="categoryID"
                     // onChange={(e) => setFilter({ brand: e })}
                   />
                 ) : (
