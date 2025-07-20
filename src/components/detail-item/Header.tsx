@@ -4,8 +4,14 @@ import Button from "../Button";
 import Badge from "../Badge";
 import Select from "../Select";
 import Image from "next/image";
+import { IItems } from "@/types/single_items";
 
-export default function Header() {
+interface Props {
+  detail: IItems;
+  query: any;
+}
+
+export default function Header({ detail, query }: Props) {
   return (
     <div>
       <h1 className="text-2xl font-bold text-orange-500">Detail Items</h1>
@@ -13,11 +19,11 @@ export default function Header() {
         <div>
           <div className="flex justify-between gap-4">
             <div className="flex gap-5 items-center">
-              <h5>Canon EOS R100</h5>
-              <Badge text="Available" />
+              <h5>{detail?.name ?? "-"}</h5>
+              <Badge text={detail?.status_booking} />
             </div>
             <div className="flex gap-2 items-center">
-              <Select options={[]} placeholder="Need Check" />
+              <Select options={[]} placeholder={detail?.status_items} />
               {/* <Button
                 className="flex items-center gap-1 border border-orange-500"
                 variant="custom-color"
@@ -40,7 +46,7 @@ export default function Header() {
                 height={20}
                 className={"w-auto h-auto"}
               />
-              <p className="text-xs text-gray-500">123456789</p>
+              <p className="text-xs text-gray-500">{detail?.serial_number}</p>
             </div>
             <div className="flex gap-1 items-center">
               <Image
@@ -50,7 +56,7 @@ export default function Header() {
                 height={20}
                 className={"w-auto h-auto"}
               />
-              <p className="text-xs text-gray-500">Bulk Item</p>
+              <p className="text-xs text-gray-500">{query.type}</p>
             </div>
           </div>
         </div>

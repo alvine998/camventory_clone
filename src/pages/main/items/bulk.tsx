@@ -114,7 +114,7 @@ export default function AdministratorPage({ table }: any) {
           variant="custom-color"
           type="button"
           onClick={() => {
-            router.push(`/main/items/${item.id}/detail`);
+            router.push(`/main/items/${item.id}/detail?type=bulk`);
           }}
         >
           <EyeIcon className="w-4 h-4" />

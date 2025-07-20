@@ -8,9 +8,11 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import { MapPin } from "lucide-react";
 import Button from "@/components/Button";
+import axios from "axios";
+import { CONFIG } from "@/config";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const { req, params } = ctx;
+  const { req, params, query } = ctx;
   const cookies = parse(req.headers.cookie || "");
   const token = cookies.token;
 
@@ -23,6 +25,33 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
+
+    let result = null;
+    if (query.type === "bulk" && params) {
+      result = await axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+    } else if (query.type === "single" && params) {
+      result = await axios.get(
+        `${CONFIG.API_URL}/v1/single-items/${params.id}`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      );
+    } else {
+      throw new Error(`Invalid query.type: ${query.type}`);
+    }
+
+    if (result.status !== 200) {
+      throw new Error(`API request failed with status code ${result.status}`);
+    }
+
+    // Optionally validate token...
+    return { props: { params, detail: result?.data, query } };
 
     // Optionally validate token...
     return { props: { params } };
@@ -41,12 +70,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     };
   }
 };
-export default function Dashboard({ params }: any) {
+export default function Dashboard({ params, detail, query }: any) {
   return (
     <div className="p-2">
-      <Header />
+      <Header detail={detail?.data} query={query} />
       <div className="mt-4">
-        <Tabs tabs={itemTabs(params?.id)} />
+        <Tabs tabs={itemTabs(params?.id, query)} />
       </div>
 
       <div className="flex md:flex-row flex-col gap-8 mt-5">

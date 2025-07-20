@@ -136,6 +136,16 @@ export default function AdministratorPage({ brands, categories }: Props) {
         image_path: "items/" + image,
         rate_day: Number(value?.replaceAll(".", "")),
         qty: Number(formData?.qty) || null,
+        purchase_date: formData?.purchase_date
+          ? Math.floor(
+              new Date(formData?.purchase_date.toString()).getTime() / 1000
+            )
+          : null,
+        warranty_date: formData?.warranty_date
+          ? Math.floor(
+              new Date(formData?.warranty_date.toString()).getTime() / 1000
+            )
+          : null,
       };
       if (type === "bulk") {
         await axios.post("/api/items/bulk", payload);
@@ -261,35 +271,42 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   required
                   value={value}
                 />
-                {/* <Input
-                  placeholder="Purchase Date"
-                  label="Purchase Date"
-                  name="purchase_date"
-                  fullWidth
-                  type="date"
-                />
-                <Input
-                  placeholder="Warranty Date"
-                  label="Warranty Date"
-                  name="warranty_date"
-                  fullWidth
-                  type="date"
-                /> */}
               </div>
+              {type !== "" && (
+                <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
+                  <Input
+                    placeholder="Purchase Date"
+                    label="Purchase Date"
+                    name="purchase_date"
+                    fullWidth
+                    type="date"
+                  />
+                  <Input
+                    placeholder="Warranty Date"
+                    label="Warranty Date"
+                    name="warranty_date"
+                    fullWidth
+                    type="date"
+                  />
+                </div>
+              )}
+              {type !== "bulk" && (
+                <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
+                  <Input
+                    placeholder="Serial Number"
+                    label="Serial Number"
+                    name="serial_number"
+                    fullWidth
+                  />
+                  <Input
+                    placeholder="Barcode"
+                    label="Barcode"
+                    name="barcode"
+                    fullWidth
+                  />
+                </div>
+              )}
               <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
-                <Select
-                  options={categories?.map((item: any) => ({
-                    label: item.name,
-                    value: item.id,
-                  }))}
-                  placeholder="Category"
-                  label="Category Items"
-                  fullWidth
-                  required
-                  name="categoryID"
-                  // onChange={(e) => setFilter({ brand: e })}
-                />
-
                 {type === "bulk" ? (
                   <Input
                     placeholder="0"
@@ -300,34 +317,31 @@ export default function AdministratorPage({ brands, categories }: Props) {
                     type="number"
                   />
                 ) : (
-                  <Input
-                    placeholder="Image"
-                    label="Image"
-                    name="image"
-                    accept="image/*"
+                  <Select
+                    options={categories?.map((item: any) => ({
+                      label: item.name,
+                      value: item.id,
+                    }))}
+                    placeholder="Category"
+                    label="Category Items"
                     fullWidth
-                    type="file"
-                    onChange={handleImage}
-                    multiple
                     required
+                    name="categoryID"
+                    // onChange={(e) => setFilter({ brand: e })}
                   />
                 )}
+                <Input
+                  placeholder="Image"
+                  label="Image"
+                  name="image"
+                  accept="image/*"
+                  fullWidth
+                  type="file"
+                  onChange={handleImage}
+                  multiple
+                  required
+                />
               </div>
-              {type === "bulk" && (
-                <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
-                  <Input
-                    placeholder="Image"
-                    label="Image"
-                    name="image"
-                    accept="image/*"
-                    fullWidth
-                    type="file"
-                    onChange={handleImage}
-                    multiple
-                    required
-                  />
-                </div>
-              )}
               <div className="flex sm:flex-row flex-col gap-4 mt-4">
                 {images.map((url: any, i: number) => (
                   <div className="relative" key={i}>
@@ -351,25 +365,6 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   </div>
                 ))}
               </div>
-
-              {/* <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
-               
-                <Input
-                  placeholder="Serial Number"
-                  label="Serial Number"
-                  name="serial_number"
-                  fullWidth
-                />
-              </div>
-              <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
-                
-                <Input
-                  placeholder="Barcode"
-                  label="Barcode"
-                  name="barcode"
-                  fullWidth
-                />
-              </div> */}
               <div className="flex flex-row gap-4 justify-end items-center mt-4">
                 <Button
                   variant="white"

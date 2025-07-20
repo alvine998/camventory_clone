@@ -13,7 +13,6 @@ interface TabsProps {
 
 export default function Tabs({ tabs }: TabsProps) {
   const router = useRouter();
-  console.log(router.asPath)
 
   return (
     <div className="flex space-x-4 border-b border-gray-300">

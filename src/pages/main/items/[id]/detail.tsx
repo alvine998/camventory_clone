@@ -2,13 +2,18 @@ import Button from "@/components/Button";
 import Header from "@/components/detail-item/Header";
 import Tabs, { Tab } from "@/components/Tabs";
 import Toggle from "@/components/Toggle";
+import { CONFIG } from "@/config";
+import { IItems } from "@/types/single_items";
+import { toMoney } from "@/utils";
+import axios from "axios";
 import { parse } from "cookie";
 import { MinusCircleIcon, PlusCircleIcon, TrashIcon } from "lucide-react";
+import moment from "moment";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import React, { useState } from "react";
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const { req, params } = ctx;
+  const { req, params, query } = ctx;
   const cookies = parse(req.headers.cookie || "");
   const token = cookies.token;
 
@@ -22,8 +27,32 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
+    let result = null;
+    if (query.type === "bulk" && params) {
+      result = await axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+    } else if (query.type === "single" && params) {
+      result = await axios.get(
+        `${CONFIG.API_URL}/v1/single-items/${params.id}`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      );
+    } else {
+      throw new Error(`Invalid query.type: ${query.type}`);
+    }
+
+    if (result.status !== 200) {
+      throw new Error(`API request failed with status code ${result.status}`);
+    }
+
     // Optionally validate token...
-    return { props: { params } };
+    return { props: { params, detail: result?.data, query } };
   } catch (error: any) {
     console.log(error);
     if (error?.response?.status === 401) {
@@ -40,74 +69,81 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   }
 };
 
-export const itemTabs = (id: string): Tab[] => [
-  { label: "Information", href: `/main/items/${id}/detail` },
-  { label: "Dashboard", href: `/main/items/${id}/dashboard` },
-  { label: "Depreciation", href: `/main/items/${id}/depreciation` },
-  { label: "Reservations", href: `/main/items/${id}/reservations` },
-  { label: "Check-outs", href: `/main/items/${id}/checkouts` },
+export const itemTabs = (id: string, query: any): Tab[] => [
+  { label: "Information", href: `/main/items/${id}/detail?type=${query.type}` },
+  {
+    label: "Dashboard",
+    href: `/main/items/${id}/dashboard?type=${query.type}`,
+  },
+  {
+    label: "Depreciation",
+    href: `/main/items/${id}/depreciation?type=${query.type}`,
+  },
+  {
+    label: "Reservations",
+    href: `/main/items/${id}/reservations?type=${query.type}`,
+  },
+  {
+    label: "Check-outs",
+    href: `/main/items/${id}/checkouts?type=${query.type}`,
+  },
 ];
-export default function Detail({ params }: any) {
+export default function Detail({ params, detail, query }: any) {
+  const itemDetail: IItems = detail?.data;
+  const [qty, setQty] = useState<number>(1);
+  const [toggle, setToggle] = useState<boolean>(true);
   const itemInformation = [
     {
       label: "Item Name",
-      value: "Canon EOS R100",
+      value: itemDetail?.name,
     },
     {
       label: "Model",
-      value: "EOS R100",
-    },
-    {
-      label: "Purchase Price",
-      value: 15000000,
+      value: itemDetail?.model,
     },
     {
       label: "Warranty Date",
-      value: "2023-01-01",
+      value: moment(itemDetail?.warranty_date).format("DD-MM-YYYY"),
     },
     {
       label: "Rate/Day",
-      value: 1500000,
+      value: toMoney(itemDetail?.rate_day),
     },
     {
       label: "Barcode",
-      value: "123456789",
+      value: itemDetail?.barcode,
     },
     {
       label: "Image",
-      value: "/images/camera.png",
+      value: itemDetail?.full_path_image,
     },
   ];
-
   const itemInformation2 = [
     {
       label: "Brand",
-      value: "Canon",
+      value: itemDetail?.brandID,
     },
     {
       label: "Category",
-      value: "Bulk Item",
+      value: itemDetail?.categoryID,
     },
     {
       label: "Purchase Date",
-      value: "2023-01-01",
+      value: moment(itemDetail?.purchase_date).format("DD-MM-YYYY"),
     },
     {
       label: "Location",
-      value: "Dipatiukur",
+      value: itemDetail?.location,
     },
     {
       label: "Serial Number",
-      value: "KD12345",
+      value: itemDetail?.serial_number,
     },
     {
       label: "Completeness",
-      value: "Complete",
+      value: itemDetail?.completeness,
     },
   ];
-  const [qty, setQty] = useState<number>(1);
-  const [toggle, setToggle] = useState<boolean>(true);
-
   const trackers = [
     {
       label: "Tracker 1",
@@ -124,9 +160,9 @@ export default function Detail({ params }: any) {
   ];
   return (
     <div className="p-2">
-      <Header />
+      <Header detail={itemDetail} query={query} />
       <div className="mt-4">
-        <Tabs tabs={itemTabs(params?.id)} />
+        <Tabs tabs={itemTabs(params?.id, query)} />
       </div>
 
       <div className="flex gap-5 mt-4">

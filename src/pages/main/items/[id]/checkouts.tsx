@@ -4,17 +4,16 @@ import React, { useEffect, useState } from "react";
 import { itemTabs } from "./detail";
 import { GetServerSideProps } from "next";
 import { parse } from "cookie";
-import {
-  Calendar1Icon,
-  MapPin,
-} from "lucide-react";
+import { Calendar1Icon, MapPin } from "lucide-react";
 import Button from "@/components/Button";
 import moment from "moment";
 import DataTable from "react-data-table-component";
 import { ColumnCheckout } from "@/constants/column_checkout";
+import axios from "axios";
+import { CONFIG } from "@/config";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const { req, params } = ctx;
+  const { req, params, query } = ctx;
   const cookies = parse(req.headers.cookie || "");
   const token = cookies.token;
 
@@ -27,6 +26,33 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
+
+    let result = null;
+    if (query.type === "bulk" && params) {
+      result = await axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+    } else if (query.type === "single" && params) {
+      result = await axios.get(
+        `${CONFIG.API_URL}/v1/single-items/${params.id}`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      );
+    } else {
+      throw new Error(`Invalid query.type: ${query.type}`);
+    }
+
+    if (result.status !== 200) {
+      throw new Error(`API request failed with status code ${result.status}`);
+    }
+
+    // Optionally validate token...
+    return { props: { params, detail: result?.data, query } };
 
     // Optionally validate token...
     return { props: { params } };
@@ -46,7 +72,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   }
 };
 
-export default function Checkouts({ params }: any) {
+export default function Checkouts({ params, detail, query }: any) {
   const [show, setShow] = useState<boolean>(false);
 
   useEffect(() => {
@@ -56,9 +82,9 @@ export default function Checkouts({ params }: any) {
   }, []);
   return (
     <div className="p-2">
-      <Header />
+      <Header detail={detail?.data} query={query} />
       <div className="mt-4">
-        <Tabs tabs={itemTabs(params?.id)} />
+        <Tabs tabs={itemTabs(params?.id, query)} />
       </div>
 
       <div className="flex md:flex-row flex-col gap-4 mt-5">
