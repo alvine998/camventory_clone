@@ -14,6 +14,7 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
+import FlagIcon from "../../../../public/icons/flag.svg";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -90,7 +91,13 @@ export default function AdministratorPage({ table }: any) {
     ...item,
     item_name: (
       <div className="flex gap-2 items-center">
-        <Image src={item.full_path_image} alt="image" width={50} height={50} className="p-2" />
+        <Image
+          src={item.full_path_image}
+          alt="image"
+          width={50}
+          height={50}
+          className="p-2"
+        />
         <div>
           <h5 className="text-black">{item.name}</h5>
           <div>
@@ -99,6 +106,40 @@ export default function AdministratorPage({ table }: any) {
             <p>{item.code}</p>
           </div>
         </div>
+      </div>
+    ),
+    flag_status: (
+      <div>
+        {item.status_items === "GOOD" && (
+          <div className="flex justify-center items-center gap-2">
+            <FlagIcon className="text-green-500 fill-current" />
+            <p className="text-green-500 font-bold text-lg">Good</p>
+          </div>
+        )}
+        {item.status_items === "ON_REPAIR" && (
+          <div className="flex justify-center items-center gap-2">
+            <FlagIcon className="text-violet-500 fill-current" />
+            <p className="text-violet-500 font-bold text-lg">On Repair</p>
+          </div>
+        )}
+        {item.status_items === "BROKEN" && (
+          <div className="flex justify-center items-center gap-2">
+            <FlagIcon className="text-red-500 fill-current" />
+            <p className="text-red-500 font-bold text-lg">Broken</p>
+          </div>
+        )}
+        {item.status_items === "TAKEOUT" && (
+          <div className="flex justify-center items-center gap-2">
+            <FlagIcon className="text-gray-300 fill-current" />
+            <p className="text-gray-300 font-bold text-lg">Takeout</p>
+          </div>
+        )}
+        {item.status_items === "NEED_CHECK" && (
+          <div className="flex justify-center items-center gap-2">
+            <FlagIcon className="text-orange-500 fill-current" />
+            <p className="text-orange-500 font-bold text-lg">Need Check</p>
+          </div>
+        )}
       </div>
     ),
     action: (

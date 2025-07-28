@@ -28,7 +28,7 @@ export const ColumnItems = [
   },
   {
     name: "Flag Status",
-    selector: (row: any) => row.status_booking,
+    selector: (row: any) => row.flag_status,
     sortable: true,
   },
   {

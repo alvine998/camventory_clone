@@ -13,6 +13,7 @@
     "@fullcalendar/daygrid": "^6.1.17",
     "@fullcalendar/react": "^6.1.17",
     "@headlessui/react": "^2.2.0",
+    "@svgr/webpack": "^8.1.0",
     "axios": "^1.8.2",
     "cookie": "^1.0.2",
     "formidable": "^3.5.3",

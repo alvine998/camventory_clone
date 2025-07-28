@@ -12,7 +12,15 @@ const nextConfig = {
         hostname: 'pub-01ab921568614e369e392f548902259d.r2.dev',
       },
     ]
-  }
+  },
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.svg$/i,
+      issuer: /\.[jt]sx?$/,
+      use: ['@svgr/webpack'],
+    });
+    return config;
+  },
 };
 
 export default nextConfig;
