@@ -17,4 +17,5 @@ export interface IItems {
   status_items: string;
   created_at: number;
   updated_at: number;
+  purchase_price: number;
 }

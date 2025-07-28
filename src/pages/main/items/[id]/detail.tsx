@@ -7,7 +7,12 @@ import { IItems } from "@/types/single_items";
 import { toMoney } from "@/utils";
 import axios from "axios";
 import { parse } from "cookie";
-import { MinusCircleIcon, PlusCircleIcon, TrashIcon } from "lucide-react";
+import {
+  MinusCircleIcon,
+  PencilIcon,
+  PlusCircleIcon,
+  TrashIcon,
+} from "lucide-react";
 import moment from "moment";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
@@ -102,6 +107,10 @@ export default function Detail({ params, detail, query }: any) {
       value: itemDetail?.model,
     },
     {
+      label: "Purchase Price",
+      value: toMoney(itemDetail?.purchase_price),
+    },
+    {
       label: "Warranty Date",
       value: moment(itemDetail?.warranty_date).format("DD-MM-YYYY"),
     },
@@ -144,6 +153,61 @@ export default function Detail({ params, detail, query }: any) {
       value: itemDetail?.completeness,
     },
   ];
+
+  const singleInformation = [
+    {
+      label: "Item Name",
+      value: itemDetail?.name,
+    },
+    {
+      label: "Brand",
+      value: itemDetail?.brandID,
+    },
+    {
+      label: "Model",
+      value: itemDetail?.model,
+    },
+    {
+      label: "Category Items",
+      value: itemDetail?.categoryID,
+    },
+    {
+      label: "Purchase Price",
+      value: toMoney(Number(itemDetail?.purchase_price)),
+    },
+    {
+      label: "Purchase Date",
+      value: moment(itemDetail?.purchase_date).format("DD-MM-YYYY"),
+    },
+    {
+      label: "Warranty Date",
+      value: moment(itemDetail?.warranty_date).format("DD-MM-YYYY"),
+    },
+    {
+      label: "Location",
+      value: itemDetail?.location,
+    },
+    {
+      label: "Rate/Day",
+      value: toMoney(itemDetail?.rate_day),
+    },
+    {
+      label: "Serial Number",
+      value: itemDetail?.serial_number,
+    },
+    {
+      label: "Barcode",
+      value: itemDetail?.barcode,
+    },
+    {
+      label: "Completeness",
+      value: itemDetail?.completeness,
+    },
+    {
+      label: "Image",
+      value: itemDetail?.full_path_image,
+    },
+  ];
   const trackers = [
     {
       label: "Tracker 1",
@@ -165,30 +229,23 @@ export default function Detail({ params, detail, query }: any) {
         <Tabs tabs={itemTabs(params?.id, query)} />
       </div>
 
-      <div className="flex gap-5 mt-4">
-        {/* Row 1 */}
-        <div className="border border-gray-300 p-4 rounded w-full">
-          <div className="border-b border-gray-300 w-full flex items-center justify-between pb-2">
-            <h3 className="text-md font-bold">Information Items</h3>
-            <Button
-              variant="custom-color"
-              className="flex items-center gap-1 border border-orange-500"
-            >
-              <Image
-                alt="icon"
-                src={"/icons/send-2.svg"}
-                width={20}
-                height={20}
-                className={"w-auto h-auto"}
-              />
-              <p className="text-xs text-orange-500">Action</p>
-            </Button>
-          </div>
+      {query?.type === "single" && (
+        <div className="flex gap-5 mt-4">
+          <div className="border border-gray-300 p-4 rounded w-full">
+            <div className="border-b border-gray-300 w-full flex items-center justify-between pb-2">
+              <h3 className="text-md font-bold">Information Items</h3>
+              <Button
+                variant="custom-color"
+                className="flex items-center gap-1 border border-orange-500"
+              >
+                <PencilIcon className="w-4 h-4 text-orange-500" />
+                <p className="text-xs text-orange-500">Edit</p>
+              </Button>
+            </div>
 
-          <div className="mt-4 grid lg:grid-cols-2 grid-cols-1 gap-10">
-            <div className="flex flex-col gap-2">
-              {itemInformation.map((item, index) => (
-                <div key={index} className="flex justify-between items-center">
+            <div className="mt-4 grid lg:grid-cols-5 grid-cols-1 gap-10 w-full">
+              {singleInformation.map((item, index) => (
+                <div key={index} className="flex gap-2 items-center">
                   <p className="text-xs">{item.label}</p>
                   {item.label === "Image" ? (
                     <Image
@@ -204,98 +261,154 @@ export default function Detail({ params, detail, query }: any) {
                 </div>
               ))}
             </div>
-            <div className="flex flex-col gap-2">
-              {itemInformation2.map((item, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <p className="text-xs">{item.label}</p>
-                  {item.label === "Image" ? (
-                    <Image
-                      alt="icon"
-                      src={item?.value || ""}
-                      width={50}
-                      height={50}
-                      className={"w-auto h-auto"}
-                    />
-                  ) : (
-                    <p className="text-xs font-bold">{item.value}</p>
-                  )}
-                </div>
-              ))}
-            </div>
           </div>
         </div>
+      )}
 
-        {/* Row 2 */}
-        <div className="lg:w-1/2 w-full flex flex-col gap-4">
-          <div className="border border-gray-300 p-4 rounded flex justify-between items-center h-auto">
-            <h3 className="text-md font-bold">Quantity</h3>
-            <div className="flex gap-5 border border-orange-500 py-1 px-2 rounded">
-              <button
-                type="button"
-                onClick={() => {
-                  setQty(qty - 1);
-                }}
-                disabled={qty <= 1}
+      {query?.type === "bulk" && (
+        <div className="flex gap-5 mt-4">
+          {/* Row 1 */}
+          <div className="border border-gray-300 p-4 rounded w-full">
+            <div className="border-b border-gray-300 w-full flex items-center justify-between pb-2">
+              <h3 className="text-md font-bold">Information Items</h3>
+              <Button
+                variant="custom-color"
+                className="flex items-center gap-1 border border-orange-500"
               >
-                <MinusCircleIcon color={qty > 1 ? "orange" : "black"} />
-              </button>
-              <p className="font-bold">{qty}</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setQty(qty + 1);
-                }}
-              >
-                <PlusCircleIcon color="orange" />
-              </button>
-            </div>
-          </div>
-
-          <div className="border border-gray-300 p-4 rounded">
-            <div className="pb-2 border-b border-gray-300 flex justify-between items-center">
-              <h3 className="text-md font-bold">Tracking Code</h3>
-              <Button variant="submit" className="flex items-center gap-1">
-                <PlusCircleIcon className="w-4 h-4" />
-                <p className="text-xs text-white">Add Code</p>
+                <Image
+                  alt="icon"
+                  src={"/icons/send-2.svg"}
+                  width={20}
+                  height={20}
+                  className={"w-auto h-auto"}
+                />
+                <p className="text-xs text-orange-500">Action</p>
               </Button>
             </div>
-            <div className="mt-4 flex flex-col gap-2">
-              {trackers?.map((tracker, index) => (
-                <div className="flex justify-between items-center" key={index}>
-                  <div className="flex flex-row gap-2 items-center">
-                    <Image
-                      alt="icon"
-                      src="/icons/barcode.svg"
-                      width={20}
-                      height={20}
-                    />
-                    <p className="text-xs">{tracker.value}</p>
+
+            <div className="mt-4 grid lg:grid-cols-2 grid-cols-1 gap-10">
+              <div className="flex flex-col gap-2">
+                {itemInformation.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center w-full"
+                  >
+                    <p className="text-xs">{item.label}</p>
+                    {item.label === "Image" ? (
+                      <Image
+                        alt="icon"
+                        src={typeof item?.value === "string" ? item.value : ""}
+                        width={50}
+                        height={50}
+                        className={"w-auto h-auto"}
+                      />
+                    ) : (
+                      <p className="text-xs font-bold">{item.value}</p>
+                    )}{" "}
                   </div>
-                  <button>
-                    <TrashIcon color="red" className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+                ))}
+              </div>
+              <div className="flex flex-col gap-2">
+                {itemInformation2.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center"
+                  >
+                    <p className="text-xs">{item.label}</p>
+                    {item.label === "Image" ? (
+                      <Image
+                        alt="icon"
+                        src={item?.value || ""}
+                        width={50}
+                        height={50}
+                        className={"w-auto h-auto"}
+                      />
+                    ) : (
+                      <p className="text-xs font-bold">{item.value}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="border border-gray-300 p-4 rounded h-auto">
-            <div className="pb-2 border-b border-gray-300 flex justify-between items-center">
-              <h3 className="text-md font-bold">Settings</h3>
+          {/* Row 2 */}
+          <div className="lg:w-1/2 w-full flex flex-col gap-4">
+            <div className="border border-gray-300 p-4 rounded flex justify-between items-center h-auto">
+              <h3 className="text-md font-bold">Quantity</h3>
+              <div className="flex gap-5 border border-orange-500 py-1 px-2 rounded">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQty(qty - 1);
+                  }}
+                  disabled={qty <= 1}
+                >
+                  <MinusCircleIcon color={qty > 1 ? "orange" : "black"} />
+                </button>
+                <p className="font-bold">{qty}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQty(qty + 1);
+                  }}
+                >
+                  <PlusCircleIcon color="orange" />
+                </button>
+              </div>
             </div>
 
-            <div className="mt-4 flex flex-row gap-2 items-center justify-between">
-              <div>
-                <h5 className="text-xs font-bold">Available for reservation</h5>
-                <h5 className="text-xs text-gray-500 mt-2">
-                  Item is available to be used in reservations
-                </h5>
+            <div className="border border-gray-300 p-4 rounded">
+              <div className="pb-2 border-b border-gray-300 flex justify-between items-center">
+                <h3 className="text-md font-bold">Tracking Code</h3>
+                <Button variant="submit" className="flex items-center gap-1">
+                  <PlusCircleIcon className="w-4 h-4" />
+                  <p className="text-xs text-white">Add Code</p>
+                </Button>
               </div>
-              <Toggle setValue={setToggle} value={toggle} />
+              <div className="mt-4 flex flex-col gap-2">
+                {trackers?.map((tracker, index) => (
+                  <div
+                    className="flex justify-between items-center"
+                    key={index}
+                  >
+                    <div className="flex flex-row gap-2 items-center">
+                      <Image
+                        alt="icon"
+                        src="/icons/barcode.svg"
+                        width={20}
+                        height={20}
+                      />
+                      <p className="text-xs">{tracker.value}</p>
+                    </div>
+                    <button>
+                      <TrashIcon color="red" className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border border-gray-300 p-4 rounded h-auto">
+              <div className="pb-2 border-b border-gray-300 flex justify-between items-center">
+                <h3 className="text-md font-bold">Settings</h3>
+              </div>
+
+              <div className="mt-4 flex flex-row gap-2 items-center justify-between">
+                <div>
+                  <h5 className="text-xs font-bold">
+                    Available for reservation
+                  </h5>
+                  <h5 className="text-xs text-gray-500 mt-2">
+                    Item is available to be used in reservations
+                  </h5>
+                </div>
+                <Toggle setValue={setToggle} value={toggle} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="mt-4 border-t border-gray-300 w-full flex justify-end items-center">
         <div className="flex gap-4 mt-2">

@@ -80,7 +80,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         ) : props.type == "search" ? (
           <>
             <div
-              className={`border flex flex-row justify-between items-center rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 ${className} ${
+              className={`border flex flex-row items-center rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 ${className} ${
                 error ? "border-red-500" : "border-gray-300"
               }`}
             >

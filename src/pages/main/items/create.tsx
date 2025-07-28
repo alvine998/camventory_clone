@@ -85,6 +85,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
   const [image, setImage] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [value, setValue] = useState("");
+  const [price, setPrice] = useState("");
 
   // Format number with thousand separator
   const formatNumber = (input: string) => {
@@ -97,6 +98,12 @@ export default function AdministratorPage({ brands, categories }: Props) {
     const raw = e.target.value;
     const formatted = formatNumber(raw);
     setValue(formatted);
+  };
+
+  const handlePrice = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    const formatted = formatNumber(raw);
+    setPrice(formatted);
   };
 
   const handleImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,16 +282,19 @@ export default function AdministratorPage({ brands, categories }: Props) {
               {type !== "" && (
                 <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
                   <Input
+                    placeholder="Purchase Price"
+                    label="Purchase Price"
+                    name="rate_day"
+                    fullWidth
+                    type="text"
+                    onChange={handlePrice}
+                    required
+                    value={price}
+                  />
+                  <Input
                     placeholder="Purchase Date"
                     label="Purchase Date"
                     name="purchase_date"
-                    fullWidth
-                    type="date"
-                  />
-                  <Input
-                    placeholder="Warranty Date"
-                    label="Warranty Date"
-                    name="warranty_date"
                     fullWidth
                     type="date"
                   />
@@ -299,14 +309,21 @@ export default function AdministratorPage({ brands, categories }: Props) {
                     fullWidth
                   />
                   <Input
-                    placeholder="Barcode"
-                    label="Barcode"
-                    name="barcode"
+                    placeholder="Warranty Date"
+                    label="Warranty Date"
+                    name="warranty_date"
                     fullWidth
+                    type="date"
                   />
                 </div>
               )}
               <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
+                <Input
+                  placeholder="Barcode"
+                  label="Barcode"
+                  name="barcode"
+                  fullWidth
+                />
                 {type === "bulk" ? (
                   <Input
                     placeholder="0"
@@ -330,18 +347,18 @@ export default function AdministratorPage({ brands, categories }: Props) {
                     // onChange={(e) => setFilter({ brand: e })}
                   />
                 )}
-                <Input
-                  placeholder="Image"
-                  label="Image"
-                  name="image"
-                  accept="image/*"
-                  fullWidth
-                  type="file"
-                  onChange={handleImage}
-                  multiple
-                  required
-                />
               </div>
+              <Input
+                placeholder="Image"
+                label="Image"
+                name="image"
+                accept="image/*"
+                fullWidth
+                type="file"
+                onChange={handleImage}
+                multiple
+                required
+              />
               <div className="flex sm:flex-row flex-col gap-4 mt-4">
                 {images.map((url: any, i: number) => (
                   <div className="relative" key={i}>
