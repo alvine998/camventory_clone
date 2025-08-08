@@ -31,4 +31,9 @@ export const ColumnReservation = [
     selector: (row: IReservation) => row.pickup_location,
     sortable: true,
   },
+  {
+    name: "Action",
+    selector: (row: IReservation) => row.action,
+    sortable: true,
+  },
 ];

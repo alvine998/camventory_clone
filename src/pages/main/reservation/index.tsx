@@ -173,9 +173,9 @@ export default function ReservationPage({ table }: any) {
             variant="custom-color"
             className="bg-orange-500 text-white w-auto"
             type="button"
-            onClick={() => router.push("/main/items/create")}
+            onClick={() => router.push("/main/reservation/create")}
           >
-            + Add Items
+            + Add Reservation
           </Button>
         </div>
       </div>
