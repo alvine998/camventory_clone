@@ -1,13 +1,16 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
+import { useModal } from "@/components/Modal";
+import AddEquipmentsModal from "@/components/modals/reservation/AddEquipments";
 import Select from "@/components/Select";
 import { CONFIG } from "@/config";
 import axios from "axios";
 import { parse } from "cookie";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, PlusSquareIcon, Trash2Icon } from "lucide-react";
 import { GetServerSideProps } from "next";
+import Image from "next/image";
 import { useRouter } from "next/router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
@@ -29,6 +32,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),
+      ...(search && { search: String(search) || "" }),
+      location: String(query.location || ""),
+      category: String(query.category || ""),
+      brand: String(query.brand || ""),
+      type: String(query.type || ""),
+      status: String(query.status || ""),
     });
 
     if (typeof search === "string" && search.trim() !== "") {
@@ -48,11 +57,31 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       },
     });
 
+    const bulkItems = await axios.get(
+      `${CONFIG.API_URL}/v1/bulk-items?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `${token}`,
+        },
+      }
+    );
+
+    const singleItems = await axios.get(
+      `${CONFIG.API_URL}/v1/single-items?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `${token}`,
+        },
+      }
+    );
+console.log(singleItems?.data?.data);
     // Optionally validate token...
     return {
       props: {
         categories: categories?.data?.data || [],
         brands: brands?.data?.data || [],
+        bulkItems: bulkItems?.data?.data || [],
+        singleItems: singleItems?.data?.data || [],
       },
     };
   } catch (error: any) {
@@ -74,14 +103,20 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 interface Props {
   categories: any;
   brands: any;
+  bulkItems: any;
+  singleItems: any;
 }
 
-export default function CreateReservationPage({ brands }: Props) {
+export default function CreateReservationPage({
+  brands,
+  bulkItems,
+  singleItems,
+}: Props) {
   //   const [type, setType] = useState<string>("individual");
   const router = useRouter();
-  //   const [image, setImage] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  //   const [value, setValue] = useState("");
+  const [items, setItems] = useState<any>([]);
+  const [modal, setModal] = useState<useModal>();
 
   //   // Format number with thousand separator
   //   const formatNumber = (input: string) => {
@@ -95,6 +130,8 @@ export default function CreateReservationPage({ brands }: Props) {
   //     const formatted = formatNumber(raw);
   //     setValue(formatted);
   //   };
+
+  const [filter, setFilter] = useState<any>({});
 
   const onSubmit = async (e: any) => {
     e.preventDefault();
@@ -118,7 +155,7 @@ export default function CreateReservationPage({ brands }: Props) {
       await axios.post("/api/reservation", payload);
       Swal.fire({
         icon: "success",
-        title: "User Created Successfully",
+        title: "Reservation Created Successfully",
         showConfirmButton: false,
         timer: 1500,
       });
@@ -129,6 +166,10 @@ export default function CreateReservationPage({ brands }: Props) {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    const queryFilter = new URLSearchParams(filter).toString();
+    router.push(`?${queryFilter}`);
+  }, [filter]);
   return (
     <div>
       <div className="">
@@ -217,7 +258,76 @@ export default function CreateReservationPage({ brands }: Props) {
                 <h1 className="text-xl font-bold text-orange-500">
                   Equipments
                 </h1>
+                <div className={`border rounded p-4 mt-2`}>
+                  <div className="flex justify-center items-center">
+                    <button
+                      className="border border-orange-500 p-2 justify-center rounded flex items-center gap-2"
+                      type="button"
+                      onClick={() => setModal({ open: true })}
+                    >
+                      <PlusSquareIcon className="w-4 h-4 text-orange-500" />
+                      <p className="text-xs text-orange-500">
+                        Add product or Item
+                      </p>
+                    </button>
+                  </div>
+                  {items?.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      {items?.map((item: any) => (
+                        <div
+                          key={item.id}
+                          className="flex justify-between items-center border-b py-2"
+                        >
+                          <div className="flex flex-row gap-1">
+                            <Image
+                              src={item.full_path_image}
+                              alt={item.name}
+                              width={50}
+                              height={50}
+                              className="w-24 h-20 object-cover rounded"
+                            />
+                            <div className="flex flex-col">
+                              <p className="text-sm font-bold">{item.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {item.serial_number || "-"}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setItems(
+                                items.filter((i: any) => i.id !== item.id)
+                              );
+                              Swal.fire({
+                                icon: "success",
+                                title: "Item removed successfully",
+                                showConfirmButton: false,
+                                timer: 1500,
+                              });
+                            }}
+                          >
+                            <Trash2Icon className="w-5 h-5 text-red-500" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {modal?.open && (
+                <AddEquipmentsModal
+                  open={modal?.open}
+                  setOpen={setModal}
+                  items={items}
+                  setItems={setItems}
+                  singleItems={singleItems}
+                  bulkItems={bulkItems}
+                  setFilter={setFilter}
+                  filter={filter}
+                />
+              )}
 
               <div className="flex flex-row gap-4 justify-end items-center mt-4">
                 <Button

@@ -37,6 +37,8 @@ const Button: React.FC<ButtonProps> = ({
     "custom-color": "rounded text-xs",
     submit:
       "bg-orange-500 text-white rounded hover:bg-orange-600 focus:ring-orange-300 text-xs",
+    customColor:
+      "bg-white text-gray-900 rounded border border-gray-300 hover:bg-gray-100 focus:ring-gray-200 text-xs",
   };
 
   return (
