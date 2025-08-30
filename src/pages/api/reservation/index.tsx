@@ -56,7 +56,7 @@ export default async function handler(
         items: JSON.parse(items),
       };
 
-      const result = await axios.post(
+      await axios.post(
         CONFIG.API_URL + "/v1/reservation",
         payload,
         {
@@ -67,19 +67,10 @@ export default async function handler(
         }
       );
 
-      if (result.status !== 201) {
-        return res.status(400).json({ message: result?.data?.error });
-      }
-
       return res.status(201).json({
         message: "Reservation created successfully",
         payload: {
-          start_date,
-          end_date,
-          customer_uuid,
-          location,
-          user_uuid,
-          items,
+          ...payload,
           id,
         },
       });

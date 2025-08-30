@@ -117,7 +117,7 @@ export default function ReservationPage({ table }: any) {
           variant="custom-color"
           type="button"
           onClick={() => {
-            router.push(`/main/items/${item.id}/detail?type=single`);
+            router.push(`/main/reservation/${item.id}/detail`);
           }}
         >
           <EyeIcon className="w-4 h-4" />

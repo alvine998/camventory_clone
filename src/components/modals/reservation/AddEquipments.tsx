@@ -200,7 +200,7 @@ export default function AddEquipmentsModal({
                 <div className="flex flex-col">
                   <p className="text-sm font-semibold">{item.name}</p>
                   <p className="text-xs text-gray-500">
-                    {item.serial_number || "-"}
+                    {item?.qty ? "Item" : "Product"}
                   </p>
                 </div>
               </div>

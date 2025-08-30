@@ -89,6 +89,7 @@ export default function AdministratorPage({ table }: any) {
   }, []);
   const data = [...table].map((item, index) => ({
     ...item,
+    number: index + 1,
     item_name: (
       <div className="flex gap-2 items-center">
         <Image

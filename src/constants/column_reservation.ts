@@ -8,7 +8,7 @@ export const ColumnReservation = [
   },
   {
     name: "Customer Name",
-    selector: (row: IReservation) => row.customer_id,
+    selector: (row: IReservation) => row.ref_customer?.name || "-",
     sortable: true,
   },
   {
@@ -26,7 +26,7 @@ export const ColumnReservation = [
     selector: (row: IReservation) => row.end_date,
     sortable: true,
   },
-   {
+  {
     name: "Pickup Location",
     selector: (row: IReservation) => row.pickup_location,
     sortable: true,

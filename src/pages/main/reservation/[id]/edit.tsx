@@ -3,9 +3,11 @@ import Input from "@/components/Input";
 import AddEquipmentsModal from "@/components/modals/reservation/AddEquipments";
 import Select from "@/components/Select";
 import { CONFIG } from "@/config";
+import { IDetail, IReservation } from "@/types/reservation";
 import axios from "axios";
 import { parse } from "cookie";
 import { ArrowLeftIcon, PlusSquareIcon, Trash2Icon } from "lucide-react";
+import moment from "moment";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
@@ -37,10 +39,11 @@ interface Props {
   singleItems: Item[];
   users: { id: string; name: string }[];
   customers: { id: string; name: string }[];
+  detail: IReservation;
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const { query, req } = ctx;
+  const { query, req, params } = ctx;
   const cookies = parse(req.headers.cookie || "");
   const token = cookies.token;
 
@@ -53,41 +56,53 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   try {
     const { page = "1", limit = "10", search = "" } = query;
 
-    const [categories, brands, bulkItems, singleItems, users, customers] =
-      await Promise.all([
-        axios.get(`${CONFIG.API_URL}/v1/master/categories`, {
+    const [
+      categories,
+      brands,
+      bulkItems,
+      singleItems,
+      users,
+      customers,
+      detail,
+    ] = await Promise.all([
+      axios.get(`${CONFIG.API_URL}/v1/master/categories`, {
+        headers: { Authorization: token },
+      }),
+      axios.get(`${CONFIG.API_URL}/v1/master/brands`, {
+        headers: { Authorization: token },
+      }),
+      axios.get(
+        `${CONFIG.API_URL}/v1/bulk-items?page=${page}&limit=${limit}${
+          search ? `&search=${search}` : ""
+        }`,
+        {
           headers: { Authorization: token },
-        }),
-        axios.get(`${CONFIG.API_URL}/v1/master/brands`, {
+        }
+      ),
+      axios.get(
+        `${CONFIG.API_URL}/v1/single-items?page=${page}&limit=${limit}${
+          search ? `&search=${search}` : ""
+        }`,
+        {
           headers: { Authorization: token },
-        }),
-        axios.get(
-          `${CONFIG.API_URL}/v1/bulk-items?page=${page}&limit=${limit}${
-            search ? `&search=${search}` : ""
-          }`,
-          {
-            headers: { Authorization: token },
-          }
-        ),
-        axios.get(
-          `${CONFIG.API_URL}/v1/single-items?page=${page}&limit=${limit}${
-            search ? `&search=${search}` : ""
-          }`,
-          {
-            headers: { Authorization: token },
-          }
-        ),
-        axios.get(`${CONFIG.API_URL}/accounts/v1/users/all?page=1&limit=100`, {
-          headers: {
-            Authorization: `${token}`,
-          },
-        }),
-        axios.get(`${CONFIG.API_URL}/v1/customers?page=1&limit=100`, {
-          headers: {
-            Authorization: `${token}`,
-          },
-        }),
-      ]);
+        }
+      ),
+      axios.get(`${CONFIG.API_URL}/accounts/v1/users/all?page=1&limit=100`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      }),
+      axios.get(`${CONFIG.API_URL}/v1/customers?page=1&limit=100`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      }),
+      axios.get(`${CONFIG.API_URL}/v1/reservation/${params?.id}`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      }),
+    ]);
 
     return {
       props: {
@@ -97,6 +112,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         singleItems: singleItems.data?.data || [],
         users: users.data?.data || [],
         customers: customers.data?.data || [],
+        detail: detail.data?.data || {},
       },
     };
   } catch (error: any) {
@@ -109,15 +125,16 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   }
 };
 
-export default function CreateReservationPage({
+export default function EditReservationPage({
   bulkItems,
   singleItems,
   users,
   customers,
+  detail,
 }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState<Item[]>([]);
+  const [items, setItems] = useState<any[]>(detail?.details || []);
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState<Record<string, string>>({});
 
@@ -168,14 +185,27 @@ export default function CreateReservationPage({
     }
   }, [filter, router]);
 
+  const CUSTOMERS = customers.map((item) => ({
+    label: item.name,
+    value: item.id,
+  }));
+
+  const USERS = users.map((item) => ({
+    label: item.name,
+    value: item.id,
+  }));
+
   return (
     <div>
       <div className="flex flex-row gap-2 items-center">
-        <button onClick={() => router.push(`/main/reservation`)} type="button">
+        <button
+          onClick={() => router.push(`/main/reservation/${detail?.id}`)}
+          type="button"
+        >
           <ArrowLeftIcon className="w-6 h-6 text-orange-500" />
         </button>
         <h1 className="text-2xl font-bold text-orange-500">
-          Add Reservation Data
+          Edit Reservation Data
         </h1>
       </div>
 
@@ -183,26 +213,26 @@ export default function CreateReservationPage({
         {/* Customer & User */}
         <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
           <Select
-            options={customers.map((item) => ({
-              label: item.name,
-              value: item.id,
-            }))}
+            options={CUSTOMERS}
             placeholder="Customer"
             label="Customer"
             fullWidth
             required
             name="customer_uuid"
+            defaultValue={CUSTOMERS.find(
+              (item) => item.value === detail?.ref_customer?.id
+            )}
           />
           <Select
-            options={users.map((item) => ({
-              label: item.name,
-              value: item.id,
-            }))}
+            options={USERS}
             placeholder="User/Employee"
             label="User/Employee"
             fullWidth
             required
             name="user_uuid"
+            defaultValue={USERS.find(
+              (item) => item.value === detail?.ref_user?.id
+            )}
           />
         </div>
 
@@ -216,6 +246,9 @@ export default function CreateReservationPage({
               fullWidth
               required
               type="date"
+              defaultValue={moment(detail?.start_date * 1000).format(
+                "YYYY-MM-DD"
+              )}
             />
             <Input
               placeholder="To"
@@ -224,6 +257,9 @@ export default function CreateReservationPage({
               fullWidth
               required
               type="date"
+              defaultValue={moment(detail?.start_date * 1000).format(
+                "YYYY-MM-DD"
+              )}
             />
           </div>
           <Select
@@ -236,6 +272,10 @@ export default function CreateReservationPage({
             fullWidth
             required
             name="location"
+            defaultValue={[
+              { label: "Dipatiukur", value: "dipatiukur" },
+              { label: "Cipadung", value: "cipadung" },
+            ].find((item) => item.value === detail?.pickup_location)}
           />
         </div>
 
@@ -256,26 +296,26 @@ export default function CreateReservationPage({
 
             {items.length > 0 && (
               <div className="flex flex-col gap-2 mt-4">
-                {items.map((item: any) => (
+                {items.map((item: IDetail) => (
                   <div
                     key={item.id}
                     className="flex justify-between items-center border-b py-2"
                   >
                     <div className="flex gap-2 items-center">
                       <Image
-                        src={item.full_path_image}
-                        alt={item.name}
+                        src={CONFIG.IMAGE_URL + item.item_image_path}
+                        alt={item.item_id}
                         width={50}
                         height={50}
                         className="w-24 h-20 object-cover rounded"
                       />
                       <div>
-                        <p className="text-sm font-bold">{item.name}</p>
+                        <p className="text-sm font-bold">{item.item_name}</p>
                         <p className="text-xs text-gray-500">
-                          {item?.qty ? "Item" : "Product"}
+                          {item?.item_type === "bulk" ? "Item" : "Product"}
                         </p>
                         <p className="text-xs text-gray-500 font-bold">
-                          {item?.added || "1"}
+                          {item?.qty || "1"}
                         </p>
                       </div>
                     </div>

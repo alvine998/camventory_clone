@@ -3,7 +3,7 @@ import { toMoney } from "@/utils";
 export const ColumnItems = [
   {
     name: "No",
-    selector: (row: any) => row.id,
+    selector: (row: any) => row.number,
     sortable: true,
   },
   {
