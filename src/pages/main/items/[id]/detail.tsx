@@ -16,6 +16,7 @@ import {
 import moment from "moment";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import React, { useState } from "react";
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { req, params, query } = ctx;
@@ -412,8 +413,14 @@ export default function Detail({ params, detail, query }: any) {
 
       <div className="mt-4 border-t border-gray-300 w-full flex justify-end items-center">
         <div className="flex gap-4 mt-2">
-          <Button variant="white">Cancel</Button>
-          <Button variant="submit">Checkout</Button>
+          <Link href={`/main/items`}>
+            <Button variant="white">Cancel</Button>
+          </Link>
+          <Link href={`/main/checkout`}>
+            <Button variant="submit" type="button">
+              Checkout
+            </Button>
+          </Link>
         </div>
       </div>
     </div>

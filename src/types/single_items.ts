@@ -18,4 +18,5 @@ export interface IItems {
   created_at: number;
   updated_at: number;
   purchase_price: number;
+  qty?: number;
 }
