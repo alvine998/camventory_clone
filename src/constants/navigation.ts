@@ -36,8 +36,34 @@ export const NAVIGATIONS = [
   },
   {
     title: "Reports",
-    href: "/main/reports",
+    href: "/main/report",
     icon: "/icons/document-text.svg",
+    children: [
+      {
+        title: "Sales Summary",
+        href: "/main/report/sales-summary",
+      },
+      {
+        title: "Sales Trend",
+        href: "/main/report/sales-trend",
+      },
+      {
+        title: "Sales Report per Category",
+        href: "/main/report/sales-category",
+      },
+      {
+        title: "Sales Report per Product",
+        href: "/main/report/sales-product",
+      },
+      {
+        title: "Sales Report per Brand",
+        href: "/main/report/sales-brand",
+      },
+      {
+        title: "Sales Report per Customer",
+        href: "/main/report/sales-customer",
+      },
+    ],
   },
 ];
 

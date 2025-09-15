@@ -19,11 +19,11 @@ export default function Layout({ children }: Props) {
       <Head>
         <title>Camventory</title>
       </Head>
-      <div className="flex flex-row max-h-screen h-screen">
+      <div className="flex flex-row max-h-screen h-screen overflow-hidden">
         <div
           className={`bg-black ${
             isWide ? "w-1/4" : "w-[90px]"
-          } h-screen duration-300 transition-all lg:block hidden`}
+          } h-screen duration-300 transition-all lg:block hidden overflow-y-auto`}
         >
           <Sidebar
             navigations={
@@ -32,7 +32,7 @@ export default function Layout({ children }: Props) {
             isWide={isWide}
           />
         </div>
-        <div className="w-full flex flex-col h-full">
+        <div className="w-full flex flex-col h-full overflow-y-auto">
           <Topbar
             isWide={isWide}
             setIsWide={setIsWide}

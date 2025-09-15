@@ -80,6 +80,7 @@ export default function ReservationPage({ table }: any) {
   const [modal, setModal] = useState<useModal>();
   const router = useRouter();
   const [filter, setFilter] = useState<any>(router.query);
+  console.log(table,'lslsl')
   useEffect(() => {
     if (typeof window !== "undefined") {
       setShow(true);
@@ -186,8 +187,12 @@ export default function ReservationPage({ table }: any) {
               columns={ColumnReservation}
               data={data}
               pagination
+              paginationServer
+              paginationTotalRows={table?.meta?.total_data}
               highlightOnHover
               responsive
+              onChangeRowsPerPage={(e) => setFilter({ limit: e })}
+              onChangePage={(e) => setFilter({ page: e })}
               customStyles={{
                 headCells: {
                   style: {
