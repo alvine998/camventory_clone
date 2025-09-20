@@ -170,7 +170,7 @@ export default function SalesSummaryPage() {
         </div>
       </div>
 
-      <h2 className="font-bold text-xl mt-4">Sales</h2>
+      <h2 className="font-bold text-xl mt-4">{selectType}</h2>
       {/* Header 2 */}
       <div className="flex items-start gap-10 mt-2">
         <div className="flex gap-2">
