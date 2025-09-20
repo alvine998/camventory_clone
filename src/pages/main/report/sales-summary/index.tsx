@@ -2,6 +2,7 @@ import Button from "@/components/Button";
 import DateRangePicker from "@/components/DateRangePicker";
 import Modal, { useModal } from "@/components/Modal";
 import { CalendarDays, Upload } from "lucide-react";
+import { format } from "date-fns";
 import moment from "moment";
 import dynamic from "next/dynamic";
 import React, { useEffect, useState } from "react";
@@ -29,10 +30,14 @@ const chartOptions: ApexCharts.ApexOptions = {
     width: 2,
   },
   xaxis: {
-    categories: Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`),
+    categories: Array.from({ length: 30 }, (_, i) => {
+      const date = moment().subtract(29, 'days').add(i, 'days');
+      return date.format('DD MMM');
+    }),
     title: {
       text: "Date",
     },
+    type: 'category',
   },
   yaxis: {
     title: {
@@ -40,8 +45,10 @@ const chartOptions: ApexCharts.ApexOptions = {
     },
   },
   tooltip: {
+    enabled: true,
     x: {
-      format: "dd/MM/yyyy",
+      format: 'dd MMM yyyy',
+      formatter: undefined, // Use default formatter
     },
   },
   colors: ["#f97316"], // Orange color to match your theme
@@ -58,8 +65,21 @@ const chartSeries = [
   },
 ];
 
+const parseDateString = (dateStr: string): Date => {
+  if (!dateStr) return new Date();
+  const [day, month, year] = dateStr.split('/').map(Number);
+  // Create date in local timezone
+  const date = new Date(year, month - 1, day);
+  // Validate the date
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid date string, using current date instead');
+    return new Date();
+  }
+  return date;
+};
+
 export default function SalesSummaryPage() {
-  const [date, setDate] = useState<any>({
+  const [date, setDate] = useState({
     start: moment().format("DD/MM/YYYY"),
     end: moment().add(30, "days").format("DD/MM/YYYY"),
   });
@@ -188,7 +208,37 @@ export default function SalesSummaryPage() {
           setOpen={() => setModal({ open: false, key: "", data: {} })}
           size="xl"
         >
-          <DateRangePicker date={date} setDate={setDate} />
+          <DateRangePicker 
+            date={{
+              start: parseDateString(date.start),
+              end: parseDateString(date.end)
+            }} 
+            setDate={(dateRange) => {
+              try {
+                // Convert the received date range to the expected format
+                const startDate = dateRange.start ? new Date(dateRange.start) : new Date();
+                const endDate = dateRange.end ? new Date(dateRange.end) : new Date();
+                
+                // Ensure dates are valid
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                  throw new Error('Invalid date');
+                }
+                
+                setDate({
+                  start: format(startDate, 'dd/MM/yyyy'),
+                  end: format(endDate, 'dd/MM/yyyy')
+                });
+              } catch (error) {
+                console.error('Error setting date range:', error);
+                const now = new Date();
+                const nowStr = format(now, 'dd/MM/yyyy');
+                setDate({
+                  start: nowStr,
+                  end: nowStr
+                });
+              }
+            }}
+          />
         </Modal>
       )}
     </div>
