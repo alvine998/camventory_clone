@@ -199,9 +199,6 @@ export default function SalesSummaryPage() {
 
       {/* Chart Section */}
       <div className="mt-8 bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">
-          Sales Overview
-        </h2>
         {isMounted && (
           <div className="w-full">
             <Chart
