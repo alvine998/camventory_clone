@@ -3,7 +3,7 @@ import { IReservation } from "@/types/reservation";
 export const ColumnReservation = [
   {
     name: "Book ID",
-    selector: (row: IReservation) => row.id,
+    selector: (row: IReservation) => row.book_id,
     sortable: true,
   },
   {

@@ -6,7 +6,7 @@ import Select from "@/components/Select";
 import { CONFIG } from "@/config";
 import axios from "axios";
 import { parse } from "cookie";
-import { EyeIcon } from "lucide-react";
+import { EyeIcon, Filter, X } from "lucide-react";
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
@@ -56,6 +56,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
+    console.log(table?.data?.data)
 
     // Optionally validate token...
     return { props: { table: table?.data } };
@@ -79,8 +80,17 @@ export default function ReservationPage({ table }: any) {
   const [show, setShow] = useState<boolean>(false);
   const [modal, setModal] = useState<useModal>();
   const router = useRouter();
-  const [filter, setFilter] = useState<any>(router.query);
-  console.log(table,'lslsl')
+  const [filter, setFilter] = useState(() => ({
+    search: typeof router.query.search === "string" ? router.query.search : "",
+    status:
+      typeof router.query.status === "string" ? router.query.status : "all",
+    location:
+      typeof router.query.location === "string" ? router.query.location : "all",
+    customer:
+      typeof router.query.customer === "string" ? router.query.customer : "",
+    page: router.query.page ? Number(router.query.page) : 1,
+    limit: router.query.limit ? Number(router.query.limit) : 10,
+  }));
   useEffect(() => {
     if (typeof window !== "undefined") {
       setShow(true);
@@ -126,53 +136,84 @@ export default function ReservationPage({ table }: any) {
       </div>
     ),
   }));
+  // Update URL when filters change
   useEffect(() => {
-    const queryFilter = new URLSearchParams(filter).toString();
-    router.push(`?${queryFilter}`);
-  }, [filter]);
+    const delayDebounce = setTimeout(() => {
+      const queryParams = new URLSearchParams();
+
+      // Always include pagination
+      queryParams.set("page", String(filter.page));
+      queryParams.set("limit", String(filter.limit));
+
+      // Only include search if it has a value
+      if (filter.search) {
+        queryParams.set("search", filter.search);
+      }
+
+      // Only include status if it's not 'all'
+      if (filter.status && filter.status !== "all") {
+        queryParams.set("status", filter.status);
+      }
+
+      // Only include location if it's not 'all'
+      if (filter.location && filter.location !== "all") {
+        queryParams.set("location", filter.location);
+      }
+
+      // Only include customer if it has a value
+      if (filter.customer) {
+        queryParams.set("customer", filter.customer);
+      }
+
+      // Only update URL if there are actual changes
+      const currentQuery = new URLSearchParams(window.location.search);
+      if (queryParams.toString() !== currentQuery.toString()) {
+        router.push(`?${queryParams.toString()}`, undefined, { shallow: true });
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [filter, router]);
+
+  // Reset all filters
+  const handleResetFilters = () => {
+    setFilter({
+      search: "",
+      status: "all",
+      location: "all",
+      customer: "",
+      page: 1,
+      limit: filter.limit,
+    });
+  };
+
+  // Check if any filter is active
+  const isFilterActive =
+    filter.search ||
+    filter.status !== "all" ||
+    filter.location !== "all" ||
+    filter.customer;
   return (
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">
         <h1 className="text-2xl font-bold">List Reservations</h1>
       </div>
-      <div className="flex lg:flex-row flex-col gap-2 items-center justify-between mt-4">
-        <div className="flex gap-2 items-center w-full">
-          <Input
-            placeholder="Search Reservation"
-            type="search"
-            onChange={(e) => setFilter({ search: e.target.value })}
-            fullWidth
-          />
-          <Select
-            options={[]}
-            placeholder="Status"
-            onChange={(e) => setFilter({ status: e })}
-            fullWidth
-          />
-          <Select
-            options={[
-              { value: "all", label: "All" },
-              { value: "cipadung", label: "Cipadung" },
-              { value: "dipatiukur", label: "Dipatiukur" },
-            ]}
-            placeholder="Location"
-            onChange={(e) => setFilter({ location: e })}
-            fullWidth
-          />
-          <Select
-            options={[]}
-            placeholder="Customer"
-            onChange={(e) => setFilter({ customer: e })}
-            fullWidth
-          />
-          <button className="text-red-500 hover:text-red-600 text-lg w-1/2">
-            Reset Filter
-          </button>
+      <div className="flex flex-col md:flex-row gap-4 mt-4">
+        <div className="flex-1 flex flex-col md:flex-row gap-2 flex-wrap">
+          <Button
+            variant="white"
+            type="button"
+            className="flex items-center gap-2"
+            onClick={() => setModal({ open: true, key: "filter" })}
+          >
+            <Filter className="w-4 h-4" />
+            Filter
+          </Button>
         </div>
-        <div className="md:w-1/5 w-full flex items-end justify-end">
+        <div className="md:w-auto w-full">
           <Button
             variant="custom-color"
-            className="bg-orange-500 text-white w-auto"
+            className="bg-orange-500 text-white w-full md:w-auto"
             type="button"
             onClick={() => router.push("/main/reservation/create")}
           >
@@ -188,11 +229,15 @@ export default function ReservationPage({ table }: any) {
               data={data}
               pagination
               paginationServer
-              paginationTotalRows={table?.meta?.total_data}
+              paginationTotalRows={table?.meta?.total_data || 0}
               highlightOnHover
               responsive
-              onChangeRowsPerPage={(e) => setFilter({ limit: e })}
-              onChangePage={(e) => setFilter({ page: e })}
+              onChangeRowsPerPage={(limit) =>
+                setFilter((prev) => ({ ...prev, limit, page: 1 }))
+              }
+              onChangePage={(page) => setFilter((prev) => ({ ...prev, page }))}
+              paginationPerPage={filter.limit}
+              paginationDefaultPage={filter.page}
               customStyles={{
                 headCells: {
                   style: {

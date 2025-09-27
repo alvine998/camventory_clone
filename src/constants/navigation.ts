@@ -14,11 +14,11 @@ export const NAVIGATIONS = [
     href: "/main/reservation",
     icon: "/icons/box-tick.svg",
   },
-  {
-    title: "Check Out",
-    href: "/main/check-out",
-    icon: "/icons/shopping-cart.svg",
-  },
+  // {
+  //   title: "Check Out",
+  //   href: "/main/checkout",
+  //   icon: "/icons/shopping-cart.svg",
+  // },
   {
     title: "Category Items",
     href: "/main/category",

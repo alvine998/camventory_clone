@@ -9,7 +9,7 @@ import { Calendar1Icon, CalendarIcon } from "lucide-react";
 import moment from "moment";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
-import React from "react";
+import React, { useState } from "react";
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { req, params, query } = ctx;
   const cookies = parse(req.headers.cookie || "");
@@ -66,8 +66,27 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 };
 export default function Detail({ detail, query }: any) {
   const itemDetail: IReservation = detail?.data;
-  console.log(itemDetail, "lslsl");
-
+  const [itemOrder, setItemOrder] = useState<any>(itemDetail?.details || []);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Update itemOrder when details change
+  React.useEffect(() => {
+    setItemOrder(itemDetail?.details || []);
+  }, [itemDetail?.details]);
+  
+  // Handle search with debounce
+  React.useEffect(() => {
+    if (!searchTerm) {
+      setItemOrder(itemDetail?.details || []);
+      return;
+    }
+    
+    const filtered = (itemDetail?.details || []).filter((item: any) =>
+      item.item_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.item_id?.toString().includes(searchTerm)
+    );
+    setItemOrder(filtered);
+  }, [searchTerm, itemDetail?.details]);
   return (
     <div className="p-2">
       <HeaderReservation detail={itemDetail} query={query} />
@@ -149,7 +168,8 @@ export default function Detail({ detail, query }: any) {
               <Input
                 placeholder="Search Equipment"
                 type="search"
-                // onChange={(e) => setFilter({ search: e.target.value })}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 fullWidth
               />
             </div>
@@ -157,7 +177,7 @@ export default function Detail({ detail, query }: any) {
 
           {/* List Equipment */}
           <div className="flex flex-col gap-2">
-            {itemDetail?.details?.map((item, index: number) => (
+            {itemOrder?.map((item: any, index: number) => (
               <div className="flex gap-4 items-center py-4" key={index}>
                 <Image
                   src={

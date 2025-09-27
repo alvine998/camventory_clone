@@ -138,35 +138,60 @@ export default function EditReservationPage({
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState<Record<string, string>>({});
 
+  const [formData, setFormData] = useState({
+    customer_uuid: detail?.ref_customer?.id || '',
+    user_uuid: detail?.ref_user?.id || '',
+    location: detail?.pickup_location || 'dipatiukur',
+    from: moment(detail?.start_date * 1000).format("YYYY-MM-DD") || '',
+    to: moment(detail?.end_date * 1000).format("YYYY-MM-DD") || '',
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    const formData = new FormData(e.currentTarget);
     const payload = {
-      ...Object.fromEntries(formData),
-      start_date: formData.get("from")
-        ? Math.floor(
-            new Date(formData.get("from")!.toString()).getTime() / 1000
-          )
+      ...detail,
+      ...formData,
+      start_date: formData.from
+        ? Math.floor(new Date(formData.from).getTime() / 1000)
         : null,
-      end_date: formData.get("to")
-        ? Math.floor(new Date(formData.get("to")!.toString()).getTime() / 1000)
+      end_date: formData.to
+        ? Math.floor(new Date(formData.to).getTime() / 1000)
         : null,
       items: JSON.stringify(
         items?.map((item: any) => ({
           uuid: item.id,
-          qty: item?.added || 1,
-          type: item?.category ? "single" : "bulk",
+          qty: item?.qty || item?.added || 1,
+          type: item?.item_type || (item?.category ? "single" : "bulk"),
         })) || []
       ),
     };
 
+    // Ensure required fields are present
+    if (!payload.customer_uuid || !payload.user_uuid || !payload.location) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'Please fill all required fields',
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
-      await axios.post("/api/reservation", payload);
+      await axios.patch(`/api/reservation`, payload);
       Swal.fire({
         icon: "success",
-        title: "Reservation Created Successfully",
+        title: "Reservation Edited Successfully",
         timer: 1500,
         showConfirmButton: false,
       });
@@ -212,28 +237,44 @@ export default function EditReservationPage({
       <form onSubmit={onSubmit} className="mt-6 mb-20">
         {/* Customer & User */}
         <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
-          <Select
-            options={CUSTOMERS}
-            placeholder="Customer"
-            label="Customer"
-            fullWidth
-            required
-            name="customer_uuid"
-            defaultValue={CUSTOMERS.find(
-              (item) => item.value === detail?.ref_customer?.id
-            )}
-          />
-          <Select
-            options={USERS}
-            placeholder="User/Employee"
-            label="User/Employee"
-            fullWidth
-            required
-            name="user_uuid"
-            defaultValue={USERS.find(
-              (item) => item.value === detail?.ref_user?.id
-            )}
-          />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Customer <span className="text-red-500">*</span>
+            </label>
+            <select
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              name="customer_uuid"
+              value={formData.customer_uuid}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="">Select Customer</option>
+              {CUSTOMERS.map((customer) => (
+                <option key={customer.value} value={customer.value}>
+                  {customer.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              User/Employee <span className="text-red-500">*</span>
+            </label>
+            <select
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              name="user_uuid"
+              value={formData.user_uuid}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="">Select User/Employee</option>
+              {USERS.map((user) => (
+                <option key={user.value} value={user.value}>
+                  {user.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Dates & Location */}
@@ -246,9 +287,8 @@ export default function EditReservationPage({
               fullWidth
               required
               type="date"
-              defaultValue={moment(detail?.start_date * 1000).format(
-                "YYYY-MM-DD"
-              )}
+              value={formData.from}
+              onChange={handleInputChange}
             />
             <Input
               placeholder="To"
@@ -257,26 +297,26 @@ export default function EditReservationPage({
               fullWidth
               required
               type="date"
-              defaultValue={moment(detail?.start_date * 1000).format(
-                "YYYY-MM-DD"
-              )}
+              value={formData.to}
+              onChange={handleInputChange}
+              min={formData.from}
             />
           </div>
-          <Select
-            options={[
-              { label: "Dipatiukur", value: "dipatiukur" },
-              { label: "Cipadung", value: "cipadung" },
-            ]}
-            placeholder="Pickup Location"
-            label="Pickup Location"
-            fullWidth
-            required
-            name="location"
-            defaultValue={[
-              { label: "Dipatiukur", value: "dipatiukur" },
-              { label: "Cipadung", value: "cipadung" },
-            ].find((item) => item.value === detail?.pickup_location)}
-          />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Pickup Location <span className="text-red-500">*</span>
+            </label>
+            <select
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              name="location"
+              value={formData.location}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="dipatiukur">Dipatiukur</option>
+              <option value="cipadung">Cipadung</option>
+            </select>
+          </div>
         </div>
 
         {/* Equipment Section */}

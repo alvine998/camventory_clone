@@ -1,5 +1,6 @@
 export interface IReservation {
   id: string;
+  book_id: string;
   customer_id: string;
   pickup_location: string;
   start_date: number;
