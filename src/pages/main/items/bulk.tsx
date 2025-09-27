@@ -2,8 +2,6 @@ import Button from "@/components/Button";
 import Input from "@/components/Input";
 import { useModal } from "@/components/Modal";
 import CustomerDeleteModal from "@/components/modals/customer/delete";
-import Select from "@/components/Select";
-import Tabs from "@/components/Tabs";
 import { CONFIG } from "@/config";
 import { ColumnBulkItems } from "@/constants/column_items";
 import axios from "axios";
@@ -12,7 +10,7 @@ import { EyeIcon } from "lucide-react";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
@@ -34,6 +32,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),
+      location: String(query.location || ""),
+      search: String(query.search || ""),
     });
 
     if (typeof search === "string" && search.trim() !== "") {
@@ -59,7 +59,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
 
     // Optionally validate token...
-    return { props: { table: table?.data?.data } };
+    return {
+      props: { table: { data: table?.data?.data, ...table?.data?.meta } },
+    };
   } catch (error: any) {
     console.log(error);
     if (error?.response?.status === 401) {
@@ -71,7 +73,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { table: [] },
+      props: { table: { data: [], meta: { total_data: 0 } } },
     };
   }
 };
@@ -80,13 +82,46 @@ export default function AdministratorPage({ table }: any) {
   const [show, setShow] = useState<boolean>(false);
   const [modal, setModal] = useState<useModal>();
   const router = useRouter();
-  const [filter, setFilter] = useState<any>(router.query);
+  // Define filter state with proper types
+  const [filter, setFilter] = useState<{
+    search?: string;
+    location?: string;
+    page?: number;
+    limit?: number;
+  }>(() => ({
+    search: typeof router.query.search === "string" ? router.query.search : "",
+    location:
+      typeof router.query.location === "string" ? router.query.location : "all",
+    page: router.query.page ? Number(router.query.page) : 1,
+    limit: router.query.limit ? Number(router.query.limit) : 10,
+  }));
+
+  // Reset all filters and pagination
+  const handleResetFilter = useCallback(() => {
+    // Create a new filter object with default values
+    const newFilter = {
+      search: "",
+      location: "all",
+      page: 1,
+      limit: filter.limit || 10, // Keep the current limit
+    };
+
+    // Update the filter state
+    setFilter(newFilter);
+
+    // Update the URL without the filter parameters
+    const queryParams = new URLSearchParams();
+    queryParams.set("page", "1");
+    queryParams.set("limit", String(newFilter.limit));
+
+    router.push(`?${queryParams.toString()}`, undefined, { shallow: true });
+  }, [filter.limit, router]);
   useEffect(() => {
     if (typeof window !== "undefined") {
       setShow(true);
     }
   }, []);
-  const data = [...table].map((item, index) => ({
+  const data = [...table?.data].map((item, index) => ({
     ...item,
     item_name: (
       <div className="flex gap-2 items-center">
@@ -126,39 +161,81 @@ export default function AdministratorPage({ table }: any) {
     { label: "Individual Item", href: `/main/items` },
     { label: "Bulk Item", href: `/main/items/bulk` },
   ];
+  // Handle filter changes and update URL
   useEffect(() => {
-    const queryFilter = new URLSearchParams(filter).toString();
-    router.push(`?${queryFilter}`);
-  }, [filter]);
+    const delayDebounce = setTimeout(() => {
+      const queryParams = new URLSearchParams();
+
+      // Always include page and limit
+      queryParams.set("page", String(filter.page || 1));
+      queryParams.set("limit", String(filter.limit || 10));
+
+      // Include search if it exists
+      if (filter.search) {
+        queryParams.set("search", filter.search);
+      }
+
+      // Include location if it's not 'all'
+      if (filter.location && filter.location !== "all") {
+        queryParams.set("location", filter.location);
+      }
+
+      // Only update URL if there are changes to avoid unnecessary re-renders
+      if (
+        queryParams.toString() !==
+        new URLSearchParams(router.asPath.split("?")[1] || "").toString()
+      ) {
+        router.push(`?${queryParams.toString()}`, undefined, { shallow: true });
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [filter, router]);
   return (
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">
         <h1 className="text-2xl font-bold">List Bulk Items</h1>
       </div>
-      <div className="flex lg:flex-row flex-col gap-2 items-center justify-between mt-4">
-        <div className="flex gap-2 items-center">
+      <div className="flex flex-col md:flex-row gap-4 mt-4">
+        <div className="flex-1 flex flex-col md:flex-row gap-2">
           <Input
-            placeholder="Search Items"
+            placeholder="Search Bulk Items"
             type="search"
-            onChange={(e) => setFilter({ search: e.target.value })}
+            className="flex-1 min-w-[200px]"
+            value={filter.search || ""}
+            onChange={(e) =>
+              setFilter((prev) => ({
+                ...prev,
+                search: e.target.value,
+                page: 1,
+              }))
+            }
           />
-          <Select
-            options={[]}
-            placeholder="Bulk Items"
-            onChange={(e) => setFilter({ bulk: e })}
-          />
-          <Select
-            options={[
-              { value: "all", label: "All" },
-              { value: "cipadung", label: "Cipadung" },
-              { value: "dipatiukur", label: "Dipatiukur" },
-            ]}
-            placeholder="Location"
-            onChange={(e) => setFilter({ location: e })}
-          />
-          <button className="text-red-500 hover:text-red-600 text-lg">
-            Reset Filter
-          </button>
+          <select
+            className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+            value={filter.location || "all"}
+            onChange={(e) =>
+              setFilter((prev) => ({
+                ...prev,
+                location: e.target.value,
+                page: 1,
+              }))
+            }
+          >
+            <option value="all">All Locations</option>
+            <option value="cipadung">Cipadung</option>
+            <option value="dipatiukur">Dipatiukur</option>
+          </select>
+          {(filter.search ||
+            (filter.location && filter.location !== "all")) && (
+            <button
+              type="button"
+              className="px-4 py-2 text-red-500 hover:text-red-600 font-medium transition-colors duration-200"
+              onClick={handleResetFilter}
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
         <Button
           variant="custom-color"
@@ -172,7 +249,24 @@ export default function AdministratorPage({ table }: any) {
 
       {/* Tabs */}
       <div className="mt-4">
-        <Tabs tabs={itemTabs} />
+        <div className="flex border-b border-gray-200">
+          {itemTabs.map((tab) => {
+            const isActive = router.pathname === tab.href;
+            return (
+              <button
+                key={tab.href}
+                className={`px-4 py-2 font-medium text-sm ${
+                  isActive
+                    ? "border-b-2 border-orange-500 text-orange-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                onClick={() => router.push(tab.href)}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
       <div className="w-full overflow-x-auto">
         {show && (
@@ -182,6 +276,13 @@ export default function AdministratorPage({ table }: any) {
               data={data}
               pagination
               highlightOnHover
+              paginationTotalRows={table?.total_data || 0}
+              paginationRowsPerPageOptions={[10, 20, 50, 100]}
+              paginationServer
+              onChangePage={(page) =>
+                setFilter((prev: any) => ({ ...prev, page }))
+              }
+              onChangeRowsPerPage={(limit, page) => setFilter({ limit, page })}
               responsive
               customStyles={{
                 headCells: {

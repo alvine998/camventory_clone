@@ -60,7 +60,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
 
     // Optionally validate token...
-    return { props: { table: table?.data?.data } };
+    return {
+      props: { table: { data: table?.data?.data, ...table?.data?.meta } },
+    };
   } catch (error: any) {
     console.log(error);
     if (error?.response?.status === 401) {
@@ -87,7 +89,7 @@ export default function AdministratorPage({ table }: any) {
       setShow(true);
     }
   }, []);
-  const data = [...table].map((item, index) => ({
+  const data = [...table?.data].map((item, index) => ({
     ...item,
     ktp: (
       <div className="flex gap-2 items-center">
@@ -167,6 +169,13 @@ export default function AdministratorPage({ table }: any) {
               data={data}
               pagination
               highlightOnHover
+              paginationTotalRows={table?.total_data || 0}
+              paginationRowsPerPageOptions={[10, 20, 50, 100]}
+              paginationServer
+              onChangePage={(page) =>
+                setFilter((prev: any) => ({ ...prev, page }))
+              }
+              onChangeRowsPerPage={(limit, page) => setFilter({ limit, page })}
               responsive
               customStyles={{
                 headCells: {

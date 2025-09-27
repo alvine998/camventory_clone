@@ -124,7 +124,7 @@ export default function AdministratorPage({ table }: AdministratorPageProps) {
 
   // Reset all filters and pagination
   const handleResetFilter = useCallback(() => {
-    setFilter(prev => ({
+    setFilter((prev) => ({
       search: "",
       location: "",
       page: 1,
@@ -137,8 +137,9 @@ export default function AdministratorPage({ table }: AdministratorPageProps) {
     }
   }, []);
   // Ensure data is always an array and handle potential undefined/null cases
-  const data = (Array.isArray(table?.data) ? table.data : []).map((item: Category, index: number) => ({
-    ...item,
+  const data = (Array.isArray(table?.data) ? table.data : []).map(
+    (item: Category, index: number) => ({
+      ...item,
       action: (
         <div key={index} className="flex gap-2">
           <Button
@@ -194,7 +195,7 @@ export default function AdministratorPage({ table }: AdministratorPageProps) {
   return (
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">
-        <h1 className="text-2xl font-bold">List Category Items</h1>
+        <h1 className="text-2xl font-bold">List Checkout</h1>
       </div>
       <div className="flex flex-col md:flex-row gap-4 mt-4">
         <div className="flex-1 flex flex-col md:flex-row gap-2">
