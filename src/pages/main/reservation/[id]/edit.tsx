@@ -1,7 +1,7 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 import AddEquipmentsModal from "@/components/modals/reservation/AddEquipments";
-import Select from "@/components/Select";
+// import Select from "@/components/Select";
 import { CONFIG } from "@/config";
 import { IDetail, IReservation } from "@/types/reservation";
 import axios from "axios";

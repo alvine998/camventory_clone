@@ -1,12 +1,10 @@
 import Button from "@/components/Button";
-import Input from "@/components/Input";
 import { useModal } from "@/components/Modal";
 import CustomerDeleteModal from "@/components/modals/customer/delete";
-import Select from "@/components/Select";
 import { CONFIG } from "@/config";
 import axios from "axios";
 import { parse } from "cookie";
-import { EyeIcon, Filter, X } from "lucide-react";
+import { EyeIcon, Filter } from "lucide-react";
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
@@ -175,24 +173,6 @@ export default function ReservationPage({ table }: any) {
     return () => clearTimeout(delayDebounce);
   }, [filter, router]);
 
-  // Reset all filters
-  const handleResetFilters = () => {
-    setFilter({
-      search: "",
-      status: "all",
-      location: "all",
-      customer: "",
-      page: 1,
-      limit: filter.limit,
-    });
-  };
-
-  // Check if any filter is active
-  const isFilterActive =
-    filter.search ||
-    filter.status !== "all" ||
-    filter.location !== "all" ||
-    filter.customer;
   return (
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">
