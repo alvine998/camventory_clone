@@ -28,7 +28,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const { page = 1, limit = 10, search = "", customer = "", customer_id = "" } = query;
+    const { page = 1, limit = 10, search = "", customer = "", customer_id = "", status = "", location = "" } = query;
 
     const params = new URLSearchParams({
       page: String(page),
@@ -51,8 +51,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       }
     );
-
-    console.log("API Response:", table.data);
 
     const customers = await axios.get(
       `${CONFIG.API_URL}/v1/customers?page=1&limit=10${customer ? `&search=${customer}` : ""}`,
