@@ -15,12 +15,12 @@ export default function Badge({
     <div
       className={
         color == "available"
-          ? "py-1 px-5 bg-green-100 border border-green-500 rounded"
+          ? "py-1 px-2 bg-green-100 border border-green-500 rounded"
           : color == "empty"
-          ? "py-1 px-5 bg-red-100 border border-red-500 rounded"
+          ? "py-1 px-2 bg-red-100 border border-red-500 rounded"
           : color == "warning"
-          ? "py-1 px-5 bg-yellow-100 border border-yellow-500 rounded"
-          : "bg-orange-100 py-1 px-5 border border-orange-500 rounded"
+          ? "py-1 px-2 bg-yellow-100 border border-yellow-500 rounded"
+          : "bg-orange-100 py-1 px-2 border border-orange-500 rounded"
       }
     >
       {color === "available" ? (
@@ -32,7 +32,7 @@ export default function Badge({
           {text}
         </p>
       ) : (
-        <div>{children}</div>
+        <div className="text-xs">{children}</div>
       )}
     </div>
   );

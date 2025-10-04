@@ -38,8 +38,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     if (typeof search === "string" && search.trim() !== "") {
       params.set("search", search);
     }
-    console.log(params.toString());
-
     const table = await axios.get(
       `${CONFIG.API_URL}/v1/single-items?${params.toString()}`,
       {
@@ -48,7 +46,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       }
     );
-
+    console.log(table?.data?.data)
     if (table?.status === 401) {
       return {
         redirect: {
@@ -106,15 +104,15 @@ export default function AdministratorPage({ table }: any) {
       page: 1,
       limit: filter.limit || 10, // Keep the current limit
     };
-    
+
     // Update the filter state
     setFilter(newFilter);
-    
+
     // Update the URL without the filter parameters
     const queryParams = new URLSearchParams();
     queryParams.set('page', '1');
     queryParams.set('limit', String(newFilter.limit));
-    
+
     router.push(`?${queryParams.toString()}`, undefined, { shallow: true });
   }, [filter.limit, router]);
   useEffect(() => {
@@ -196,15 +194,15 @@ export default function AdministratorPage({ table }: any) {
 
   // Get current path to determine active tab
   const currentPath = router.pathname;
-  
+
   const itemTabs = [
-    { 
-      label: "Individual Item", 
+    {
+      label: "Individual Item",
       href: "/main/items",
       isActive: currentPath === '/main/items'
     },
-    { 
-      label: "Bulk Item", 
+    {
+      label: "Bulk Item",
       href: "/main/items/bulk",
       isActive: currentPath === '/main/items/bulk'
     },
@@ -214,21 +212,21 @@ export default function AdministratorPage({ table }: any) {
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       const queryParams = new URLSearchParams();
-      
+
       // Always include page and limit
       queryParams.set('page', String(filter.page || 1));
       queryParams.set('limit', String(filter.limit || 10));
-      
+
       // Include search if it exists
       if (filter.search) {
         queryParams.set('search', filter.search);
       }
-      
+
       // Include location if it's not 'all'
       if (filter.location && filter.location !== 'all') {
         queryParams.set('location', filter.location);
       }
-      
+
       // Only update URL if there are changes to avoid unnecessary re-renders
       if (queryParams.toString() !== new URLSearchParams(router.asPath.split('?')[1] || '').toString()) {
         router.push(`?${queryParams.toString()}`, undefined, { shallow: true });
@@ -286,11 +284,10 @@ export default function AdministratorPage({ table }: any) {
           {itemTabs.map((tab) => (
             <button
               key={tab.href}
-              className={`px-4 py-2 font-medium text-sm ${
-                tab.isActive
+              className={`px-4 py-2 font-medium text-sm ${tab.isActive
                   ? 'border-b-2 border-orange-500 text-orange-600'
                   : 'text-gray-500 hover:text-gray-700'
-              }`}
+                }`}
               onClick={() => router.push(tab.href)}
             >
               {tab.label}

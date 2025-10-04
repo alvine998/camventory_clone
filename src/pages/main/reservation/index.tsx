@@ -1,6 +1,8 @@
 import Button from "@/components/Button";
 import { useModal } from "@/components/Modal";
 import CustomerDeleteModal from "@/components/modals/customer/delete";
+import FilterModal from "@/components/modals/reservation/FilterModal";
+import Badge from "@/components/Badge";
 import { CONFIG } from "@/config";
 import axios from "axios";
 import { parse } from "cookie";
@@ -26,7 +28,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const { page = 1, limit = 10, search = "" } = query;
+    const { page = 1, limit = 10, search = "", customer = "", customer_id = "" } = query;
 
     const params = new URLSearchParams({
       page: String(page),
@@ -37,8 +39,23 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       params.set("search", search);
     }
 
+    if (typeof customer_id === "string" && customer_id.trim() !== "") {
+      params.set("customer_id", customer_id);
+    }
+
     const table = await axios.get(
       `${CONFIG.API_URL}/v1/reservation?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `${token}`,
+        },
+      }
+    );
+
+    console.log("API Response:", table.data);
+
+    const customers = await axios.get(
+      `${CONFIG.API_URL}/v1/customers?page=1&limit=10${customer ? `&search=${customer}` : ""}`,
       {
         headers: {
           Authorization: `${token}`,
@@ -54,10 +71,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    console.log(table?.data?.data)
 
     // Optionally validate token...
-    return { props: { table: table?.data } };
+    return { props: { table: table?.data, customers: customers?.data?.data || [] } };
   } catch (error: any) {
     console.log(error);
     if (error?.response?.status === 401) {
@@ -74,7 +90,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   }
 };
 
-export default function ReservationPage({ table }: any) {
+export default function ReservationPage({ table, customers }: any) {
   const [show, setShow] = useState<boolean>(false);
   const [modal, setModal] = useState<useModal>();
   const router = useRouter();
@@ -84,8 +100,10 @@ export default function ReservationPage({ table }: any) {
       typeof router.query.status === "string" ? router.query.status : "all",
     location:
       typeof router.query.location === "string" ? router.query.location : "all",
-    customer:
-      typeof router.query.customer === "string" ? router.query.customer : "",
+    customer_id:
+      typeof router.query.customer_id === "string" ? router.query.customer_id : "",
+    startDate: typeof router.query.startDate === "string" ? router.query.startDate : "",
+    endDate: typeof router.query.endDate === "string" ? router.query.endDate : "",
     page: router.query.page ? Number(router.query.page) : 1,
     limit: router.query.limit ? Number(router.query.limit) : 10,
   }));
@@ -94,11 +112,30 @@ export default function ReservationPage({ table }: any) {
       setShow(true);
     }
   }, []);
+  // Helper function to get badge color based on status
+  const getStatusBadgeColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'confirmed':
+        return 'available';
+      case 'pending':
+        return 'warning';
+      case 'cancelled':
+        return 'empty';
+      case 'completed':
+        return 'available';
+      case 'overdue':
+        return 'empty';
+      case 'booked':
+        return 'warning';
+      default:
+        return 'custom';
+    }
+  };
+
   const data = [...table?.data].map((item, index) => ({
     ...item,
-    rental_duration: `${(item.end_date - item.start_date) / 86400} ${
-      (item.end_date - item.start_date) / 86400 == 1 ? "Day" : "Days"
-    }`,
+    rental_duration: `${(item.end_date - item.start_date) / 86400} ${(item.end_date - item.start_date) / 86400 == 1 ? "Day" : "Days"
+      }`,
     start_date: (
       <div>
         <h5 className="font-bold">
@@ -119,6 +156,12 @@ export default function ReservationPage({ table }: any) {
         </p>
       </div>
     ),
+    status: (
+      <Badge
+        color={getStatusBadgeColor(item.status)}
+        text={item.status}
+      >{item.status}</Badge>
+    ),
     action: (
       <div key={index} className="flex gap-2">
         <Button
@@ -134,7 +177,8 @@ export default function ReservationPage({ table }: any) {
       </div>
     ),
   }));
-  // Update URL when filters change
+
+  // Handle pagination changes
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       const queryParams = new URLSearchParams();
@@ -143,24 +187,24 @@ export default function ReservationPage({ table }: any) {
       queryParams.set("page", String(filter.page));
       queryParams.set("limit", String(filter.limit));
 
-      // Only include search if it has a value
+      // Include existing filters
       if (filter.search) {
         queryParams.set("search", filter.search);
       }
-
-      // Only include status if it's not 'all'
       if (filter.status && filter.status !== "all") {
         queryParams.set("status", filter.status);
       }
-
-      // Only include location if it's not 'all'
       if (filter.location && filter.location !== "all") {
         queryParams.set("location", filter.location);
       }
-
-      // Only include customer if it has a value
-      if (filter.customer) {
-        queryParams.set("customer", filter.customer);
+      if (filter.customer_id) {
+        queryParams.set("customer_id", filter.customer_id);
+      }
+      if (filter.startDate) {
+        queryParams.set("startDate", filter.startDate);
+      }
+      if (filter.endDate) {
+        queryParams.set("endDate", filter.endDate);
       }
 
       // Only update URL if there are actual changes
@@ -168,10 +212,38 @@ export default function ReservationPage({ table }: any) {
       if (queryParams.toString() !== currentQuery.toString()) {
         router.push(`?${queryParams.toString()}`, undefined, { shallow: true });
       }
-    }, 300);
+    }, 100); // Shorter delay for pagination
 
     return () => clearTimeout(delayDebounce);
-  }, [filter, router]);
+  }, [filter.page, filter.limit, filter.search, filter.status, filter.location, filter.customer_id, filter.startDate, filter.endDate, router]);
+
+  // Handle filter modal apply
+  const handleFilterApply = (appliedFilters: any) => {
+    const newFilters = {
+      customer_id: appliedFilters.customer?.value || "",
+      status: appliedFilters.status?.value || "all",
+      location: appliedFilters.location?.value || "all",
+      startDate: appliedFilters.startDate || "",
+      endDate: appliedFilters.endDate || "",
+      page: 1, // Reset to first page when applying filters
+    };
+
+    setFilter(prev => ({ ...prev, ...newFilters }));
+
+    // Force page reload to fetch new data
+    router.push({
+      pathname: router.pathname,
+      query: {
+        page: 1,
+        limit: 10,
+        ...Object.fromEntries(
+          Object.entries(newFilters).filter(([, value]) =>
+            value && value !== "all" && value !== ""
+          )
+        )
+      }
+    });
+  };
 
   return (
     <div>
@@ -212,10 +284,27 @@ export default function ReservationPage({ table }: any) {
               paginationTotalRows={table?.meta?.total_data || 0}
               highlightOnHover
               responsive
-              onChangeRowsPerPage={(limit) =>
-                setFilter((prev) => ({ ...prev, limit, page: 1 }))
-              }
-              onChangePage={(page) => setFilter((prev) => ({ ...prev, page }))}
+              onChangeRowsPerPage={(limit) => {
+                const newQuery = {
+                  ...router.query,
+                  limit: String(limit),
+                  page: "1"
+                };
+                router.push({
+                  pathname: router.pathname,
+                  query: newQuery
+                });
+              }}
+              onChangePage={(page) => {
+                const newQuery = {
+                  ...router.query,
+                  page: String(page)
+                };
+                router.push({
+                  pathname: router.pathname,
+                  query: newQuery
+                });
+              }}
               paginationPerPage={filter.limit}
               paginationDefaultPage={filter.page}
               customStyles={{
@@ -242,6 +331,24 @@ export default function ReservationPage({ table }: any) {
           open={modal?.open}
           setOpen={setModal}
           data={modal?.data}
+        />
+      )}
+      {modal?.key == "filter" && (
+        <FilterModal
+          open={modal?.open}
+          setOpen={setModal}
+          onApply={handleFilterApply}
+          customers={customers}
+          initialFilters={{
+            customer: filter.customer_id ? {
+              value: filter.customer_id,
+              label: customers.find((c: any) => c.id === filter.customer_id)?.name || filter.customer_id
+            } : null,
+            status: filter.status !== "all" ? { value: filter.status, label: filter.status } : null,
+            location: filter.location !== "all" ? { value: filter.location, label: filter.location } : null,
+            startDate: filter.startDate,
+            endDate: filter.endDate,
+          }}
         />
       )}
     </div>

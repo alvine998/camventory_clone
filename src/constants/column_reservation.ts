@@ -27,6 +27,11 @@ export const ColumnReservation = [
     sortable: true,
   },
   {
+    name: "Status",
+    selector: (row: IReservation) => row.status,
+    sortable: true,
+  },
+  {
     name: "Pickup Location",
     selector: (row: IReservation) => row.pickup_location,
     sortable: true,

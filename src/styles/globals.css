@@ -2,4 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
+/* FullCalendar basic styling */
+.fc {
+  font-family: inherit;
+}
+
+.fc-toolbar {
+  display: none; /* Hide default toolbar since we have custom navigation */
+}
+
+.fc-daygrid-day {
+  border: 1px solid #e5e7eb;
+  min-height: 120px;
+}
+
+.fc-daygrid-day-number {
+  padding: 8px;
+  font-weight: 500;
+}
+
+.fc-day-today {
+  background-color: #fef3c7 !important;
+}
+
+.fc-event {
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 12px;
+  font-weight: 500;
+  margin: 1px;
+}
+
+.fc-event-title {
+  font-weight: 500;
+}
+
+.fc-daygrid-event {
+  margin: 1px 2px;
+}
+
+.fc-more-link {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.fc-col-header-cell {
+  background-color: #f9fafb;
+  font-weight: 600;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.fc-daygrid-day-events {
+  margin-top: 2px;
+}
+
+/* TimeGrid specific styling */
+.fc-timegrid-slot {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.fc-timegrid-slot-label {
+  font-size: 12px;
+  color: #6b7280;
+  padding: 4px 8px;
+}
+
+.fc-timegrid-event {
+  border-radius: 4px;
+  font-size: 12px;
+  padding: 2px 4px;
+}
+
+.fc-timegrid-event-harness {
+  margin: 1px;
+}
+
+.fc-timegrid-axis {
+  background-color: #f9fafb;
+  border-right: 1px solid #e5e7eb;
+}
+
+.fc-timegrid-col-frame {
+  border-right: 1px solid #e5e7eb;
+}
+
+.fc-timegrid-day {
+  border-right: 1px solid #e5e7eb;
+}
+
+.fc-timegrid-slot-minor {
+  border-bottom: 1px solid #f9fafb;
+}
+
+.fc-timegrid-slot-major {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .fc-timegrid-slot-label {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+  
+  .fc-timegrid-event {
+    font-size: 10px;
+    padding: 1px 2px;
+  }
+}
 

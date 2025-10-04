@@ -16,6 +16,9 @@ interface SelectComponentProps {
   isMulti?: boolean;
   isClearable?: boolean;
   isDisabled?: boolean;
+  isLoading?: boolean;
+  onInputChange?: (inputValue: string) => void;
+  noOptionsMessage?: () => string;
   label?: string;
   required?: boolean;
   name?: string;
@@ -31,6 +34,9 @@ const Select: React.FC<SelectComponentProps> = ({
   isMulti = false,
   isClearable = true,
   isDisabled = false,
+  isLoading = false,
+  onInputChange,
+  noOptionsMessage,
   label,
   required = false,
   name,
@@ -57,6 +63,9 @@ const Select: React.FC<SelectComponentProps> = ({
         isMulti={isMulti}
         isClearable={isClearable}
         isDisabled={isDisabled}
+        isLoading={isLoading}
+        onInputChange={onInputChange}
+        noOptionsMessage={noOptionsMessage}
         className={"w-full text-xs"}
         classNamePrefix="custom-select"
         name={name}
