@@ -28,7 +28,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const { page = 1, limit = 10, search = "", customer = "", customer_id = "", status = "", location = "" } = query;
+    const { page = 1, limit = 10, search = "", customer = "", customer_id = "", status = "", location = "", startDate = "", endDate = "" } = query;
 
     const params = new URLSearchParams({
       page: String(page),
@@ -41,6 +41,22 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     if (typeof customer_id === "string" && customer_id.trim() !== "") {
       params.set("customer_id", customer_id);
+    }
+
+    if (typeof status === "string" && status.trim() !== "") {
+      params.set("status", status);
+    }
+
+    if (typeof location === "string" && location.trim() !== "") {
+      params.set("location", location);
+    }
+
+    if (typeof startDate === "string" && startDate.trim() !== "") {
+      params.set("startDate", startDate);
+    }
+
+    if (typeof endDate === "string" && endDate.trim() !== "") {
+      params.set("endDate", endDate);
     }
 
     const table = await axios.get(

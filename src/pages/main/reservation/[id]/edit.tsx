@@ -139,9 +139,9 @@ export default function EditReservationPage({
   const [filter, setFilter] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
-    customer_uuid: detail?.ref_customer?.id || '',
-    user_uuid: detail?.ref_user?.id || '',
-    location: detail?.pickup_location || 'dipatiukur',
+    customer_id: detail?.ref_customer?.id || '',
+    user_id: detail?.ref_user?.id || '',
+    pickup_location: detail?.pickup_location || 'dipatiukur',
     from: moment(detail?.start_date * 1000).format("YYYY-MM-DD") || '',
     to: moment(detail?.end_date * 1000).format("YYYY-MM-DD") || '',
   });
@@ -176,8 +176,10 @@ export default function EditReservationPage({
       ),
     };
 
+    console.log("Payload being sent:", payload);
+
     // Ensure required fields are present
-    if (!payload.customer_uuid || !payload.user_uuid || !payload.location) {
+    if (!payload.customer_id || !payload.user_id || !payload.pickup_location) {
       Swal.fire({
         icon: 'error',
         title: 'Validation Error',
@@ -188,7 +190,16 @@ export default function EditReservationPage({
     }
 
     try {
-      await axios.patch(`/api/reservation`, payload);
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('token='))
+        ?.split('=')[1];
+
+      await axios.patch(`${CONFIG.API_URL}/v1/reservation/${router.query.id}`, payload, {
+        headers: {
+          Authorization: token,
+        },
+      });
       Swal.fire({
         icon: "success",
         title: "Reservation Edited Successfully",
@@ -196,8 +207,13 @@ export default function EditReservationPage({
         showConfirmButton: false,
       });
       router.push(`/main/reservation`);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error("Update error:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Update Failed",
+        text: error.response?.data?.message || "An error occurred while updating the reservation",
+      });
     } finally {
       setLoading(false);
     }
@@ -224,7 +240,7 @@ export default function EditReservationPage({
     <div>
       <div className="flex flex-row gap-2 items-center">
         <button
-          onClick={() => router.push(`/main/reservation/${detail?.id}`)}
+          onClick={() => router.push(`/main/reservation/${detail?.id}/detail`)}
           type="button"
         >
           <ArrowLeftIcon className="w-6 h-6 text-orange-500" />
@@ -243,8 +259,8 @@ export default function EditReservationPage({
             </label>
             <select
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              name="customer_uuid"
-              value={formData.customer_uuid}
+              name="customer_id"
+              value={formData.customer_id}
               onChange={handleInputChange}
               required
             >
@@ -262,8 +278,8 @@ export default function EditReservationPage({
             </label>
             <select
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              name="user_uuid"
-              value={formData.user_uuid}
+              name="user_id"
+              value={formData.user_id}
               onChange={handleInputChange}
               required
             >
@@ -308,8 +324,8 @@ export default function EditReservationPage({
             </label>
             <select
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              name="location"
-              value={formData.location}
+              name="pickup_location"
+              value={formData.pickup_location}
               onChange={handleInputChange}
               required
             >

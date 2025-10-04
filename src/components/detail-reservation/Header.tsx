@@ -5,11 +5,14 @@ import {
   ShoppingCartIcon,
   XCircleIcon,
 } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
 import Button from "../Button";
 import Badge from "../Badge";
 import { useRouter } from "next/router";
 import { IReservation } from "@/types/reservation";
+import CancelModal from "../modals/reservation/CancelModal";
+import axios from "axios";
+import Swal from "sweetalert2";
 
 interface Props {
   detail: IReservation;
@@ -18,6 +21,39 @@ interface Props {
 
 export default function HeaderReservation({ detail }: Props) {
   const router = useRouter();
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleCancelReservation = async (description: string) => {
+    setIsLoading(true);
+    
+    try {
+      await axios.patch('/api/reservation/cancel', {
+        reason: description,
+        id: detail?.id
+      });
+
+      Swal.fire({
+        icon: "success",
+        title: "Reservation Cancelled",
+        text: "The reservation has been successfully cancelled.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      setShowCancelModal(false);
+      router.push("/main/reservation");
+    } catch (error: any) {
+      console.error("Cancel error:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Cancel Failed",
+        text: error.response?.data?.message || "An error occurred while cancelling the reservation",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <div>
       <div className="flex items-center gap-2">
@@ -57,6 +93,8 @@ export default function HeaderReservation({ detail }: Props) {
               <Button
                 variant="custom-color"
                 className="flex items-center gap-1 border border-orange-500"
+                type="button"
+                onClick={() => setShowCancelModal(true)}
               >
                 <XCircleIcon className="w-4 h-4 text-orange-500" />
                 <p className="text-xs text-orange-500">Cancel</p>
@@ -75,6 +113,14 @@ export default function HeaderReservation({ detail }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Cancel Modal */}
+      <CancelModal
+        open={showCancelModal}
+        setOpen={setShowCancelModal}
+        onConfirm={handleCancelReservation}
+        isLoading={isLoading}
+      />
     </div>
   );
 }
