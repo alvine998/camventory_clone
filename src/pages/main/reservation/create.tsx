@@ -154,8 +154,18 @@ export default function CreateReservationPage({
         showConfirmButton: false,
       });
       router.push(`/main/reservation`);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      const errorMessage = error.response?.data?.message || "An error occurred while creating the reservation";
+      
+      Swal.fire({
+        icon: "error",
+        title: "Reservation Creation Failed",
+        text: errorMessage,
+        html: errorMessage.includes('Date conflict detected') ? 
+          `<div style="text-align: left; white-space: pre-line;">${errorMessage}</div>` : 
+          errorMessage
+      });
     } finally {
       setLoading(false);
     }

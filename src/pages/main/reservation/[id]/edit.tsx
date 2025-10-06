@@ -190,16 +190,7 @@ export default function EditReservationPage({
     }
 
     try {
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('token='))
-        ?.split('=')[1];
-
-      await axios.patch(`${CONFIG.API_URL}/v1/reservation/${router.query.id}`, payload, {
-        headers: {
-          Authorization: token,
-        },
-      });
+      await axios.patch("/api/reservation", payload);
       Swal.fire({
         icon: "success",
         title: "Reservation Edited Successfully",
@@ -209,10 +200,15 @@ export default function EditReservationPage({
       router.push(`/main/reservation`);
     } catch (error: any) {
       console.error("Update error:", error);
+      const errorMessage = error.response?.data?.message || "An error occurred while updating the reservation";
+      
       Swal.fire({
         icon: "error",
         title: "Update Failed",
-        text: error.response?.data?.message || "An error occurred while updating the reservation",
+        text: errorMessage,
+        html: errorMessage.includes('Date conflict detected') ? 
+          `<div style="text-align: left; white-space: pre-line;">${errorMessage}</div>` : 
+          errorMessage
       });
     } finally {
       setLoading(false);
