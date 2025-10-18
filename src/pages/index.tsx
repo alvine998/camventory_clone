@@ -98,7 +98,7 @@ export default function Home() {
             Camventory!
           </h3>
         </div>
-        <div className=" lg:mt-0 mt-5 lg:w-1/2 w-full lg:ml-40 ml-0 lg:mr-20 mr-0 lg:px-0 px-5">
+        <div className=" lg:mt-0 mt-5 lg:w-1/3 w-full lg:ml-40 ml-0 lg:mr-20 mr-0 lg:px-0 px-5">
           <div className="bg-white rounded-lg shadow lg:px-10 px-4 lg:py-20 py-6">
             <h5 className={`text-center font-bold text-xl text-orange-500`}>
               Login
@@ -142,9 +142,9 @@ export default function Home() {
                       ""
                     )}
                   </button>
-                  <span className="text-xs">Remember me</span>
+                  <span className="text-md">Remember me</span>
                 </div>
-                <Link href={"forgot-password"} className="text-xs text-red-500">
+                <Link href={"forgot-password"} className="text-md text-red-500">
                   Forgot Password
                 </Link>
               </div>

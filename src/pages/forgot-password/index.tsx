@@ -61,7 +61,7 @@ export default function ForgotPasswordPage() {
             Reset your password, so you can continue using the Camventory App.
           </h3>
         </div>
-        <div className=" lg:mt-0 mt-5 lg:w-1/2 w-full lg:ml-40 ml-0 lg:mr-20 mr-0 lg:px-0 px-5">
+        <div className=" lg:mt-0 mt-5 lg:w-1/3 w-full lg:ml-40 ml-0 lg:mr-20 mr-0 lg:px-0 px-5">
           <div className="bg-white rounded-lg shadow lg:px-10 px-4 lg:py-20 py-6">
             <h5 className={`text-center font-bold text-xl text-orange-500`}>
               Forgot Password
@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
                   <Button
                     variant="custom-color"
                     disabled={loading}
-                    className="bg-orange-500 mt-4"
+                    className="bg-orange-500 text-white mt-4 px-4 py-3 w-full"
                   >
                     {loading ? "Loading..." : "Reset Password"}
                   </Button>
@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
                   <Button
                     variant="custom-color"
                     disabled={loading}
-                    className="bg-orange-500 text-white mt-4"
+                    className="bg-orange-500 text-white mt-4 px-4 py-3 w-full"
                   >
                     {loading ? "Loading..." : "Resend Link"}
                   </Button>
@@ -113,7 +113,7 @@ export default function ForgotPasswordPage() {
                   className="flex justify-center items-center gap-2 w-full"
                 >
                   <ArrowLeftIcon className="text-orange-500 w-5" />
-                  Back
+                  Back to Sign In
                 </Button>
               </Link>
             </form>
