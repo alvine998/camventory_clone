@@ -6,6 +6,10 @@ import { format } from "date-fns";
 import moment from "moment";
 import dynamic from "next/dynamic";
 import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { CONFIG } from "@/config";
+import { parse } from "cookie";
+import { GetServerSideProps } from "next";
 
 // Dynamically import ApexCharts to avoid SSR issues
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -78,19 +82,149 @@ const parseDateString = (dateStr: string): Date => {
   return date;
 };
 
-export default function SalesSummaryPage() {
+interface ReportData {
+  date: string | null;
+  sum_by_date: Record<string, number> | null;
+  total_sum_by_date: number;
+  tax: number;
+}
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const { req, query } = ctx;
+  const cookies = parse(req.headers.cookie || "");
+  const token = cookies.token;
+
+  try {
+    if (!token) {
+      return {
+        redirect: {
+          destination: "/",
+          permanent: false,
+        },
+      };
+    }
+
+    // Get date range from query or use defaults
+    const startDate = (query.startDate as string) || moment().format("DD/MM/YYYY");
+    const endDate = (query.endDate as string) || moment().add(30, "days").format("DD/MM/YYYY");
+
+    // Convert dates to Unix timestamps
+    const startTimestamp = moment(startDate, "DD/MM/YYYY").unix();
+    const endTimestamp = moment(endDate, "DD/MM/YYYY").unix();
+
+    const response = await axios.get(`${CONFIG.API_URL}/v1/report/`, {
+      params: {
+        startDate: startTimestamp,
+        endDate: endTimestamp,
+      },
+      headers: {
+        Authorization: `${token}`,
+      },
+    });
+
+    if (response?.status === 401) {
+      return {
+        redirect: {
+          destination: "/",
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        initialReportData: response.data?.data || null,
+        dateRange: { start: startDate, end: endDate },
+      },
+    };
+  } catch (error: any) {
+    console.log(error);
+    if (error?.response?.status === 401) {
+      return {
+        redirect: {
+          destination: "/",
+          permanent: false,
+        },
+      };
+    }
+    return {
+      props: {
+        initialReportData: null,
+        dateRange: {
+          start: moment().format("DD/MM/YYYY"),
+          end: moment().add(30, "days").format("DD/MM/YYYY"),
+        },
+      },
+    };
+  }
+};
+
+export default function SalesSummaryPage({ initialReportData, dateRange }: any) {
   const [date, setDate] = useState({
-    start: moment().format("DD/MM/YYYY"),
-    end: moment().add(30, "days").format("DD/MM/YYYY"),
+    start: dateRange?.start || moment().format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
   });
   const [modal, setModal] = useState<useModal>();
   const [isMounted, setIsMounted] = useState(false);
+  const [reportData, setReportData] = useState<ReportData | null>(initialReportData);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch report data from API
+  const fetchReportData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get token from cookies
+      const cookies = parse(document.cookie);
+      const token = cookies.token;
+      
+      if (!token) {
+        setError("No authentication token found");
+        return;
+      }
+      
+      // Convert dates to Unix timestamps
+      const startTimestamp = moment(date.start, "DD/MM/YYYY").unix();
+      const endTimestamp = moment(date.end, "DD/MM/YYYY").unix();
+      
+      const response = await axios.get(`${CONFIG.API_URL}/v1/report/`, {
+        params: {
+          startDate: startTimestamp,
+          endDate: endTimestamp,
+        },
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+
+      if (response.data.status === 1) {
+        setReportData(response.data.data);
+      } else {
+        setError(response.data.error?.message || "Failed to fetch report data");
+      }
+    } catch (err: any) {
+      console.error("Error fetching report data:", err);
+      setError(err.response?.data?.error?.message || "Failed to fetch report data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // This ensures the component is mounted before rendering the chart
   useEffect(() => {
     setIsMounted(true);
     return () => setIsMounted(false);
   }, []);
+
+  // Fetch data when date range changes (only on client-side)
+  useEffect(() => {
+    if (isMounted && (date.start !== dateRange?.start || date.end !== dateRange?.end)) {
+      fetchReportData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMounted, date]);
   return (
     <div>
       <h1 className="text-2xl font-bold text-orange-500">Sales Summary</h1>
@@ -145,55 +279,69 @@ export default function SalesSummaryPage() {
         {/* Border Sales */}
         <div className="border border-gray-300 rounded-lg p-4 mt-4">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Sales</h2>
-          <div className="mt-2">
-            <h5 className="text-gray-500">
-              Gross Sales - (Discount + Redeem Point) + Tax
-            </h5>
-            <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
-              <p>Gross Sales</p>
-              <p>Rp21.353.000</p>
+          {loading ? (
+            <p className="text-gray-500 text-center py-4">Loading...</p>
+          ) : error ? (
+            <p className="text-red-500 text-center py-4">{error}</p>
+          ) : (
+            <div className="mt-2">
+              <h5 className="text-gray-500">
+                Gross Sales - (Discount + Redeem Point) + Tax
+              </h5>
+              <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
+                <p>Gross Sales</p>
+                <p>Rp{reportData?.total_sum_by_date?.toLocaleString('id-ID') || '0'}</p>
+              </div>
+              <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
+                <p>Discount</p>
+                <p>-Rp0</p>
+              </div>
+              <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
+                <p>Redeem Point</p>
+                <p>-</p>
+              </div>
+              <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
+                <p className="font-bold">Total Net Sales</p>
+                <p className="font-bold">Rp{reportData?.total_sum_by_date?.toLocaleString('id-ID') || '0'}</p>
+              </div>
+              <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
+                <p>Tax</p>
+                <p>Rp{reportData?.tax?.toLocaleString('id-ID') || '0'}</p>
+              </div>
+              <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
+                <p className="font-bold">Total Sales</p>
+                <p className="font-bold">
+                  Rp{((reportData?.total_sum_by_date || 0) + (reportData?.tax || 0)).toLocaleString('id-ID')}
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
-              <p>Discount</p>
-              <p>-Rp694.500</p>
-            </div>
-            <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
-              <p>Redeem Point</p>
-              <p>-</p>
-            </div>
-            <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
-              <p className="font-bold">Total Net Sales</p>
-              <p className="font-bold">Rp20.658.500</p>
-            </div>
-            <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
-              <p>Tax</p>
-              <p>Rp0</p>
-            </div>
-            <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
-              <p className="font-bold">Total Sales</p>
-              <p className="font-bold">Rp20.658.500</p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Border Profit */}
         <div className="border border-gray-300 rounded-lg p-4 mt-4">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Profit</h2>
-          <div className="mt-2">
-            <h5 className="text-gray-500">Total Net Sales - Base Price</h5>
-            <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
-              <p>Total Net Sales</p>
-              <p>Rp20.658.500</p>
+          {loading ? (
+            <p className="text-gray-500 text-center py-4">Loading...</p>
+          ) : error ? (
+            <p className="text-red-500 text-center py-4">{error}</p>
+          ) : (
+            <div className="mt-2">
+              <h5 className="text-gray-500">Total Net Sales - Base Price</h5>
+              <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
+                <p>Total Net Sales</p>
+                <p>Rp{reportData?.total_sum_by_date?.toLocaleString('id-ID') || '0'}</p>
+              </div>
+              <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
+                <p>Base price</p>
+                <p>-Rp0</p>
+              </div>
+              <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
+                <p>Total Profit</p>
+                <p>Rp{reportData?.total_sum_by_date?.toLocaleString('id-ID') || '0'}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
-              <p>Base price</p>
-              <p>-Rp0</p>
-            </div>
-            <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
-              <p>Total Profit</p>
-              <p>Rp20.658.500</p>
-            </div>
-          </div>
+          )}
           <p className="text-gray-500 mt-2 text-xs">
             *Operating Costs recorded in Cash Out are not included in the Total
             Profit
