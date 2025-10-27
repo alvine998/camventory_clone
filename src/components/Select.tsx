@@ -59,6 +59,7 @@ const Select: React.FC<SelectComponentProps> = ({
             onChange(selectedOption);
           }
         }}
+        maxMenuHeight={150}
         placeholder={placeholder}
         isMulti={isMulti}
         isClearable={isClearable}

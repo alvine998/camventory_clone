@@ -28,7 +28,17 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const { page = 1, limit = 10, search = "", customer = "", customer_id = "", status = "", location = "", startDate = "", endDate = "" } = query;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      customer = "",
+      customer_id = "",
+      status = "",
+      location = "",
+      startDate = "",
+      endDate = "",
+    } = query;
 
     const params = new URLSearchParams({
       page: String(page),
@@ -44,7 +54,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
 
     if (typeof status === "string" && status.trim() !== "") {
-      params.set("status", status);
+      params.set("status", status?.toUpperCase());
     }
 
     if (typeof location === "string" && location.trim() !== "") {
@@ -52,11 +62,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
 
     if (typeof startDate === "string" && startDate.trim() !== "") {
-      params.set("startDate", startDate);
+      params.set("start_date", String(startDate));
     }
 
     if (typeof endDate === "string" && endDate.trim() !== "") {
-      params.set("endDate", endDate);
+      params.set("end_date", String(endDate));
     }
 
     const table = await axios.get(
@@ -69,7 +79,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     );
 
     const customers = await axios.get(
-      `${CONFIG.API_URL}/v1/customers?page=1&limit=10${customer ? `&search=${customer}` : ""}`,
+      `${CONFIG.API_URL}/v1/customers?page=1&limit=10${
+        customer ? `&search=${customer}` : ""
+      }`,
       {
         headers: {
           Authorization: `${token}`,
@@ -87,7 +99,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
 
     // Optionally validate token...
-    return { props: { table: table?.data, customers: customers?.data?.data || [] } };
+    return {
+      props: { table: table?.data, customers: customers?.data?.data || [] },
+    };
   } catch (error: any) {
     console.log(error);
     if (error?.response?.status === 401) {
@@ -108,19 +122,8 @@ export default function ReservationPage({ table, customers }: any) {
   const [show, setShow] = useState<boolean>(false);
   const [modal, setModal] = useState<useModal>();
   const router = useRouter();
-  const [filter, setFilter] = useState(() => ({
-    search: typeof router.query.search === "string" ? router.query.search : "",
-    status:
-      typeof router.query.status === "string" ? router.query.status : "all",
-    location:
-      typeof router.query.location === "string" ? router.query.location : "all",
-    customer_id:
-      typeof router.query.customer_id === "string" ? router.query.customer_id : "",
-    startDate: typeof router.query.startDate === "string" ? router.query.startDate : "",
-    endDate: typeof router.query.endDate === "string" ? router.query.endDate : "",
-    page: router.query.page ? Number(router.query.page) : 1,
-    limit: router.query.limit ? Number(router.query.limit) : 10,
-  }));
+  const [filter, setFilter] = useState<any>(router.query);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       setShow(true);
@@ -129,27 +132,28 @@ export default function ReservationPage({ table, customers }: any) {
   // Helper function to get badge color based on status
   const getStatusBadgeColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'confirmed':
-        return 'available';
-      case 'pending':
-        return 'warning';
-      case 'cancelled':
-        return 'empty';
-      case 'completed':
-        return 'available';
-      case 'overdue':
-        return 'empty';
-      case 'booked':
-        return 'warning';
+      case "confirmed":
+        return "available";
+      case "pending":
+        return "warning";
+      case "cancelled":
+        return "empty";
+      case "completed":
+        return "available";
+      case "overdue":
+        return "empty";
+      case "booked":
+        return "warning";
       default:
-        return 'custom';
+        return "custom";
     }
   };
 
   const data = [...table?.data].map((item, index) => ({
     ...item,
-    rental_duration: `${(item.end_date - item.start_date) / 86400} ${(item.end_date - item.start_date) / 86400 == 1 ? "Day" : "Days"
-      }`,
+    rental_duration: `${(item.end_date - item.start_date) / 86400} ${
+      (item.end_date - item.start_date) / 86400 == 1 ? "Day" : "Days"
+    }`,
     start_date: (
       <div>
         <h5 className="font-bold">
@@ -171,10 +175,9 @@ export default function ReservationPage({ table, customers }: any) {
       </div>
     ),
     status: (
-      <Badge
-        color={getStatusBadgeColor(item.status)}
-        text={item.status}
-      >{item.status}</Badge>
+      <Badge color={getStatusBadgeColor(item.status)} text={item.status}>
+        {item.status}
+      </Badge>
     ),
     action: (
       <div key={index} className="flex gap-2">
@@ -192,71 +195,38 @@ export default function ReservationPage({ table, customers }: any) {
     ),
   }));
 
-  // Handle pagination changes
   useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      const queryParams = new URLSearchParams();
-
-      // Always include pagination
-      queryParams.set("page", String(filter.page));
-      queryParams.set("limit", String(filter.limit));
-
-      // Include existing filters
-      if (filter.search) {
-        queryParams.set("search", filter.search);
-      }
-      if (filter.status && filter.status !== "all") {
-        queryParams.set("status", filter.status);
-      }
-      if (filter.location && filter.location !== "all") {
-        queryParams.set("location", filter.location);
-      }
-      if (filter.customer_id) {
-        queryParams.set("customer_id", filter.customer_id);
-      }
-      if (filter.startDate) {
-        queryParams.set("startDate", filter.startDate);
-      }
-      if (filter.endDate) {
-        queryParams.set("endDate", filter.endDate);
-      }
-
-      // Only update URL if there are actual changes
-      const currentQuery = new URLSearchParams(window.location.search);
-      if (queryParams.toString() !== currentQuery.toString()) {
-        router.push(`?${queryParams.toString()}`, undefined, { shallow: true });
-      }
-    }, 100); // Shorter delay for pagination
-
-    return () => clearTimeout(delayDebounce);
-  }, [filter.page, filter.limit, filter.search, filter.status, filter.location, filter.customer_id, filter.startDate, filter.endDate, router]);
+    const queryFilter = new URLSearchParams(filter).toString();
+    router.push(`?${queryFilter}`);
+  }, [filter]);
 
   // Handle filter modal apply
   const handleFilterApply = (appliedFilters: any) => {
-    const newFilters = {
-      customer_id: appliedFilters.customer?.value || "",
-      status: appliedFilters.status?.value || "all",
-      location: appliedFilters.location?.value || "all",
-      startDate: appliedFilters.startDate || "",
-      endDate: appliedFilters.endDate || "",
-      page: 1, // Reset to first page when applying filters
+    const newFilters: any = {
+      page: 1,
+      limit: router.query.limit || 10,
     };
 
-    setFilter(prev => ({ ...prev, ...newFilters }));
+    if (appliedFilters.customer?.value) {
+      newFilters.customer_id = appliedFilters.customer.value;
+    }
+    if (appliedFilters.status?.value && appliedFilters.status.value !== "all") {
+      newFilters.status = appliedFilters.status.value;
+    }
+    if (
+      appliedFilters.location?.value &&
+      appliedFilters.location.value !== "all"
+    ) {
+      newFilters.location = appliedFilters.location.value;
+    }
+    if (appliedFilters.startDate) {
+      newFilters.start_date = String(Date.parse(appliedFilters.startDate));
+    }
+    if (appliedFilters.endDate) {
+      newFilters.end_date = String(Date.parse(appliedFilters.endDate));
+    }
 
-    // Force page reload to fetch new data
-    router.push({
-      pathname: router.pathname,
-      query: {
-        page: 1,
-        limit: 10,
-        ...Object.fromEntries(
-          Object.entries(newFilters).filter(([, value]) =>
-            value && value !== "all" && value !== ""
-          )
-        )
-      }
-    });
+    setFilter(newFilters);
   };
 
   return (
@@ -296,31 +266,13 @@ export default function ReservationPage({ table, customers }: any) {
               pagination
               paginationServer
               paginationTotalRows={table?.meta?.total_data || 0}
+              paginationRowsPerPageOptions={[10, 20, 50, 100]}
               highlightOnHover
               responsive
-              onChangeRowsPerPage={(limit) => {
-                const newQuery = {
-                  ...router.query,
-                  limit: String(limit),
-                  page: "1"
-                };
-                router.push({
-                  pathname: router.pathname,
-                  query: newQuery
-                });
-              }}
-              onChangePage={(page) => {
-                const newQuery = {
-                  ...router.query,
-                  page: String(page)
-                };
-                router.push({
-                  pathname: router.pathname,
-                  query: newQuery
-                });
-              }}
-              paginationPerPage={filter.limit}
-              paginationDefaultPage={filter.page}
+              onChangePage={(page) =>
+                setFilter((prev: any) => ({ ...prev, page }))
+              }
+              onChangeRowsPerPage={(limit, page) => setFilter({ limit, page })}
               customStyles={{
                 headCells: {
                   style: {
@@ -354,14 +306,26 @@ export default function ReservationPage({ table, customers }: any) {
           onApply={handleFilterApply}
           customers={customers}
           initialFilters={{
-            customer: filter.customer_id ? {
-              value: filter.customer_id,
-              label: customers.find((c: any) => c.id === filter.customer_id)?.name || filter.customer_id
-            } : null,
-            status: filter.status !== "all" ? { value: filter.status, label: filter.status } : null,
-            location: filter.location !== "all" ? { value: filter.location, label: filter.location } : null,
-            startDate: filter.startDate,
-            endDate: filter.endDate,
+            customer:
+              typeof filter.customer_id === "string" && filter.customer_id
+                ? {
+                    value: filter.customer_id,
+                    label:
+                      customers.find((c: any) => c.id === filter.customer_id)
+                        ?.name || filter.customer_id,
+                  }
+                : null,
+            status:
+              typeof filter.status === "string" && filter.status !== "all"
+                ? { value: filter.status, label: filter.status }
+                : null,
+            location:
+              typeof filter.location === "string" && filter.location !== "all"
+                ? { value: filter.location, label: filter.location }
+                : null,
+            startDate:
+              typeof filter.startDate === "string" ? filter.startDate : "",
+            endDate: typeof filter.endDate === "string" ? filter.endDate : "",
           }}
         />
       )}

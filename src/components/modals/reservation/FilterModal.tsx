@@ -30,15 +30,18 @@ export default function FilterModal({
 
   // Status options
   const statusOptions = [
+    { value: "all", label: "All" },
     { value: "confirmed", label: "Confirmed" },
     { value: "pending", label: "Pending" },
     { value: "cancelled", label: "Cancelled" },
     { value: "completed", label: "Completed" },
     { value: "overdue", label: "Overdue" },
+    { value: "booked", label: "Booked" },
   ];
 
   // Location options
   const locationOptions = [
+    { value: "all", label: "All" },
     { value: "dipatiukur", label: "Dipatiukur" },
     { value: "cipadung", label: "Cipadung" },
   ];
@@ -142,6 +145,7 @@ export default function FilterModal({
                   onChange={(selectedOption) => 
                     setFilters(prev => ({ ...prev, status: selectedOption }))
                   }
+                  defaultValue={{ value: "all", label: "All" }}
                   placeholder="Status"
                   isClearable
                   fullWidth
@@ -161,6 +165,7 @@ export default function FilterModal({
                   onChange={(selectedOption) => 
                     setFilters(prev => ({ ...prev, location: selectedOption }))
                   }
+                  defaultValue={{ value: "all", label: "All" }}
                   placeholder="Location"
                   isClearable
                   fullWidth
