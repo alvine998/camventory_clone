@@ -29,21 +29,36 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const { page = 1, limit = 100, search = "" } = query;
+    const { 
+      page = 1, 
+      limit = 10, 
+      categoryID = "",
+      startDate = "",
+      endDate = "",
+    } = query;
+
+    // Get date range from query or use defaults
+    const startDateStr = (startDate as string) || moment().format("DD/MM/YYYY");
+    const endDateStr = (endDate as string) || moment().add(30, "days").format("DD/MM/YYYY");
+
+    // Convert dates to Unix timestamps
+    const startTimestamp = moment(startDateStr, "DD/MM/YYYY").unix();
+    const endTimestamp = moment(endDateStr, "DD/MM/YYYY").unix();
 
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),
-      bulk: String(query.bulk || ""),
-      location: String(query.location || ""),
+      startDate: String(startTimestamp),
+      endDate: String(endTimestamp),
     });
 
-    if (typeof search === "string" && search.trim() !== "") {
-      params.set("search", search);
+    if (typeof categoryID === "string" && categoryID.trim() !== "") {
+      params.set("categoryID", categoryID);
     }
 
-    const categories = await axios.get(
-      `${CONFIG.API_URL}/v1/master/categories?${params.toString()}`,
+    // Fetch report data
+    const reportResponse = await axios.get(
+      `${CONFIG.API_URL}/v1/report/category?${params.toString()}`,
       {
         headers: {
           Authorization: `${token}`,
@@ -51,7 +66,17 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       }
     );
 
-    if (categories?.status === 401) {
+    // Fetch categories list
+    const categories = await axios.get(
+      `${CONFIG.API_URL}/v1/master/categories?page=1&limit=100`,
+      {
+        headers: {
+          Authorization: `${token}`,
+        },
+      }
+    );
+
+    if (reportResponse?.status === 401 || categories?.status === 401) {
       return {
         redirect: {
           destination: "/",
@@ -60,10 +85,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    // Optionally validate token...
-    // Normalize the response to always be { data: Category[], total?: number, ... }
     return {
-      props: { categories: categories?.data?.data || [] },
+      props: { 
+        reportData: reportResponse.data?.data || null,
+        categories: categories?.data?.data || [],
+        dateRange: { start: startDateStr, end: endDateStr },
+      },
     };
   } catch (error: any) {
     console.log(error);
@@ -75,9 +102,15 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    // Ensure consistent shape on error
     return {
-      props: { table: { data: [], total: 0 } },
+      props: { 
+        reportData: null,
+        categories: [],
+        dateRange: {
+          start: moment().format("DD/MM/YYYY"),
+          end: moment().add(30, "days").format("DD/MM/YYYY"),
+        },
+      },
     };
   }
 };
@@ -96,13 +129,15 @@ const parseDateString = (dateStr: string): Date => {
 };
 
 interface Props {
+  reportData: any;
   categories: any[];
+  dateRange: { start: string; end: string };
 }
 
-export default function SalesSummaryPage({ categories }: Props) {
+export default function SalesCategoryPage({ reportData, categories, dateRange }: Props) {
   const [date, setDate] = useState({
-    start: moment().format("DD/MM/YYYY"),
-    end: moment().add(30, "days").format("DD/MM/YYYY"),
+    start: dateRange?.start || moment().format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
   });
   const [modal, setModal] = useState<useModal>();
   const [isMounted, setIsMounted] = useState(false);
@@ -126,22 +161,22 @@ export default function SalesSummaryPage({ categories }: Props) {
   const salesData = [
     {
       label: "Product Sold",
-      value: 151,
+      value: reportData?.summary_data?.total || 0,
       icon: "/icons/camera.svg",
     },
     {
       label: "Total Gross Sales",
-      value: 18646000,
+      value: reportData?.summary_data?.gross_sales || 0,
       icon: "/icons/growth-chart.svg",
     },
     {
       label: "Total Tax",
-      value: 0,
+      value: reportData?.summary_data?.taxes || 0,
       icon: "/icons/receipt.svg",
     },
     {
       label: "Total Sales",
-      value: 16873500,
+      value: reportData?.summary_data?.sales || 0,
       icon: "/icons/bill.svg",
     },
   ];
@@ -213,18 +248,16 @@ export default function SalesSummaryPage({ categories }: Props) {
         <div className="mt-4">
           <DataTable
             columns={ColumnSalesCategory}
-            data={[
-              {
-                category: "Camera",
-                total_rentals: 151,
-                gross_sales: 18646000,
-                taxes: 0,
-                sales: 16873500,
-              },
-            ]}
+            data={reportData?.data_list?.map((item: any) => ({
+              category: item.name,
+              total_rentals: item.total,
+              gross_sales: item.gross_sales,
+              taxes: item.taxes,
+              sales: item.sales,
+            })) || []}
             pagination
             highlightOnHover
-            paginationTotalRows={0}
+            paginationTotalRows={reportData?.count || 0}
             paginationRowsPerPageOptions={[10, 20, 50, 100]}
             paginationServer
             onChangePage={handlePageChange}

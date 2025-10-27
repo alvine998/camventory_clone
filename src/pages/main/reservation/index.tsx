@@ -198,7 +198,7 @@ export default function ReservationPage({ table, customers }: any) {
   useEffect(() => {
     const queryFilter = new URLSearchParams(filter).toString();
     router.push(`?${queryFilter}`);
-  }, [filter]);
+  }, [filter, router]);
 
   // Handle filter modal apply
   const handleFilterApply = (appliedFilters: any) => {

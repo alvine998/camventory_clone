@@ -140,7 +140,7 @@ export default function AdministratorPage({ table }: any) {
   useEffect(() => {
     const queryFilter = new URLSearchParams(filter).toString();
     router.push(`?${queryFilter}`);
-  }, [filter]);
+  }, [filter, router]);
   return (
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">

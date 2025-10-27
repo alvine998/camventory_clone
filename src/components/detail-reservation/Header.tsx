@@ -73,7 +73,7 @@ export default function HeaderReservation({ detail }: Props) {
         <div>
           <div className="flex justify-between gap-4">
             <div className="flex gap-5 items-center">
-              <h5>{detail?.id ?? "NK0001"}</h5>
+              <h5>{detail?.book_id ?? "NK0001"}</h5>
               <Badge text={detail?.status || "Booked"} color="warning">
                 <p className="text-xs text-yellow-600">Booked</p>
               </Badge>

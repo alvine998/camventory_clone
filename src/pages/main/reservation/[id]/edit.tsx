@@ -139,18 +139,20 @@ export default function EditReservationPage({
   const [filter, setFilter] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
-    customer_id: detail?.ref_customer?.id || '',
-    user_id: detail?.ref_user?.id || '',
-    pickup_location: detail?.pickup_location || 'dipatiukur',
-    from: moment(detail?.start_date * 1000).format("YYYY-MM-DD") || '',
-    to: moment(detail?.end_date * 1000).format("YYYY-MM-DD") || '',
+    customer_id: detail?.ref_customer?.id || "",
+    user_id: detail?.ref_user?.id || "",
+    pickup_location: detail?.pickup_location || "dipatiukur",
+    from: moment(detail?.start_date * 1000).format("YYYY-MM-DD") || "",
+    to: moment(detail?.end_date * 1000).format("YYYY-MM-DD") || "",
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -174,6 +176,11 @@ export default function EditReservationPage({
           type: item?.item_type || (item?.category ? "single" : "bulk"),
         })) || []
       ),
+      customer_uuid: formData.customer_id || detail?.ref_customer?.id || "",
+      location:
+        formData.pickup_location || detail?.pickup_location || "dipatiukur",
+      user_uuid: formData.user_id || detail?.ref_user?.id || "",
+      id: detail?.id,
     };
 
     console.log("Payload being sent:", payload);
@@ -181,9 +188,9 @@ export default function EditReservationPage({
     // Ensure required fields are present
     if (!payload.customer_id || !payload.user_id || !payload.pickup_location) {
       Swal.fire({
-        icon: 'error',
-        title: 'Validation Error',
-        text: 'Please fill all required fields',
+        icon: "error",
+        title: "Validation Error",
+        text: "Please fill all required fields",
       });
       setLoading(false);
       return;
@@ -200,15 +207,19 @@ export default function EditReservationPage({
       router.push(`/main/reservation`);
     } catch (error: any) {
       console.error("Update error:", error);
-      const errorMessage = error.response?.data?.message || "An error occurred while updating the reservation";
-      
+      const errorMessage =
+        error.response?.data?.message &&
+        typeof error.response?.data?.message === "string"
+          ? error.response?.data?.message
+          : error.response?.data?.message?.message || "An error occurred while updating the reservation";
+
       Swal.fire({
         icon: "error",
         title: "Update Failed",
         text: errorMessage,
-        html: errorMessage.includes('Date conflict detected') ? 
-          `<div style="text-align: left; white-space: pre-line;">${errorMessage}</div>` : 
-          errorMessage
+        html: errorMessage?.includes("Date conflict detected")
+          ? `<div style="text-align: left; white-space: pre-line;">${errorMessage}</div>`
+          : errorMessage,
       });
     } finally {
       setLoading(false);
