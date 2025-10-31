@@ -155,6 +155,7 @@ export default function EditReservationPage({
       [name]: value,
     }));
   };
+  console.log(detail, "detail");
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -171,7 +172,7 @@ export default function EditReservationPage({
         : null,
       items: JSON.stringify(
         items?.map((item: any) => ({
-          uuid: item.id,
+          uuid: item.item_id,
           qty: item?.qty || item?.added || 1,
           type: item?.item_type || (item?.category ? "single" : "bulk"),
         })) || []
@@ -182,8 +183,6 @@ export default function EditReservationPage({
       user_uuid: formData.user_id || detail?.ref_user?.id || "",
       id: detail?.id,
     };
-
-    console.log("Payload being sent:", payload);
 
     // Ensure required fields are present
     if (!payload.customer_id || !payload.user_id || !payload.pickup_location) {
