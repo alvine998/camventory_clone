@@ -63,11 +63,19 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
 
     if (typeof startDate === "string" && startDate.trim() !== "") {
-      params.set("start_date", String(startDate));
+      const startTimestamp = Number(startDate);
+      // Only set if it's a valid number and positive epoch timestamp
+      if (!isNaN(startTimestamp) && startTimestamp > 0) {
+        params.set("start_date", String(startTimestamp));
+      }
     }
 
     if (typeof endDate === "string" && endDate.trim() !== "") {
-      params.set("end_date", String(endDate));
+      const endTimestamp = Number(endDate);
+      // Only set if it's a valid number and positive epoch timestamp
+      if (!isNaN(endTimestamp) && endTimestamp > 0) {
+        params.set("end_date", String(endTimestamp));
+      }
     }
 
     const table = await axios.get(
@@ -199,7 +207,21 @@ export default function ReservationPage({ table, customers }: any) {
   }));
 
   useEffect(() => {
-    const queryFilter = new URLSearchParams(filter).toString();
+    // Clean filter object to remove invalid values
+    const cleanFilter: any = {};
+    Object.entries(filter).forEach(([key, value]) => {
+      // Skip invalid date values (NaN or empty)
+      if (key === 'startDate' || key === 'endDate') {
+        const timestamp = Number(value);
+        if (!isNaN(timestamp) && timestamp > 0) {
+          cleanFilter[key] = value;
+        }
+      } else if (value !== undefined && value !== null && value !== '') {
+        cleanFilter[key] = value;
+      }
+    });
+    
+    const queryFilter = new URLSearchParams(cleanFilter).toString();
     const currentQuery = new URLSearchParams(window.location.search).toString();
     
     // Only push if the filter has actually changed
@@ -231,14 +253,26 @@ export default function ReservationPage({ table, customers }: any) {
       newFilters.location = appliedFilters.location.value;
     }
     if (appliedFilters.startDate) {
-      // Convert DD/MM/YYYY to Unix epoch (seconds)
-      const startTimestamp = moment(appliedFilters.startDate, "DD/MM/YYYY").unix();
-      newFilters.startDate = String(startTimestamp);
+      // Date input returns YYYY-MM-DD format, set to 00:00:00 and convert to Unix epoch (seconds)
+      const startMoment = moment(appliedFilters.startDate, "YYYY-MM-DD", true)
+        .startOf('day'); // Sets to 00:00:00
+      if (startMoment.isValid()) {
+        const startTimestamp = startMoment.unix();
+        if (!isNaN(startTimestamp) && startTimestamp > 0) {
+          newFilters.startDate = String(startTimestamp);
+        }
+      }
     }
     if (appliedFilters.endDate) {
-      // Convert DD/MM/YYYY to Unix epoch (seconds)
-      const endTimestamp = moment(appliedFilters.endDate, "DD/MM/YYYY").unix();
-      newFilters.endDate = String(endTimestamp);
+      // Date input returns YYYY-MM-DD format, set to 23:59:59 and convert to Unix epoch (seconds)
+      const endMoment = moment(appliedFilters.endDate, "YYYY-MM-DD", true)
+        .endOf('day'); // Sets to 23:59:59
+      if (endMoment.isValid()) {
+        const endTimestamp = endMoment.unix();
+        if (!isNaN(endTimestamp) && endTimestamp > 0) {
+          newFilters.endDate = String(endTimestamp);
+        }
+      }
     }
 
     setFilter(newFilters);
@@ -340,11 +374,25 @@ export default function ReservationPage({ table, customers }: any) {
                 : null,
             startDate:
               typeof filter.startDate === "string" && filter.startDate
-                ? moment.unix(Number(filter.startDate)).format("DD/MM/YYYY")
+                ? (() => {
+                    const timestamp = Number(filter.startDate);
+                    if (!isNaN(timestamp) && timestamp > 0 && moment.unix(timestamp).isValid()) {
+                      // Date input expects YYYY-MM-DD format
+                      return moment.unix(timestamp).format("YYYY-MM-DD");
+                    }
+                    return "";
+                  })()
                 : "",
             endDate:
               typeof filter.endDate === "string" && filter.endDate
-                ? moment.unix(Number(filter.endDate)).format("DD/MM/YYYY")
+                ? (() => {
+                    const timestamp = Number(filter.endDate);
+                    if (!isNaN(timestamp) && timestamp > 0 && moment.unix(timestamp).isValid()) {
+                      // Date input expects YYYY-MM-DD format
+                      return moment.unix(timestamp).format("YYYY-MM-DD");
+                    }
+                    return "";
+                  })()
                 : "",
           }}
         />
