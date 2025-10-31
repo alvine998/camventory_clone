@@ -114,17 +114,11 @@ export default function AdministratorPage({ table }: AdministratorPageProps) {
   const [show, setShow] = useState<boolean>(false);
   const [modal, setModal] = useState<useModal>();
   const router = useRouter();
-  const [filter, setFilter] = useState<FilterState>(() => ({
-    search: typeof router.query.search === "string" ? router.query.search : "",
-    location:
-      typeof router.query.location === "string" ? router.query.location : "",
-    page: router.query.page ? Number(router.query.page) : 1,
-    limit: router.query.limit ? Number(router.query.limit) : 10,
-  }));
+  const [filter, setFilter] = useState<FilterState>(router.query);
 
   // Reset all filters and pagination
   const handleResetFilter = useCallback(() => {
-    setFilter(prev => ({
+    setFilter((prev) => ({
       search: "",
       location: "",
       page: 1,
@@ -137,8 +131,9 @@ export default function AdministratorPage({ table }: AdministratorPageProps) {
     }
   }, []);
   // Ensure data is always an array and handle potential undefined/null cases
-  const data = (Array.isArray(table?.data) ? table.data : []).map((item: Category, index: number) => ({
-    ...item,
+  const data = (Array.isArray(table?.data) ? table.data : []).map(
+    (item: Category, index: number) => ({
+      ...item,
       action: (
         <div key={index} className="flex gap-2">
           <Button
@@ -186,11 +181,22 @@ export default function AdministratorPage({ table }: AdministratorPageProps) {
         }
       });
 
-      router.push(`?${queryParams.toString()}`);
+      const currentQuery = new URLSearchParams(
+        window.location.search
+      ).toString();
+      const newQuery = queryParams.toString();
+
+      // Only push if the filter has actually changed
+      if (newQuery !== currentQuery) {
+        router.push(`?${newQuery}`).catch(() => {
+          // Ignore navigation cancellation errors
+        });
+      }
     }, 500);
 
     return () => clearTimeout(delayDebounce);
-  }, [filter, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
   return (
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">
@@ -202,7 +208,7 @@ export default function AdministratorPage({ table }: AdministratorPageProps) {
             placeholder="Search Category Items"
             type="search"
             className="flex-1 min-w-[200px]"
-            value={filter.search || ""}
+            value={typeof filter.search === "string" ? filter.search : ""}
             onChange={(e) =>
               setFilter((prev: FilterState) => ({
                 ...prev,
@@ -211,21 +217,6 @@ export default function AdministratorPage({ table }: AdministratorPageProps) {
               }))
             }
           />
-          <select
-            className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-            value={filter.location || ""}
-            onChange={(e) =>
-              setFilter((prev: FilterState) => ({
-                ...prev,
-                location: e.target.value,
-                page: 1,
-              }))
-            }
-          >
-            <option value="">All Locations</option>
-            <option value="dago">Dago</option>
-            <option value="dipatiukur">Dipatiukur</option>
-          </select>
           {(filter.search || filter.location) && (
             <button
               type="button"
