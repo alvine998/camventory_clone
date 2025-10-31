@@ -120,12 +120,63 @@ export default function CreateReservationPage({
   const [items, setItems] = useState<Item[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState<Record<string, string>>({});
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().split("T")[0];
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
+    const fromDate = formData.get("from")?.toString();
+    const toDate = formData.get("to")?.toString();
+    const today = new Date().toISOString().split("T")[0];
+
+    // Validate dates
+    if (fromDate && fromDate < today) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Date",
+        text: "The 'From' date cannot be before today.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (toDate && toDate < today) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Date",
+        text: "The 'To' date cannot be before today.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (fromDate && toDate && toDate < fromDate) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Date Range",
+        text: "The 'To' date cannot be before the 'From' date.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Validate items
+    if (!items || items.length === 0) {
+      Swal.fire({
+        icon: "error",
+        title: "No Items Selected",
+        text: "Please add at least one item to the reservation.",
+      });
+      setLoading(false);
+      return;
+    }
+
     const payload = {
       ...Object.fromEntries(formData),
       start_date: formData.get("from")
@@ -155,16 +206,65 @@ export default function CreateReservationPage({
       });
       router.push(`/main/reservation`);
     } catch (error: any) {
-      console.error(error);
-      const errorMessage = error.response?.data?.message || "An error occurred while creating the reservation";
+      console.error("Reservation creation error:", error);
+      
+      // Extract error message from different possible response structures
+      let errorMessage = "An error occurred while creating the reservation";
+      let errorTitle = "Reservation Creation Failed";
+      
+      if (error.response) {
+        // API error response
+        const responseData = error.response.data;
+        
+        // Check for message in different possible locations
+        if (responseData?.message) {
+          errorMessage = typeof responseData.message === 'string' 
+            ? responseData.message 
+            : responseData.message?.message || errorMessage;
+        } else if (responseData?.error?.message) {
+          errorMessage = responseData.error.message;
+        } else if (typeof responseData === 'string') {
+          errorMessage = responseData;
+        }
+        
+        // Handle specific error status codes
+        if (error.response.status === 400) {
+          errorTitle = "Invalid Request";
+        } else if (error.response.status === 401) {
+          errorTitle = "Authentication Failed";
+          errorMessage = "Your session has expired. Please log in again.";
+        } else if (error.response.status === 403) {
+          errorTitle = "Permission Denied";
+          errorMessage = "You don't have permission to create this reservation.";
+        } else if (error.response.status === 409) {
+          errorTitle = "Conflict Detected";
+        } else if (error.response.status === 422) {
+          errorTitle = "Validation Error";
+        } else if (error.response.status >= 500) {
+          errorTitle = "Server Error";
+          errorMessage = "The server encountered an error. Please try again later.";
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        errorTitle = "Network Error";
+        errorMessage = "Unable to connect to the server. Please check your internet connection.";
+      } else {
+        // Error in request setup
+        errorMessage = error.message || errorMessage;
+      }
+      
+      // Format error message for display
+      const isMultiLine = errorMessage.includes('\n') || errorMessage.includes('Date conflict');
       
       Swal.fire({
         icon: "error",
-        title: "Reservation Creation Failed",
-        text: errorMessage,
-        html: errorMessage.includes('Date conflict detected') ? 
-          `<div style="text-align: left; white-space: pre-line;">${errorMessage}</div>` : 
-          errorMessage
+        title: errorTitle,
+        text: !isMultiLine ? errorMessage : undefined,
+        html: isMultiLine 
+          ? `<div style="text-align: left; white-space: pre-line; font-size: 14px;">${errorMessage}</div>` 
+          : undefined,
+        confirmButtonText: "OK",
+        confirmButtonColor: "#f97316",
       });
     } finally {
       setLoading(false);
@@ -226,6 +326,16 @@ export default function CreateReservationPage({
               fullWidth
               required
               type="date"
+              min={today}
+              value={fromDate}
+              onChange={(e) => {
+                const selectedFromDate = e.target.value;
+                setFromDate(selectedFromDate);
+                // If "to" date is before the new "from" date, clear it
+                if (toDate && selectedFromDate && toDate < selectedFromDate) {
+                  setToDate("");
+                }
+              }}
             />
             <Input
               placeholder="To"
@@ -234,6 +344,11 @@ export default function CreateReservationPage({
               fullWidth
               required
               type="date"
+              min={fromDate || today}
+              value={toDate}
+              onChange={(e) => {
+                setToDate(e.target.value);
+              }}
             />
           </div>
           <Select
