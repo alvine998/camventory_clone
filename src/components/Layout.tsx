@@ -5,6 +5,7 @@ import Head from "next/head";
 import Topbar from "./Topbar";
 import MobileMenu from "./MobileMenu";
 import { usePathname } from "next/navigation";
+import { TooltipProvider } from "./ui/tooltip";
 
 interface Props {
   children: ReactNode;
@@ -15,11 +16,12 @@ export default function Layout({ children }: Props) {
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const pathname = usePathname();
   return (
-    <div>
-      <Head>
-        <title>Camventory</title>
-      </Head>
-      <div className="flex flex-row max-h-screen h-screen overflow-hidden">
+    <TooltipProvider>
+      <div>
+        <Head>
+          <title>Camventory</title>
+        </Head>
+        <div className="flex flex-row max-h-screen h-screen overflow-hidden">
         <div
           className={`bg-black ${
             isWide ? "w-1/4" : "w-[90px]"
@@ -54,5 +56,6 @@ export default function Layout({ children }: Props) {
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 }

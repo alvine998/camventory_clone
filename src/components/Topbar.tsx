@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/stores/useAuthStore";
 import axios from "axios";
-import { MenuIcon } from "lucide-react";
+import { Bell, MenuIcon } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -60,41 +60,48 @@ export default function Topbar({
 
       {/* Profile Only Desktop */}
       <div className="relative inline-block text-left">
-        <button
-          type="button"
-          onClick={() => {
-            setIsOpen(!isOpen);
-          }}
-          className="lg:flex items-center gap-4 border-l-2 border-l-gray-500 pl-6 hidden "
-        >
-          <Image
-            alt={"photo"}
-            src={`/images/default-photo.svg`}
-            className={`w-auto h-auto duration-200 transition-all rounded-full`}
-            layout="relative"
-            width={40}
-            height={40}
-          />
-          <div>
-            <h5 className="text-gray-500 text-sm">Welcome</h5>
-            <h5 className="font-bold text-sm uppercase">{user?.email?.split("@")[0]}</h5>
-          </div>
-
-          <div
-            className={`absolute mt-24 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10 right-0 transform duration-150 transition-all ease-in-out ${
-              isOpen ? "opacity-100" : "opacity-0"
-            }`}
+        <div className="flex items-center gap-5">
+          <button>
+            <Bell className="w-6 h-6 text-orange-600" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(!isOpen);
+            }}
+            className="lg:flex items-center gap-4 border-l-2 border-l-gray-500 pl-6 hidden "
           >
-            <ul className="py-0">
-              <li
-                onClick={handleLogout}
-                className="px-4 py-2 hover:bg-red-600 bg-red-500 text-white rounded cursor-pointer text-center"
-              >
-                Logout
-              </li>
-            </ul>
-          </div>
-        </button>
+            <Image
+              alt={"photo"}
+              src={`/images/default-photo.svg`}
+              className={`w-auto h-auto duration-200 transition-all rounded-full`}
+              layout="relative"
+              width={40}
+              height={40}
+            />
+            <div>
+              <h5 className="text-gray-500 text-sm">Welcome</h5>
+              <h5 className="font-bold text-sm uppercase">
+                {user?.email?.split("@")[0]}
+              </h5>
+            </div>
+
+            <div
+              className={`absolute mt-24 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10 right-0 transform duration-150 transition-all ease-in-out ${
+                isOpen ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              <ul className="py-0">
+                <li
+                  onClick={handleLogout}
+                  className="px-4 py-2 hover:bg-red-600 bg-red-500 text-white rounded cursor-pointer text-center"
+                >
+                  Logout
+                </li>
+              </ul>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}

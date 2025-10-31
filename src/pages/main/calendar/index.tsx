@@ -1,6 +1,14 @@
 "use client";
 
-import { FilterIcon, ChevronLeft, ChevronRight, Calendar, CalendarDays, Clock, X } from "lucide-react";
+import {
+  FilterIcon,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  CalendarDays,
+  Clock,
+  X,
+} from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -13,19 +21,29 @@ import Modal from "@/components/Modal";
 export default function CalendarPage() {
   const calendarRef = useRef<FullCalendar>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState<'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'>('dayGridMonth');
+  const [currentView, setCurrentView] = useState<
+    "dayGridMonth" | "timeGridWeek" | "timeGridDay"
+  >("dayGridMonth");
   const [reservations, setReservations] = useState<IReservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  
+
   // Filter options
   const filterOptions = [
-    { id: 'reservations', label: 'Reservations', value: 'confirmed' },
-    { id: 'overdue-reservations', label: 'Overdue (Reservation)', value: 'overdue-reservation' },
-    { id: 'checkouts', label: 'Checkouts', value: 'checkout' },
-    { id: 'overdue-checkouts', label: 'Overdue (Checkouts)', value: 'overdue-checkout' },
-    { id: 'checkin-done', label: 'Check In / Done', value: 'completed' },
+    { id: "reservations", label: "Reservations", value: "confirmed" },
+    {
+      id: "overdue-reservations",
+      label: "Overdue (Reservation)",
+      value: "overdue-reservation",
+    },
+    { id: "checkouts", label: "Checkouts", value: "checkout" },
+    {
+      id: "overdue-checkouts",
+      label: "Overdue (Checkouts)",
+      value: "overdue-checkout",
+    },
+    { id: "checkin-done", label: "Check In / Done", value: "completed" },
   ];
 
   // Fetch reservations data
@@ -51,22 +69,26 @@ export default function CalendarPage() {
     .filter((reservation) => {
       // If no filters are active, show all events
       if (activeFilters.length === 0) return true;
-      
+
       // Check if reservation status matches any active filter
-      return activeFilters.some(filter => {
+      return activeFilters.some((filter) => {
         switch (filter) {
-          case 'confirmed':
-            return reservation.status.toLowerCase() === 'confirmed';
-          case 'overdue-reservation':
-            return reservation.status.toLowerCase() === 'overdue' && 
-                   new Date(reservation.start_date) < new Date();
-          case 'checkout':
-            return reservation.status.toLowerCase() === 'checkout';
-          case 'overdue-checkout':
-            return reservation.status.toLowerCase() === 'overdue' && 
-                   new Date(reservation.end_date) < new Date();
-          case 'completed':
-            return reservation.status.toLowerCase() === 'completed';
+          case "confirmed":
+            return reservation.status.toLowerCase() === "confirmed";
+          case "overdue-reservation":
+            return (
+              reservation.status.toLowerCase() === "overdue" &&
+              new Date(reservation.start_date) < new Date()
+            );
+          case "checkout":
+            return reservation.status.toLowerCase() === "checkout";
+          case "overdue-checkout":
+            return (
+              reservation.status.toLowerCase() === "overdue" &&
+              new Date(reservation.end_date) < new Date()
+            );
+          case "completed":
+            return reservation.status.toLowerCase() === "completed";
           default:
             return true;
         }
@@ -102,7 +124,9 @@ export default function CalendarPage() {
   }
 
   // View switching handler
-  const handleViewChange = (view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay') => {
+  const handleViewChange = (
+    view: "dayGridMonth" | "timeGridWeek" | "timeGridDay"
+  ) => {
     if (calendarRef.current) {
       calendarRef.current.getApi().changeView(view);
       setCurrentView(view);
@@ -136,7 +160,9 @@ export default function CalendarPage() {
     const reservation = clickInfo.event.extendedProps.reservation;
     // You can implement a modal or navigation to reservation details here
     console.log("Clicked reservation:", reservation);
-    alert(`Reservation #${reservation.book_id}\nCustomer: ${reservation.ref_customer.name}\nStatus: ${reservation.status}`);
+    alert(
+      `Reservation #${reservation.book_id}\nCustomer: ${reservation.ref_customer.name}\nStatus: ${reservation.status}`
+    );
   };
 
   // Date click handler
@@ -147,9 +173,9 @@ export default function CalendarPage() {
 
   // Filter handlers
   const handleFilterToggle = (filterValue: string) => {
-    setActiveFilters(prev => 
-      prev.includes(filterValue) 
-        ? prev.filter(f => f !== filterValue)
+    setActiveFilters((prev) =>
+      prev.includes(filterValue)
+        ? prev.filter((f) => f !== filterValue)
         : [...prev, filterValue]
     );
   };
@@ -164,90 +190,79 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 px-2">
       {/* Header */}
       <div className="flex lg:flex-row flex-col gap-4 items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">Calendar</h1>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrev}
-              className="p-2 bg-white rounded border border-gray-300 hover:bg-gray-50 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleToday}
-              className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors text-sm font-medium"
-            >
-              Today
-            </button>
-            <button
-              onClick={handleNext}
-              className="p-2 bg-white rounded border border-gray-300 hover:bg-gray-50 transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+          <h1 className="text-2xl font-bold text-orange-600">
+            {currentView === "dayGridMonth" &&
+              currentDate.toLocaleDateString("en-US", {
+                month: "long",
+                year: "numeric",
+              })}
+          </h1>
         </div>
-        
-        <div className="flex items-center gap-4">
-          {/* View Switcher */}
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => handleViewChange('dayGridMonth')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                currentView === 'dayGridMonth'
-                  ? 'bg-white text-orange-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Calendar className="w-4 h-4" />
-              Month
-            </button>
-            <button
-              onClick={() => handleViewChange('timeGridWeek')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                currentView === 'timeGridWeek'
-                  ? 'bg-white text-orange-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <CalendarDays className="w-4 h-4" />
-              Week
-            </button>
-            <button
-              onClick={() => handleViewChange('timeGridDay')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                currentView === 'timeGridDay'
-                  ? 'bg-white text-orange-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Clock className="w-4 h-4" />
-              Day
-            </button>
-          </div>
+      </div>
 
-          <div className="text-sm text-gray-600">
-            {currentView === 'dayGridMonth' && currentDate.toLocaleDateString("en-US", { 
-              month: "long", 
-              year: "numeric" 
-            })}
-            {currentView === 'timeGridWeek' && `Week of ${currentDate.toLocaleDateString("en-US", { 
-              month: "short", 
-              day: "numeric",
-              year: "numeric" 
-            })}`}
-            {currentView === 'timeGridDay' && currentDate.toLocaleDateString("en-US", { 
-              weekday: "long",
-              month: "long", 
-              day: "numeric",
-              year: "numeric" 
-            })}
-          </div>
-          
-          <button 
+      <div className="flex items-center gap-2 justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePrev}
+            className="p-2 bg-white rounded border border-gray-300 hover:bg-gray-50 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleToday}
+            className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors text-sm font-medium"
+          >
+            Today
+          </button>
+          <button
+            onClick={handleNext}
+            className="p-2 bg-white rounded border border-gray-300 hover:bg-gray-50 transition-colors"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+        {/* View Switcher */}
+        <div className="flex items-center bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => handleViewChange("dayGridMonth")}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              currentView === "dayGridMonth"
+                ? "bg-white text-orange-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            Month
+          </button>
+          <button
+            onClick={() => handleViewChange("timeGridWeek")}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              currentView === "timeGridWeek"
+                ? "bg-white text-orange-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <CalendarDays className="w-4 h-4" />
+            Week
+          </button>
+          <button
+            onClick={() => handleViewChange("timeGridDay")}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              currentView === "timeGridDay"
+                ? "bg-white text-orange-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            Day
+          </button>
+        </div>
+        <div className="flex items-center gap-4">
+          <button
             onClick={() => setShowFilterModal(true)}
             className="py-1 px-3 bg-white rounded border-2 border-gray-500 flex items-center hover:bg-gray-200 duration-200 transition-all"
           >
@@ -265,19 +280,31 @@ export default function CalendarPage() {
       {/* Legend */}
       <div className="flex flex-wrap gap-4 text-sm">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded" style={{ backgroundColor: "#10b981" }}></div>
+          <div
+            className="w-3 h-3 rounded"
+            style={{ backgroundColor: "#10b981" }}
+          ></div>
           <span>Confirmed</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded" style={{ backgroundColor: "#f59e0b" }}></div>
+          <div
+            className="w-3 h-3 rounded"
+            style={{ backgroundColor: "#f59e0b" }}
+          ></div>
           <span>Pending</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded" style={{ backgroundColor: "#ef4444" }}></div>
+          <div
+            className="w-3 h-3 rounded"
+            style={{ backgroundColor: "#ef4444" }}
+          ></div>
           <span>Cancelled</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded" style={{ backgroundColor: "#6b7280" }}></div>
+          <div
+            className="w-3 h-3 rounded"
+            style={{ backgroundColor: "#6b7280" }}
+          ></div>
           <span>Completed</span>
         </div>
       </div>
@@ -302,7 +329,7 @@ export default function CalendarPage() {
             eventClick={handleEventClick}
             dateClick={handleDateClick}
             height="auto"
-            dayMaxEvents={currentView === 'dayGridMonth' ? 3 : false}
+            dayMaxEvents={currentView === "dayGridMonth" ? 3 : false}
             moreLinkClick="popover"
             eventDisplay="block"
             dayHeaderFormat={{ weekday: "short" }}
@@ -336,15 +363,13 @@ export default function CalendarPage() {
       </div>
 
       {/* Filter Modal */}
-      <Modal 
-        open={showFilterModal} 
-        setOpen={setShowFilterModal} 
-        size="md"
-      >
+      <Modal open={showFilterModal} setOpen={setShowFilterModal} size="md">
         <div className="p-6">
           {/* Modal Header */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-orange-600">Filter Calendar</h3>
+            <h3 className="text-lg font-semibold text-orange-600">
+              Filter Calendar
+            </h3>
             <button
               onClick={handleCloseFilters}
               className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -358,7 +383,9 @@ export default function CalendarPage() {
 
           {/* Filter Options */}
           <div className="mb-6">
-            <h4 className="text-base font-semibold text-gray-900 mb-4">Status Calendar</h4>
+            <h4 className="text-base font-semibold text-gray-900 mb-4">
+              Status Calendar
+            </h4>
             <div className="grid grid-cols-3 gap-4">
               {filterOptions.map((option) => (
                 <label
@@ -371,9 +398,7 @@ export default function CalendarPage() {
                     onChange={() => handleFilterToggle(option.value)}
                     className="w-4 h-4 text-orange-600 border-orange-300 rounded focus:ring-orange-500 focus:ring-2"
                   />
-                  <span className="text-sm text-gray-900">
-                    {option.label}
-                  </span>
+                  <span className="text-sm text-gray-900">{option.label}</span>
                 </label>
               ))}
             </div>

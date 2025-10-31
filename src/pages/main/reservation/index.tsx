@@ -13,6 +13,7 @@ import React, { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
 import { ColumnReservation } from "@/constants/column_reservation";
 import moment from "moment";
+import TooltipComponent from "@/components/TooltipComponent";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -181,24 +182,34 @@ export default function ReservationPage({ table, customers }: any) {
     ),
     action: (
       <div key={index} className="flex gap-2">
-        <Button
-          className="bg-orange-200 text-orange-500"
-          variant="custom-color"
-          type="button"
-          onClick={() => {
-            router.push(`/main/reservation/${item.id}/detail`);
-          }}
-        >
-          <EyeIcon className="w-4 h-4" />
-        </Button>
+        <TooltipComponent content="View details">
+          <Button
+            className="bg-orange-50 text-orange-500"
+            variant="custom-color"
+            type="button"
+            onClick={() => {
+              router.push(`/main/reservation/${item.id}/detail`);
+            }}
+          >
+            <EyeIcon className="w-4 h-4" />
+          </Button>
+        </TooltipComponent>
       </div>
     ),
   }));
 
   useEffect(() => {
     const queryFilter = new URLSearchParams(filter).toString();
-    router.push(`?${queryFilter}`);
-  }, [filter, router]);
+    const currentQuery = new URLSearchParams(window.location.search).toString();
+    
+    // Only push if the filter has actually changed
+    if (queryFilter !== currentQuery) {
+      router.push(`?${queryFilter}`).catch(() => {
+        // Ignore navigation cancellation errors
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
 
   // Handle filter modal apply
   const handleFilterApply = (appliedFilters: any) => {
@@ -220,17 +231,21 @@ export default function ReservationPage({ table, customers }: any) {
       newFilters.location = appliedFilters.location.value;
     }
     if (appliedFilters.startDate) {
-      newFilters.start_date = String(Date.parse(appliedFilters.startDate));
+      // Convert DD/MM/YYYY to Unix epoch (seconds)
+      const startTimestamp = moment(appliedFilters.startDate, "DD/MM/YYYY").unix();
+      newFilters.startDate = String(startTimestamp);
     }
     if (appliedFilters.endDate) {
-      newFilters.end_date = String(Date.parse(appliedFilters.endDate));
+      // Convert DD/MM/YYYY to Unix epoch (seconds)
+      const endTimestamp = moment(appliedFilters.endDate, "DD/MM/YYYY").unix();
+      newFilters.endDate = String(endTimestamp);
     }
 
     setFilter(newFilters);
   };
 
   return (
-    <div>
+    <div className="px-2">
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">
         <h1 className="text-2xl font-bold">List Reservations</h1>
       </div>
@@ -324,8 +339,13 @@ export default function ReservationPage({ table, customers }: any) {
                 ? { value: filter.location, label: filter.location }
                 : null,
             startDate:
-              typeof filter.startDate === "string" ? filter.startDate : "",
-            endDate: typeof filter.endDate === "string" ? filter.endDate : "",
+              typeof filter.startDate === "string" && filter.startDate
+                ? moment.unix(Number(filter.startDate)).format("DD/MM/YYYY")
+                : "",
+            endDate:
+              typeof filter.endDate === "string" && filter.endDate
+                ? moment.unix(Number(filter.endDate)).format("DD/MM/YYYY")
+                : "",
           }}
         />
       )}

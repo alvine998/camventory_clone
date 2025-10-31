@@ -15,9 +15,11 @@
     "@fullcalendar/react": "^6.1.17",
     "@fullcalendar/timegrid": "^6.1.19",
     "@headlessui/react": "^2.2.0",
+    "@radix-ui/react-tooltip": "^1.2.8",
     "@svgr/webpack": "^8.1.0",
     "apexcharts": "^5.3.5",
     "axios": "^1.8.2",
+    "clsx": "^2.1.1",
     "cookie": "^1.0.2",
     "date-fns": "^4.1.0",
     "formidable": "^3.5.3",
@@ -34,6 +36,7 @@
     "react-number-format": "^5.4.3",
     "react-select": "^5.10.1",
     "sweetalert2": "^11.17.2",
+    "tailwind-merge": "^3.3.1",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

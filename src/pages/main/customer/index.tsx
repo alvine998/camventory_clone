@@ -139,8 +139,16 @@ export default function AdministratorPage({ table }: any) {
 
   useEffect(() => {
     const queryFilter = new URLSearchParams(filter).toString();
-    router.push(`?${queryFilter}`);
-  }, [filter, router]);
+    const currentQuery = new URLSearchParams(window.location.search).toString();
+    
+    // Only push if the filter has actually changed
+    if (queryFilter !== currentQuery) {
+      router.push(`?${queryFilter}`, undefined, { shallow: true }).catch(() => {
+        // Ignore navigation cancellation errors
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
   return (
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">
