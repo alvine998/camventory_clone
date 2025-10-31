@@ -16,7 +16,9 @@ export default function TooltipComponent({
 }: TooltipComponentProps) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipTrigger className="inline-flex items-center justify-center">
+        {children}
+      </TooltipTrigger>
       <TooltipContent>{content}</TooltipContent>
     </Tooltip>
   );

@@ -235,6 +235,8 @@ export default function AdministratorPage({ table }: any) {
 
     return () => clearTimeout(delayDebounce);
   }, [filter, router]);
+
+  console.log(table, "table");
   return (
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">
