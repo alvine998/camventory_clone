@@ -155,7 +155,6 @@ export default function EditReservationPage({
       [name]: value,
     }));
   };
-  console.log(detail, "detail");
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -172,7 +171,7 @@ export default function EditReservationPage({
         : null,
       items: JSON.stringify(
         items?.map((item: any) => ({
-          uuid: item.item_id,
+          uuid: item.item_id || item.id,
           qty: item?.qty || item?.added || 1,
           type: item?.item_type || (item?.category ? "single" : "bulk"),
         })) || []
