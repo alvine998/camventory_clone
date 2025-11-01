@@ -14,6 +14,7 @@ import DataTable from "react-data-table-component";
 import { ColumnReservation } from "@/constants/column_reservation";
 import moment from "moment";
 import TooltipComponent from "@/components/TooltipComponent";
+import { getStatusBadgeColor } from "@/utils";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -138,25 +139,6 @@ export default function ReservationPage({ table, customers }: any) {
       setShow(true);
     }
   }, []);
-  // Helper function to get badge color based on status
-  const getStatusBadgeColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "confirmed":
-        return "available";
-      case "pending":
-        return "warning";
-      case "cancelled":
-        return "empty";
-      case "completed":
-        return "available";
-      case "overdue":
-        return "empty";
-      case "booked":
-        return "warning";
-      default:
-        return "custom";
-    }
-  };
 
   const data = [...table?.data].map((item, index) => ({
     ...item,

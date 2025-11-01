@@ -45,6 +45,36 @@ export default async function handler(
       });
     }
 
+    if (req.method === "PUT") {
+      const { id } = req.query;
+      
+      if (!id) {
+        return res.status(400).json({ message: "Item ID is required" });
+      }
+
+      const result = await axios.put(
+        CONFIG.API_URL + `/v1/single-items/${id}`,
+        {
+          ...req.body,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${req.cookies.token}`,
+          },
+        }
+      );
+
+      if (result.status !== 200 && result.status !== 201) {
+        return res.status(400).json({ message: result?.data?.error || result?.data?.message });
+      }
+
+      return res.status(200).json({
+        message: "Single Item updated successfully",
+        payload: { ...req.body, id },
+      });
+    }
+
     // if (req.method === 'PATCH') {
 
     //     // Simulate user creation (normally, you’d interact with DB here)

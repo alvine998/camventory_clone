@@ -6,13 +6,15 @@ import { CONFIG } from "@/config";
 import { ColumnItems } from "@/constants/column_items";
 import axios from "axios";
 import { parse } from "cookie";
-import { EyeIcon } from "lucide-react";
+import { Camera, EyeIcon } from "lucide-react";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import React, { useCallback, useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
 import FlagIcon from "../../../../public/icons/flag.svg";
+import Badge from "@/components/Badge";
+import { getStatusBadgeColor } from "@/utils";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -28,7 +30,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const { page = 1, limit = 10, search = "" } = query;
+    const { page = 1, limit = 10, search = "", location } = query;
 
     const params = new URLSearchParams({
       page: String(page),
@@ -38,6 +40,14 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     if (typeof search === "string" && search.trim() !== "") {
       params.set("search", search);
     }
+
+    if (
+      typeof location === "string" &&
+      location.trim() !== "" &&
+      location !== "all"
+    ) {
+      params.set("location", location);
+    }
     const table = await axios.get(
       `${CONFIG.API_URL}/v1/single-items?${params.toString()}`,
       {
@@ -46,7 +56,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       }
     );
-    console.log(table?.data?.data)
+
     if (table?.status === 401) {
       return {
         redirect: {
@@ -88,9 +98,10 @@ export default function AdministratorPage({ table }: any) {
     page?: number;
     limit?: number;
   }>(() => ({
-    search: typeof router.query.search === 'string' ? router.query.search : '',
-    location: typeof router.query.location === 'string' ? router.query.location : 'all',
-    bulk: typeof router.query.bulk === 'string' ? router.query.bulk : '',
+    search: typeof router.query.search === "string" ? router.query.search : "",
+    location:
+      typeof router.query.location === "string" ? router.query.location : "all",
+    bulk: typeof router.query.bulk === "string" ? router.query.bulk : "",
     page: router.query.page ? Number(router.query.page) : 1,
     limit: router.query.limit ? Number(router.query.limit) : 10,
   }));
@@ -99,8 +110,8 @@ export default function AdministratorPage({ table }: any) {
   const handleResetFilter = useCallback(() => {
     // Create a new filter object with default values
     const newFilter = {
-      search: '',
-      location: 'all',
+      search: "",
+      location: "all",
       page: 1,
       limit: filter.limit || 10, // Keep the current limit
     };
@@ -110,10 +121,12 @@ export default function AdministratorPage({ table }: any) {
 
     // Update the URL without the filter parameters
     const queryParams = new URLSearchParams();
-    queryParams.set('page', '1');
-    queryParams.set('limit', String(newFilter.limit));
+    queryParams.set("page", "1");
+    queryParams.set("limit", String(newFilter.limit));
 
-    router.push(`?${queryParams.toString()}`, undefined, { shallow: true });
+    router.push(`?${queryParams.toString()}`).catch(() => {
+      // Ignore navigation cancellation errors
+    });
   }, [filter.limit, router]);
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -125,18 +138,29 @@ export default function AdministratorPage({ table }: any) {
     number: index + 1,
     item_name: (
       <div className="flex gap-2 items-center">
-        <Image
-          src={item.full_path_image}
-          alt="image"
-          width={50}
-          height={50}
-          className="p-2"
-        />
+        {
+          item.full_path_image ? (
+            <Image
+              src={item.full_path_image}
+              alt="image"
+              width={50}
+              height={50}
+              className="p-2"
+            />
+          ) : 
+          <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded m-1">
+            <Camera className="w-6 h-6 text-gray-500" />
+          </div>
+        }
         <div>
           <h5 className="text-black">{item.name}</h5>
-          <div>
-            <p>Available</p>
-            <p>QRCode</p>
+          <div className="flex gap-2 items-center mt-1">
+            <Badge
+              color={getStatusBadgeColor(item.status_booking ?? "AVAILABLE")}
+              text={item.status_booking ?? "AVAILABLE"}
+            >
+              {item.status_booking ?? "AVAILABLE"}
+            </Badge>
             <p>{item.code}</p>
           </div>
         </div>
@@ -199,12 +223,12 @@ export default function AdministratorPage({ table }: any) {
     {
       label: "Individual Item",
       href: "/main/items",
-      isActive: currentPath === '/main/items'
+      isActive: currentPath === "/main/items",
     },
     {
       label: "Bulk Item",
       href: "/main/items/bulk",
-      isActive: currentPath === '/main/items/bulk'
+      isActive: currentPath === "/main/items/bulk",
     },
   ];
 
@@ -214,29 +238,37 @@ export default function AdministratorPage({ table }: any) {
       const queryParams = new URLSearchParams();
 
       // Always include page and limit
-      queryParams.set('page', String(filter.page || 1));
-      queryParams.set('limit', String(filter.limit || 10));
+      queryParams.set("page", String(filter.page || 1));
+      queryParams.set("limit", String(filter.limit || 10));
 
       // Include search if it exists
-      if (filter.search) {
-        queryParams.set('search', filter.search);
+      if (filter.search && filter.search.trim() !== "") {
+        queryParams.set("search", filter.search);
       }
 
       // Include location if it's not 'all'
-      if (filter.location && filter.location !== 'all') {
-        queryParams.set('location', filter.location);
+      if (filter.location && filter.location !== "all") {
+        queryParams.set("location", filter.location);
       }
 
-      // Only update URL if there are changes to avoid unnecessary re-renders
-      if (queryParams.toString() !== new URLSearchParams(router.asPath.split('?')[1] || '').toString()) {
-        router.push(`?${queryParams.toString()}`, undefined, { shallow: true });
+      // Get current query from window location
+      const currentQuery = new URLSearchParams(
+        window.location.search
+      ).toString();
+      const newQuery = queryParams.toString();
+
+      // Only push if the filter has actually changed
+      if (newQuery !== currentQuery) {
+        router.push(`?${newQuery}`).catch(() => {
+          // Ignore navigation cancellation errors
+        });
       }
     }, 500);
 
     return () => clearTimeout(delayDebounce);
-  }, [filter, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
 
-  console.log(table, "table");
   return (
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">
@@ -248,19 +280,32 @@ export default function AdministratorPage({ table }: any) {
             placeholder="Search Items"
             type="search"
             className="flex-1 min-w-[200px]"
-            value={filter.search || ''}
-            onChange={(e) => setFilter(prev => ({ ...prev, search: e.target.value, page: 1 }))}
+            value={filter.search || ""}
+            onChange={(e) =>
+              setFilter((prev) => ({
+                ...prev,
+                search: e.target.value,
+                page: 1,
+              }))
+            }
           />
           <select
             className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-            value={filter.location || 'all'}
-            onChange={(e) => setFilter(prev => ({ ...prev, location: e.target.value, page: 1 }))}
+            value={filter.location || "all"}
+            onChange={(e) =>
+              setFilter((prev) => ({
+                ...prev,
+                location: e.target.value,
+                page: 1,
+              }))
+            }
           >
             <option value="">All Locations</option>
             <option value="cipadung">Cipadung</option>
             <option value="dipatiukur">Dipatiukur</option>
           </select>
-          {(filter.search || (filter.location && filter.location !== 'all')) && (
+          {(filter.search ||
+            (filter.location && filter.location !== "all")) && (
             <button
               type="button"
               className="px-4 py-2 text-red-500 hover:text-red-600 font-medium transition-colors duration-200"
@@ -286,10 +331,11 @@ export default function AdministratorPage({ table }: any) {
           {itemTabs.map((tab) => (
             <button
               key={tab.href}
-              className={`px-4 py-2 font-medium text-sm ${tab.isActive
-                  ? 'border-b-2 border-orange-500 text-orange-600'
-                  : 'text-gray-500 hover:text-gray-700'
-                }`}
+              className={`px-4 py-2 font-medium text-sm ${
+                tab.isActive
+                  ? "border-b-2 border-orange-500 text-orange-600"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
               onClick={() => router.push(tab.href)}
             >
               {tab.label}
@@ -297,9 +343,9 @@ export default function AdministratorPage({ table }: any) {
           ))}
         </div>
       </div>
-      <div className="w-full overflow-x-auto">
+      <div className="w-full mt-4">
         {show && (
-          <div className="mt-4">
+          <div className="overflow-x-auto">
             <DataTable
               columns={ColumnItems}
               data={data}
@@ -312,12 +358,34 @@ export default function AdministratorPage({ table }: any) {
                 setFilter((prev: any) => ({ ...prev, page }))
               }
               onChangeRowsPerPage={(limit, page) => setFilter({ limit, page })}
-              responsive
+              noDataComponent="No items found"
               customStyles={{
+                table: {
+                  style: {
+                    width: "100%",
+                    minWidth: "1000px",
+                  },
+                },
+                tableWrapper: {
+                  style: {
+                    display: "table",
+                    width: "100%",
+                  },
+                },
                 headCells: {
                   style: {
                     backgroundColor: "#f3f4f6",
                     fontWeight: "bold",
+                    fontSize: "14px",
+                    paddingLeft: "16px",
+                    paddingRight: "16px",
+                  },
+                },
+                cells: {
+                  style: {
+                    fontSize: "14px",
+                    paddingLeft: "16px",
+                    paddingRight: "16px",
                   },
                 },
                 rows: {

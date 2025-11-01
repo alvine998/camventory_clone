@@ -235,13 +235,15 @@ export default function Detail({ params, detail, query }: any) {
           <div className="border border-gray-300 p-4 rounded w-full">
             <div className="border-b border-gray-300 w-full flex items-center justify-between pb-2">
               <h3 className="text-md font-bold">Information Items</h3>
-              <Button
-                variant="custom-color"
-                className="flex items-center gap-1 border border-orange-500"
-              >
-                <PencilIcon className="w-4 h-4 text-orange-500" />
-                <p className="text-xs text-orange-500">Edit</p>
-              </Button>
+              <Link href={`/main/items/${params?.id}/edit?type=single`}>
+                <Button
+                  variant="custom-color"
+                  className="flex items-center gap-1 border border-orange-500"
+                >
+                  <PencilIcon className="w-4 h-4 text-orange-500" />
+                  <p className="text-xs text-orange-500">Edit</p>
+                </Button>
+              </Link>
             </div>
 
             <div className="mt-4 grid lg:grid-cols-5 grid-cols-1 gap-10 w-full">

@@ -5,11 +5,17 @@ export const ColumnItems = [
     name: "No",
     selector: (row: any) => row.number,
     sortable: true,
+    width: "80px",
+    minWidth: "80px",
+    maxWidth: "80px",
   },
   {
     name: "Item Name",
     selector: (row: any) => row.item_name,
     sortable: true,
+    width: "300px",
+    minWidth: "300px",
+    maxWidth: "300px",
   },
   {
     name: "Brand",
@@ -48,6 +54,9 @@ export const ColumnBulkItems = [
     name: "No",
     selector: (row: any) => row.id,
     sortable: true,
+    width: "80px",
+    minWidth: "80px",
+    maxWidth: "80px",
   },
   {
     name: "Item Name",

@@ -137,11 +137,46 @@ export default function AdministratorPage({ brands, categories }: Props) {
     e.preventDefault();
     setLoading(true);
     const formData = Object.fromEntries(new FormData(e.target));
+    
+    // Validate image
+    if (!image && !images.length) {
+      Swal.fire({
+        icon: "error",
+        title: "Image Required",
+        text: "Please upload at least one image for the item.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Validate rate day
+    if (!value || Number(value.replaceAll(".", "")) <= 0) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Rate",
+        text: "Please enter a valid rate per day greater than 0.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Validate quantity for bulk items
+    if (type === "bulk" && (!formData?.qty || Number(formData.qty) <= 0)) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Quantity",
+        text: "Please enter a valid quantity greater than 0 for bulk items.",
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       const payload = {
         ...formData,
         image_path: "items/" + image,
         rate_day: Number(value?.replaceAll(".", "")),
+        purchase_price: Number(price?.replaceAll(".", "")),
         qty: Number(formData?.qty) || null,
         purchase_date: formData?.purchase_date
           ? Math.floor(
@@ -154,21 +189,89 @@ export default function AdministratorPage({ brands, categories }: Props) {
             )
           : null,
       };
+
       if (type === "bulk") {
         await axios.post("/api/items/bulk", payload);
       } else {
         await axios.post("/api/items/single", payload);
       }
+
       Swal.fire({
         icon: "success",
-        title: "User Created Successfully",
+        title: "Item Created Successfully",
+        text: `The ${type === "bulk" ? "bulk" : "single"} item has been created successfully.`,
         showConfirmButton: false,
         timer: 1500,
       });
       setLoading(false);
       router.push(`/main/items${type === "bulk" ? "/bulk" : ""}`);
     } catch (error: any) {
-      console.log(error);
+      console.error("Item creation error:", error);
+      
+      // Extract error message from different possible response structures
+      let errorMessage = "An error occurred while creating the item";
+      let errorTitle = "Item Creation Failed";
+      
+      if (error.response) {
+        // API error response
+        const responseData = error.response.data;
+        
+        // Check for message in different possible locations
+        if (responseData?.message) {
+          errorMessage = typeof responseData.message === 'string' 
+            ? responseData.message 
+            : responseData.message?.message || errorMessage;
+        } else if (responseData?.error?.message) {
+          errorMessage = responseData.error.message;
+        } else if (responseData?.error) {
+          errorMessage = typeof responseData.error === 'string' 
+            ? responseData.error 
+            : errorMessage;
+        } else if (typeof responseData === 'string') {
+          errorMessage = responseData;
+        }
+        
+        // Handle specific error status codes
+        if (error.response.status === 400) {
+          errorTitle = "Invalid Request";
+        } else if (error.response.status === 401) {
+          errorTitle = "Authentication Failed";
+          errorMessage = "Your session has expired. Please log in again.";
+        } else if (error.response.status === 403) {
+          errorTitle = "Permission Denied";
+          errorMessage = "You don't have permission to create items.";
+        } else if (error.response.status === 409) {
+          errorTitle = "Conflict Detected";
+          errorMessage = errorMessage || "An item with this name or identifier already exists.";
+        } else if (error.response.status === 422) {
+          errorTitle = "Validation Error";
+        } else if (error.response.status >= 500) {
+          errorTitle = "Server Error";
+          errorMessage = "The server encountered an error. Please try again later.";
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        errorTitle = "Network Error";
+        errorMessage = "Unable to connect to the server. Please check your internet connection.";
+      } else {
+        // Error in request setup
+        errorMessage = error.message || errorMessage;
+      }
+      
+      // Format error message for display
+      const isMultiLine = errorMessage.includes('\n') || errorMessage.length > 100;
+      
+      Swal.fire({
+        icon: "error",
+        title: errorTitle,
+        text: !isMultiLine ? errorMessage : undefined,
+        html: isMultiLine 
+          ? `<div style="text-align: left; white-space: pre-line; font-size: 14px;">${errorMessage}</div>` 
+          : undefined,
+        confirmButtonText: "OK",
+        confirmButtonColor: "#f97316",
+      });
+      
       setLoading(false);
     }
   };
