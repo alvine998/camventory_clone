@@ -62,7 +62,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           headers: { Authorization: token },
         }),
         axios.get(
-          `${CONFIG.API_URL}/v1/bulk-items?page=${page}&limit=${limit}${
+          `${CONFIG.API_URL}/v1/bulk-items?status=GOOD&page=${page}&limit=${limit}${
             search ? `&search=${search}` : ""
           }`,
           {
@@ -70,7 +70,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           }
         ),
         axios.get(
-          `${CONFIG.API_URL}/v1/single-items?page=${page}&limit=${limit}${
+          `${CONFIG.API_URL}/v1/single-items?status=GOOD&page=${page}&limit=${limit}${
             search ? `&search=${search}` : ""
           }`,
           {

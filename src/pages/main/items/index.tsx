@@ -65,6 +65,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
+    console.log(token,'token')
 
     // Optionally validate token...
     return {
@@ -133,6 +134,7 @@ export default function AdministratorPage({ table }: any) {
       setShow(true);
     }
   }, []);
+  console.log(table?.data)
   const data = [...table?.data].map((item, index) => ({
     ...item,
     number: index + 1,
@@ -153,7 +155,7 @@ export default function AdministratorPage({ table }: any) {
           </div>
         }
         <div>
-          <h5 className="text-black">{item.name}</h5>
+          <h5 className="text-black">{item.name} {item?.full_path_image || "--"}</h5>
           <div className="flex gap-2 items-center mt-1">
             <Badge
               color={getStatusBadgeColor(item.status_booking ?? "AVAILABLE")}

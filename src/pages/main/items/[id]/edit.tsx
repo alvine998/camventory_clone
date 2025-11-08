@@ -12,6 +12,11 @@ import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import moment from "moment";
 
+type OptionType = {
+  value: string | number;
+  label: string;
+};
+
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req, params } = ctx;
   const cookies = parse(req.headers.cookie || "");
@@ -27,7 +32,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    // Fetch categories and brands
     const [categories, brands, itemResult] = await Promise.all([
       axios.get(`${CONFIG.API_URL}/v1/master/categories`, {
         headers: { Authorization: `${token}` },
@@ -43,7 +47,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         ? axios.get(`${CONFIG.API_URL}/v1/single-items/${params.id}`, {
             headers: { Authorization: `${token}` },
           })
-        : Promise.resolve({ data: null }),
+        : Promise.resolve({ data: { data: null } }),
     ]);
 
     return {
@@ -86,29 +90,69 @@ export default function EditItemPage({
   const router = useRouter();
   const { id } = router.query;
   const type = itemType === "bulk" ? "bulk" : "individual";
-  const [filter, setFilter] = useState<any>({
-    brand: itemData?.brandID
-      ? { value: itemData.brandID, label: itemData.brand?.name || "" }
-      : null,
-    model: itemData?.model || "",
-  });
-  const [images, setImages] = useState<any>(
+
+  const initialBrand: OptionType | null = itemData?.brandID
+    ? {
+        value: itemData.brandID,
+        label: itemData.brand?.name || "",
+      }
+    : null;
+
+  const initialCategory: OptionType | null =
+    type === "individual" && itemData?.categoryID
+      ? {
+          value: itemData.categoryID,
+          label: itemData.category?.name || "",
+        }
+      : null;
+
+  const initialLocation: OptionType | null = itemData?.location
+    ? {
+        value: itemData.location,
+        label:
+          itemData.location.charAt(0).toUpperCase() +
+          itemData.location.slice(1),
+      }
+    : null;
+
+  const [selectedBrand, setSelectedBrand] = useState<OptionType | null>(
+    initialBrand
+  );
+  const [model, setModel] = useState<string>(itemData?.model || "");
+  const [selectedCategory, setSelectedCategory] =
+    useState<OptionType | null>(initialCategory);
+  const [selectedLocation, setSelectedLocation] =
+    useState<OptionType | null>(initialLocation);
+  const [images, setImages] = useState<string[]>(
     itemData?.full_path_image ? [itemData.full_path_image] : []
   );
-  const [image, setImage] = useState<string>(
-    itemData?.image_path?.split("/")[1] || ""
-  );
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [value, setValue] = useState(
-    itemData?.rate_day ? itemData.rate_day.toLocaleString("id-ID") : ""
+    itemData?.rate_day
+      ? Number(itemData.rate_day).toLocaleString("id-ID")
+      : ""
   );
   const [price, setPrice] = useState(
     itemData?.purchase_price
-      ? itemData.purchase_price.toLocaleString("id-ID")
+      ? Number(itemData.purchase_price).toLocaleString("id-ID")
       : ""
   );
+  const [qty, setQty] = useState<string>(
+    type === "bulk" && itemData?.qty ? String(itemData.qty) : ""
+  );
 
-  // Format number with thousand separator
+  useEffect(() => {
+    return () => {
+      images.forEach((url) => {
+        if (typeof url === "string" && url.startsWith("blob:")) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, [images]);
+
   const formatNumber = (input: string) => {
     const numeric = input.replace(/\D/g, "");
     if (!numeric) return "";
@@ -129,30 +173,83 @@ export default function EditItemPage({
 
   const handleImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
-    const arrImage: any[] = [...images];
+    if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
-      setImage(file.name);
-      const previewImage = URL.createObjectURL(file);
-      arrImage.push(previewImage);
+    const selectedFiles = Array.from(files);
+    const previewImages = selectedFiles.map((file) =>
+      URL.createObjectURL(file)
+    );
+
+    setImages((prev) => {
+      prev.forEach((url) => {
+        if (typeof url === "string" && url.startsWith("blob:")) {
+          URL.revokeObjectURL(url);
+        }
+      });
+
+      const persisted = prev.filter(
+        (url) => typeof url === "string" && !url.startsWith("blob:")
+      );
+      return [...persisted, ...previewImages];
     });
 
-    setImages(arrImage);
+    setImageFile(selectedFiles[0]);
+    setImageRemoved(false);
   };
 
-  useEffect(() => {
-    const queryFilter = new URLSearchParams(filter).toString();
-    router.push(`?${queryFilter}`);
-  }, [filter]);
+  const handleRemoveImage = (index: number) => {
+    setImages((prev) => {
+      const removedUrl = prev[index];
+
+      if (removedUrl === itemData?.full_path_image) {
+        setImageRemoved(true);
+      }
+
+      if (removedUrl && removedUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(removedUrl);
+        setImageFile(null);
+      }
+
+      return prev.filter((_, i) => i !== index);
+    });
+  };
 
   const onSubmit = async (e: any) => {
     e.preventDefault();
     setLoading(true);
     const formData = Object.fromEntries(new FormData(e.target));
 
-    // Validate rate day
-    if (!value || Number(value.replaceAll(".", "").replaceAll(",", "")) <= 0) {
+    if (!selectedBrand?.value) {
+      Swal.fire({
+        icon: "error",
+        title: "Brand Required",
+        text: "Please select a brand for the item.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (type === "individual" && !selectedCategory?.value) {
+      Swal.fire({
+        icon: "error",
+        title: "Category Required",
+        text: "Please select a category for the item.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (!selectedLocation?.value) {
+      Swal.fire({
+        icon: "error",
+        title: "Location Required",
+        text: "Please select a location for the item.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (!value || Number(value.replace(/\D/g, "")) <= 0) {
       Swal.fire({
         icon: "error",
         title: "Invalid Rate",
@@ -162,8 +259,7 @@ export default function EditItemPage({
       return;
     }
 
-    // Validate quantity for bulk items
-    if (type === "bulk" && (!formData?.qty || Number(formData.qty) <= 0)) {
+    if (type === "bulk" && (!qty || Number(qty) <= 0)) {
       Swal.fire({
         icon: "error",
         title: "Invalid Quantity",
@@ -174,14 +270,49 @@ export default function EditItemPage({
     }
 
     try {
-      const payload = {
+      const normalizedRate = Number(value.replace(/\D/g, ""));
+      const normalizedPrice = price ? Number(price.replace(/\D/g, "")) : null;
+
+      let imagePath = itemData?.image_path || null;
+
+      if (imageRemoved) {
+        imagePath = null;
+      }
+
+      if (imageFile instanceof File) {
+        const formDataImage = new FormData();
+        formDataImage.append("file", imageFile);
+        formDataImage.append("category", "items");
+
+        const uploadResponse = await axios.post("/api/upload", formDataImage, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        imagePath = uploadResponse?.data?.payload?.message || null;
+
+        if (!imagePath) {
+          throw new Error("Image upload failed. Please try again.");
+        }
+      }
+
+      const payload: any = {
         ...formData,
-        image_path: image ? "items/" + image : itemData?.image_path,
-        rate_day: Number(value.replaceAll(".", "").replaceAll(",", "")),
-        purchase_price: price
-          ? Number(price.replaceAll(".", "").replaceAll(",", ""))
-          : null,
-        qty: Number(formData?.qty) || null,
+        name:
+          `${selectedBrand?.label || itemData?.name || ""} ${model}`
+            .trim()
+            .replace(/\s+/g, " ") || itemData?.name,
+        model,
+        brandID: selectedBrand.value,
+        categoryID:
+          type === "individual"
+            ? selectedCategory?.value || itemData?.categoryID
+            : undefined,
+        location: selectedLocation.value,
+        rate_day: normalizedRate,
+        purchase_price: normalizedPrice,
+        qty: type === "bulk" ? Number(qty) : undefined,
         purchase_date: formData?.purchase_date
           ? Math.floor(
               new Date(formData?.purchase_date.toString()).getTime() / 1000
@@ -189,14 +320,29 @@ export default function EditItemPage({
           : itemData?.purchase_date
           ? moment(itemData.purchase_date).unix()
           : null,
-        warranty_date: formData?.warranty_date
-          ? Math.floor(
-              new Date(formData?.warranty_date.toString()).getTime() / 1000
-            )
-          : itemData?.warranty_date
-          ? moment(itemData.warranty_date).unix()
-          : null,
+        warranty_date:
+          type === "individual"
+            ? formData?.warranty_date
+              ? Math.floor(
+                  new Date(formData?.warranty_date.toString()).getTime() / 1000
+                )
+              : itemData?.warranty_date
+              ? moment(itemData.warranty_date).unix()
+              : null
+            : undefined,
       };
+
+      if (imageRemoved || imageFile instanceof File || imagePath) {
+        payload.image_path = imagePath;
+      }
+
+      if (type !== "individual") {
+        delete payload.categoryID;
+      }
+
+      if (type !== "bulk") {
+        delete payload.qty;
+      }
 
       if (type === "bulk") {
         await axios.put(`/api/items/bulk?id=${id}`, payload);
@@ -218,15 +364,12 @@ export default function EditItemPage({
     } catch (error: any) {
       console.error("Item update error:", error);
 
-      // Extract error message from different possible response structures
       let errorMessage = "An error occurred while updating the item";
       let errorTitle = "Item Update Failed";
 
       if (error.response) {
-        // API error response
         const responseData = error.response.data;
 
-        // Check for message in different possible locations
         if (responseData?.message) {
           errorMessage =
             typeof responseData.message === "string"
@@ -243,7 +386,6 @@ export default function EditItemPage({
           errorMessage = responseData;
         }
 
-        // Handle specific error status codes
         if (error.response.status === 400) {
           errorTitle = "Invalid Request";
         } else if (error.response.status === 401) {
@@ -264,16 +406,13 @@ export default function EditItemPage({
           errorMessage = "The server encountered an error. Please try again later.";
         }
       } else if (error.request) {
-        // Request was made but no response received
         errorTitle = "Network Error";
         errorMessage =
           "Unable to connect to the server. Please check your internet connection.";
       } else {
-        // Error in request setup
         errorMessage = error.message || errorMessage;
       }
 
-      // Format error message for display
       const isMultiLine =
         errorMessage.includes("\n") || errorMessage.length > 100;
 
@@ -352,8 +491,10 @@ export default function EditItemPage({
                   fullWidth
                   required
                   name="brandID"
-                  value={filter.brand}
-                  onChange={(e) => setFilter({ ...filter, brand: e })}
+                  value={selectedBrand}
+                  onChange={(selectedOption: any) =>
+                    setSelectedBrand(selectedOption as OptionType | null)
+                  }
                 />
                 <Input
                   placeholder="Model"
@@ -361,10 +502,8 @@ export default function EditItemPage({
                   name="model"
                   fullWidth
                   required
-                  defaultValue={itemData?.model || ""}
-                  onChange={(e) =>
-                    setFilter({ ...filter, model: e.target.value })
-                  }
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
                 />
               </div>
               <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
@@ -375,9 +514,13 @@ export default function EditItemPage({
                   fullWidth
                   readOnly
                   required
-                  value={`${filter?.brand?.label || itemData?.name || "Item Name"} ${
-                    filter?.model || ""
-                  }`.trim()}
+                  value={
+                    `${selectedBrand?.label || itemData?.name || "Item Name"} ${
+                      model || ""
+                    }`
+                      .trim()
+                      .replace(/\s+/g, " ")
+                  }
                 />
                 <Select
                   options={[
@@ -395,15 +538,9 @@ export default function EditItemPage({
                   fullWidth
                   required
                   name="location"
-                  value={
-                    itemData?.location
-                      ? {
-                          label:
-                            itemData.location.charAt(0).toUpperCase() +
-                            itemData.location.slice(1),
-                          value: itemData.location,
-                        }
-                      : null
+                  value={selectedLocation}
+                  onChange={(selectedOption: any) =>
+                    setSelectedLocation(selectedOption as OptionType | null)
                   }
                 />
               </div>
@@ -489,7 +626,8 @@ export default function EditItemPage({
                     fullWidth
                     required
                     type="number"
-                    defaultValue={itemData?.qty || ""}
+                    value={qty}
+                    onChange={(e) => setQty(e.target.value)}
                   />
                 ) : (
                   <Select
@@ -502,13 +640,9 @@ export default function EditItemPage({
                     fullWidth
                     required
                     name="categoryID"
-                    value={
-                      itemData?.categoryID
-                        ? {
-                            label: itemData.category?.name || "",
-                            value: itemData.categoryID,
-                          }
-                        : null
+                    value={selectedCategory}
+                    onChange={(selectedOption: any) =>
+                      setSelectedCategory(selectedOption as OptionType | null)
                     }
                   />
                 )}
@@ -524,15 +658,13 @@ export default function EditItemPage({
                 multiple
               />
               <div className="flex sm:flex-row flex-col gap-4 mt-4">
-                {images.map((url: any, i: number) => (
+                {images.map((url, i) => (
                   <div className="relative" key={i}>
                     <button
                       type="button"
                       className="absolute top-1 right-1 bg-red-500 rounded-full p-1"
                       onClick={() =>
-                        setImages(
-                          images.filter((_: any, index: number) => index !== i)
-                        )
+                        handleRemoveImage(i)
                       }
                     >
                       <XIcon className="w-4 h-4" color="white" />

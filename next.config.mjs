@@ -11,6 +11,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'pub-01ab921568614e369e392f548902259d.r2.dev',
       },
+      {
+        protocol: 'https',
+        hostname: 'api-cdn.softmate.my.id',
+      },
     ]
   },
   webpack: (config) => {

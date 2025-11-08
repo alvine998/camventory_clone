@@ -98,6 +98,7 @@ export default function Detail({ params, detail, query }: any) {
   const itemDetail: IItems = detail?.data;
   const [qty, setQty] = useState<number>(1);
   const [toggle, setToggle] = useState<boolean>(true);
+  console.log(itemDetail, "detail");
   const itemInformation = [
     {
       label: "Item Name",
@@ -257,6 +258,7 @@ export default function Detail({ params, detail, query }: any) {
                       width={50}
                       height={50}
                       className={"w-auto h-auto"}
+                      unoptimized
                     />
                   ) : (
                     <p className="text-xs font-bold">{item.value}</p>
@@ -284,10 +286,20 @@ export default function Detail({ params, detail, query }: any) {
                   width={20}
                   height={20}
                   className={"w-auto h-auto"}
+                  unoptimized
                 />
                 <p className="text-xs text-orange-500">Action</p>
               </Button>
             </div>
+
+            <Image
+              alt="icon"
+              src={itemDetail?.full_path_image || ""}
+              width={50}
+              height={50}
+              className={"w-auto h-auto"}
+              unoptimized
+            />
 
             <div className="mt-4 grid lg:grid-cols-2 grid-cols-1 gap-10">
               <div className="flex flex-col gap-2">
@@ -304,6 +316,7 @@ export default function Detail({ params, detail, query }: any) {
                         width={50}
                         height={50}
                         className={"w-auto h-auto"}
+                        unoptimized
                       />
                     ) : (
                       <p className="text-xs font-bold">{item.value}</p>
@@ -325,6 +338,7 @@ export default function Detail({ params, detail, query }: any) {
                         width={50}
                         height={50}
                         className={"w-auto h-auto"}
+                        unoptimized
                       />
                     ) : (
                       <p className="text-xs font-bold">{item.value}</p>
@@ -381,6 +395,7 @@ export default function Detail({ params, detail, query }: any) {
                         src="/icons/barcode.svg"
                         width={20}
                         height={20}
+                        unoptimized
                       />
                       <p className="text-xs">{tracker.value}</p>
                     </div>

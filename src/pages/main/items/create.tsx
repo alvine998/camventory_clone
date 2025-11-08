@@ -116,6 +116,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
       setImage(files[0]?.name);
       const previewImage = URL.createObjectURL(file);
       arrImage.push(previewImage);
+      setImage(files[0]);
       // formData.append("files", file); // Note: same field name "files"
     });
 
@@ -137,7 +138,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
     e.preventDefault();
     setLoading(true);
     const formData = Object.fromEntries(new FormData(e.target));
-    
+
     // Validate image
     if (!image && !images.length) {
       Swal.fire({
@@ -171,10 +172,29 @@ export default function AdministratorPage({ brands, categories }: Props) {
       return;
     }
 
+    const formDataImage = new FormData();
+    formDataImage.append("file", image);
+    formDataImage.append("category", "items");
+
+    const urlImage = await axios.post("/api/upload", formDataImage, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    if (!urlImage) {
+      Swal.fire({
+        icon: "error",
+        title: "Image Required",
+        text: "Please upload at least one image for the item.",
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       const payload = {
         ...formData,
-        image_path: "items/" + image,
+        image_path: urlImage?.data?.payload?.message || null,
         rate_day: Number(value?.replaceAll(".", "")),
         purchase_price: Number(price?.replaceAll(".", "")),
         qty: Number(formData?.qty) || null,
@@ -199,7 +219,9 @@ export default function AdministratorPage({ brands, categories }: Props) {
       Swal.fire({
         icon: "success",
         title: "Item Created Successfully",
-        text: `The ${type === "bulk" ? "bulk" : "single"} item has been created successfully.`,
+        text: `The ${
+          type === "bulk" ? "bulk" : "single"
+        } item has been created successfully.`,
         showConfirmButton: false,
         timer: 1500,
       });
@@ -207,30 +229,32 @@ export default function AdministratorPage({ brands, categories }: Props) {
       router.push(`/main/items${type === "bulk" ? "/bulk" : ""}`);
     } catch (error: any) {
       console.error("Item creation error:", error);
-      
+
       // Extract error message from different possible response structures
       let errorMessage = "An error occurred while creating the item";
       let errorTitle = "Item Creation Failed";
-      
+
       if (error.response) {
         // API error response
         const responseData = error.response.data;
-        
+
         // Check for message in different possible locations
         if (responseData?.message) {
-          errorMessage = typeof responseData.message === 'string' 
-            ? responseData.message 
-            : responseData.message?.message || errorMessage;
+          errorMessage =
+            typeof responseData.message === "string"
+              ? responseData.message
+              : responseData.message?.message || errorMessage;
         } else if (responseData?.error?.message) {
           errorMessage = responseData.error.message;
         } else if (responseData?.error) {
-          errorMessage = typeof responseData.error === 'string' 
-            ? responseData.error 
-            : errorMessage;
-        } else if (typeof responseData === 'string') {
+          errorMessage =
+            typeof responseData.error === "string"
+              ? responseData.error
+              : errorMessage;
+        } else if (typeof responseData === "string") {
           errorMessage = responseData;
         }
-        
+
         // Handle specific error status codes
         if (error.response.status === 400) {
           errorTitle = "Invalid Request";
@@ -242,36 +266,41 @@ export default function AdministratorPage({ brands, categories }: Props) {
           errorMessage = "You don't have permission to create items.";
         } else if (error.response.status === 409) {
           errorTitle = "Conflict Detected";
-          errorMessage = errorMessage || "An item with this name or identifier already exists.";
+          errorMessage =
+            errorMessage ||
+            "An item with this name or identifier already exists.";
         } else if (error.response.status === 422) {
           errorTitle = "Validation Error";
         } else if (error.response.status >= 500) {
           errorTitle = "Server Error";
-          errorMessage = "The server encountered an error. Please try again later.";
+          errorMessage =
+            "The server encountered an error. Please try again later.";
         }
       } else if (error.request) {
         // Request was made but no response received
         errorTitle = "Network Error";
-        errorMessage = "Unable to connect to the server. Please check your internet connection.";
+        errorMessage =
+          "Unable to connect to the server. Please check your internet connection.";
       } else {
         // Error in request setup
         errorMessage = error.message || errorMessage;
       }
-      
+
       // Format error message for display
-      const isMultiLine = errorMessage.includes('\n') || errorMessage.length > 100;
-      
+      const isMultiLine =
+        errorMessage.includes("\n") || errorMessage.length > 100;
+
       Swal.fire({
         icon: "error",
         title: errorTitle,
         text: !isMultiLine ? errorMessage : undefined,
-        html: isMultiLine 
-          ? `<div style="text-align: left; white-space: pre-line; font-size: 14px;">${errorMessage}</div>` 
+        html: isMultiLine
+          ? `<div style="text-align: left; white-space: pre-line; font-size: 14px;">${errorMessage}</div>`
           : undefined,
         confirmButtonText: "OK",
         confirmButtonColor: "#f97316",
       });
-      
+
       setLoading(false);
     }
   };
