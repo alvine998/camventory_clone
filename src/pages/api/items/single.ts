@@ -53,7 +53,7 @@ export default async function handler(
       }
       console.log(req.body, "req.body")
 
-      const result = await axios.put(
+      const result = await axios.patch(
         CONFIG.API_URL + `/v1/single-items/${id}`,
         {
           ...req.body,

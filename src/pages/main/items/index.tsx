@@ -154,7 +154,7 @@ export default function AdministratorPage({ table }: any) {
           </div>
         }
         <div>
-          <h5 className="text-black">{item.name} {item?.full_path_image || "--"}</h5>
+          <h5 className="text-black">{item.name}</h5>
           <div className="flex gap-2 items-center mt-1">
             <Badge
               color={getStatusBadgeColor(item.status_booking ?? "AVAILABLE")}
