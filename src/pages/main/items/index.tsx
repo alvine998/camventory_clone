@@ -134,7 +134,6 @@ export default function AdministratorPage({ table }: any) {
       setShow(true);
     }
   }, []);
-  console.log(table?.data)
   const data = [...table?.data].map((item, index) => ({
     ...item,
     number: index + 1,

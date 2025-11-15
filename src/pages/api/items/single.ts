@@ -51,6 +51,7 @@ export default async function handler(
       if (!id) {
         return res.status(400).json({ message: "Item ID is required" });
       }
+      console.log(req.body, "req.body")
 
       const result = await axios.put(
         CONFIG.API_URL + `/v1/single-items/${id}`,

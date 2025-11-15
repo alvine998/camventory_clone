@@ -94,7 +94,7 @@ export default function EditItemPage({
   const initialBrand: OptionType | null = itemData?.brandID
     ? {
         value: itemData.brandID,
-        label: itemData.brand?.name || "",
+        label: itemData?.name?.split(" ")[0] || "",
       }
     : null;
 
@@ -102,7 +102,7 @@ export default function EditItemPage({
     type === "individual" && itemData?.categoryID
       ? {
           value: itemData.categoryID,
-          label: itemData.category?.name || "",
+          label: categories?.find((item: any) => item.id === itemData.categoryID)?.name || "",
         }
       : null;
 
@@ -290,7 +290,7 @@ export default function EditItemPage({
           },
         });
 
-        imagePath = uploadResponse?.data?.payload?.message || null;
+        imagePath = `${CONFIG.IMAGE_URL}/${uploadResponse?.data?.payload?.message}` || null;
 
         if (!imagePath) {
           throw new Error("Image upload failed. Please try again.");
@@ -299,6 +299,8 @@ export default function EditItemPage({
 
       const payload: any = {
         ...formData,
+        image_path: imageFile?.name || itemData?.image_path,
+        full_path_image: imagePath || itemData?.full_path_image,
         name:
           `${selectedBrand?.label || itemData?.name || ""} ${model}`
             .trim()
@@ -309,7 +311,7 @@ export default function EditItemPage({
           type === "individual"
             ? selectedCategory?.value || itemData?.categoryID
             : undefined,
-        location: selectedLocation.value,
+        pickup_location: selectedLocation.value,
         rate_day: normalizedRate,
         purchase_price: normalizedPrice,
         qty: type === "bulk" ? Number(qty) : undefined,
@@ -349,6 +351,8 @@ export default function EditItemPage({
       } else {
         await axios.put(`/api/items/single?id=${id}`, payload);
       }
+
+      console.log(payload, "payload")
 
       Swal.fire({
         icon: "success",
