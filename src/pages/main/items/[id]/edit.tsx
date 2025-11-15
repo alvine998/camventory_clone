@@ -290,7 +290,7 @@ export default function EditItemPage({
           },
         });
 
-        imagePath = `${CONFIG.IMAGE_URL}/${uploadResponse?.data?.payload?.message}` || null;
+        imagePath = `${uploadResponse?.data?.payload?.message}` || null;
 
         if (!imagePath) {
           throw new Error("Image upload failed. Please try again.");
@@ -351,8 +351,6 @@ export default function EditItemPage({
       } else {
         await axios.put(`/api/items/single?id=${id}`, payload);
       }
-
-      console.log(payload, "payload")
 
       Swal.fire({
         icon: "success",
