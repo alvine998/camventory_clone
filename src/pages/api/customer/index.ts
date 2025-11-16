@@ -12,12 +12,13 @@ type Data = {
         id?: string;
         path_ktp: string;
         data?: string;
+        email: string;
     }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
     try {
-        const { nik, name, phone_number, instagram_acc, path_ktp, id } = req.body
+        const { nik, name, phone_number, instagram_acc, path_ktp, id, email } = req.body
         const requiredBody = ["nik", "name", "phone_number", "instagram_acc", "path_ktp"];
 
         if (req.method === 'POST') {
@@ -31,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             }
 
             const result = await axios.post(CONFIG.API_URL + '/v1/customers', {
-                nik, name, phone_number, instagram_acc, path_ktp
+                nik, name, phone_number, instagram_acc, path_ktp, email
             }, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -45,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
             return res.status(201).json({
                 message: 'User created successfully',
-                payload: { nik, name, phone_number, instagram_acc, path_ktp, id },
+                payload: { nik, name, phone_number, instagram_acc, path_ktp, id, email },
             })
         }
 
@@ -60,7 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             }
 
             const result = await axios.patch(CONFIG.API_URL + '/v1/customers' + `/${id}`, {
-                nik, name, phone_number, instagram_acc, path_ktp
+                nik, name, phone_number, instagram_acc, path_ktp, email
             }, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -74,7 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
             return res.status(201).json({
                 message: 'Customer updated successfully',
-                payload: { nik, name, phone_number, instagram_acc, path_ktp, id },
+                payload: { nik, name, phone_number, instagram_acc, path_ktp, id, email },
             })
         }
 
