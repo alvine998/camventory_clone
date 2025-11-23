@@ -143,7 +143,7 @@ export default function AdministratorPage({ table }: any) {
     
     // Only push if the filter has actually changed
     if (queryFilter !== currentQuery) {
-      router.push(`?${queryFilter}`, undefined, { shallow: true }).catch(() => {
+      router.push(`?${queryFilter}`).catch(() => {
         // Ignore navigation cancellation errors
       });
     }
@@ -183,7 +183,9 @@ export default function AdministratorPage({ table }: any) {
               onChangePage={(page) =>
                 setFilter((prev: any) => ({ ...prev, page }))
               }
-              onChangeRowsPerPage={(limit, page) => setFilter({ limit, page })}
+              onChangeRowsPerPage={(limit, page) =>
+                setFilter((prev: any) => ({ ...prev, limit, page }))
+              }
               responsive
               customStyles={{
                 headCells: {

@@ -40,9 +40,9 @@ export default function CustomerCreateModal({ open, setOpen }: Props) {
       });
       const { message } = response.data.payload;
       setMetaFile({
-        ...metaFile,
         file: file,
         path: message,
+        preview: URL.createObjectURL(file),
       });
       setLoading(false);
     } catch (error) {
@@ -56,12 +56,13 @@ export default function CustomerCreateModal({ open, setOpen }: Props) {
     setLoading(true);
     const formData = Object.fromEntries(new FormData(e.target));
     try {
-      if (metaFile?.file !== null) {
-        onUpload(metaFile?.file);
+      // If there's a new file but no path yet, wait for upload to complete
+      if (metaFile?.file && !metaFile?.path) {
+        await onUpload(metaFile.file);
       }
       const payload = {
         ...formData,
-        path_ktp: metaFile?.path,
+        path_ktp: metaFile?.path || null,
       };
       await axios.post("/api/customer", payload);
       Swal.fire({
@@ -173,11 +174,13 @@ export default function CustomerCreateModal({ open, setOpen }: Props) {
             type="file"
             onChange={(e: any) => {
               if (e.target.files[0]) {
+                const file = e.target.files[0];
                 setMetaFile({
-                  file: e.target.files[0],
+                  file: file,
                   path: null,
-                  preview: URL.createObjectURL(e.target.files[0]),
+                  preview: URL.createObjectURL(file),
                 });
+                onUpload(file);
               }
             }}
           />
