@@ -32,15 +32,32 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
 
     let result = null;
+    let reservation = null;
     if (query.type === "bulk" && params) {
       result = await axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
         headers: {
           Authorization: `${token}`,
         },
       });
+      reservation = await axios.get(
+        `${CONFIG.API_URL}/v1/bulk-items/${params.id}/detail/reservations`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      );
     } else if (query.type === "single" && params) {
       result = await axios.get(
         `${CONFIG.API_URL}/v1/single-items/${params.id}`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      );
+      reservation = await axios.get(
+        `${CONFIG.API_URL}/v1/single-items/${params.id}/detail/reservations`,
         {
           headers: {
             Authorization: `${token}`,
@@ -51,15 +68,25 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       throw new Error(`Invalid query.type: ${query.type}`);
     }
 
+    if (reservation.status !== 200) {
+      throw new Error(
+        `API request failed with status code ${reservation.status}`
+      );
+    }
+
     if (result.status !== 200) {
       throw new Error(`API request failed with status code ${result.status}`);
     }
 
     // Optionally validate token...
-    return { props: { params, detail: result?.data, query } };
-
-    // Optionally validate token...
-    return { props: { params } };
+    return {
+      props: {
+        params,
+        detail: result?.data,
+        query,
+        reservation: reservation?.data?.data,
+      },
+    };
   } catch (error: any) {
     console.log(error);
     if (error?.response?.status === 401) {
@@ -76,7 +103,67 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   }
 };
 
-export default function Reservations({ params, detail, query }: any) {
+const ReservationItem = ({ reservation }: any) => {
+  return (
+    <div key={reservation.id}>
+      <div className="mt-2 border-t border-gray-300 py-4">
+        <div className="border border-gray-300 rounded p-4 w-full flex gap-2 items-center justify-between">
+          <div className="flex items-center gap-2">
+            <UserCircle2Icon className="w-8 h-8 text-gray-500" />
+            <div>
+              <label className="text-gray-500 text-xs" htmlFor="customer_name">
+                Customer
+              </label>
+              <p className="text-xs font-bold">{reservation.customer_name}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-orange-300 flex items-center justify-center p-1">
+              <CalendarIcon className="w-5 h-5 text-orange-600" />
+            </div>
+            <div>
+              <label className="text-gray-500 text-xs" htmlFor="startdate">
+                From
+              </label>
+              <p className="text-xs font-bold">
+                {moment(reservation.start_date).format("MMM DD, YYYY")}
+              </p>
+            </div>
+            <div>
+              <label className="text-gray-500 text-xs" htmlFor="enddate">
+                To
+              </label>
+              <p className="text-xs font-bold">
+                {moment(reservation.end_date).format("MMM DD, YYYY")}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-orange-300 flex items-center justify-center p-1">
+              <MapPinIcon className="w-5 h-5 text-orange-600" />
+            </div>
+            <div>
+              <label className="text-gray-500 text-xs" htmlFor="location">
+                Location
+              </label>
+              <p className="text-xs font-bold">{reservation.location || "-"}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function Reservations({
+  params,
+  detail,
+  query,
+  reservation,
+}: any) {
+  console.log(reservation, "detail reservations");
   return (
     <div className="p-2">
       <Header detail={detail?.data} query={query} />
@@ -95,65 +182,15 @@ export default function Reservations({ params, detail, query }: any) {
               </p>
             </div>
           </div>
-          <div className="mt-2 border-t border-gray-300 py-4">
-            <div className="border border-gray-300 rounded p-4 w-full flex gap-2 items-center justify-between">
-              <div className="flex items-center gap-2">
-                <UserCircle2Icon className="w-8 h-8 text-gray-500" />
-                <div>
-                  <label
-                    className="text-gray-500 text-xs"
-                    htmlFor="customer_name"
-                  >
-                    Customer
-                  </label>
-                  <p className="text-xs font-bold">Ricky Abdullah</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-orange-300 flex items-center justify-center p-1">
-                  <CalendarIcon className="w-5 h-5 text-orange-600" />
-                </div>
-                <div>
-                  <label
-                    className="text-gray-500 text-xs"
-                    htmlFor="customer_name"
-                  >
-                    From
-                  </label>
-                  <p className="text-xs font-bold">
-                    {moment().format("MMM DD, YYYY")}
-                  </p>
-                </div>
-                <div>
-                  <label
-                    className="text-gray-500 text-xs"
-                    htmlFor="customer_name"
-                  >
-                    To
-                  </label>
-                  <p className="text-xs font-bold">
-                    {moment().format("MMM DD, YYYY")}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-orange-300 flex items-center justify-center p-1">
-                  <MapPinIcon className="w-5 h-5 text-orange-600" />
-                </div>
-                <div>
-                  <label
-                    className="text-gray-500 text-xs"
-                    htmlFor="customer_name"
-                  >
-                    Location
-                  </label>
-                  <p className="text-xs font-bold">Cipadung</p>
-                </div>
-              </div>
+          {reservation?.count > 0 ? (
+            reservation?.data?.map((item: any) => (
+              <ReservationItem key={item.id} reservation={item} />
+            ))
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-gray-500">No reservation found</p>
             </div>
-          </div>
+          )}
         </div>
         <div className="w-1/2">
           <div className="border border-gray-300 rounded p-4">
