@@ -5,7 +5,7 @@ import { CalendarDays, Upload } from "lucide-react";
 import { format } from "date-fns";
 import moment from "moment";
 import dynamic from "next/dynamic";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { CONFIG } from "@/config";
 import { parse } from "cookie";
@@ -57,17 +57,6 @@ const chartOptions: ApexCharts.ApexOptions = {
   },
   colors: ["#f97316"], // Orange color to match your theme
 };
-
-// Sample data for the chart
-const chartSeries = [
-  {
-    name: "Sales",
-    data: Array.from(
-      { length: 30 },
-      () => Math.floor(Math.random() * 1000) + 500
-    ),
-  },
-];
 
 const parseDateString = (dateStr: string): Date => {
   if (!dateStr) return new Date();
@@ -225,6 +214,58 @@ export default function SalesSummaryPage({ initialReportData, dateRange }: any) 
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted, date]);
+
+  // Build chart data from API response
+  const { chartCategories, chartSeries } = useMemo(() => {
+    const emptyResult = {
+      chartCategories: chartOptions.xaxis?.categories as string[],
+      chartSeries: [
+        {
+          name: "Sales",
+          data:
+            (chartOptions.xaxis?.categories as string[])?.map(() => 0) ?? [],
+        },
+      ],
+    };
+
+    if (!reportData || !reportData.sum_by_date) {
+      return emptyResult;
+    }
+
+    // Sort dates ascending (tries to handle ISO or generic date strings)
+    const entries = Object.entries(reportData.sum_by_date).sort(
+      ([dateA], [dateB]) =>
+        moment(dateA, moment.ISO_8601).valueOf() -
+        moment(dateB, moment.ISO_8601).valueOf()
+    );
+
+    const chartCategories = entries.map(([date]) =>
+      moment(date, moment.ISO_8601).isValid()
+        ? moment(date, moment.ISO_8601).format("DD MMM")
+        : date
+    );
+
+    const chartSeries = [
+      {
+        name: "Sales",
+        data: entries.map(([, value]) => value ?? 0),
+      },
+    ];
+
+    return { chartCategories, chartSeries };
+  }, [reportData]);
+
+  const mergedChartOptions: ApexCharts.ApexOptions = useMemo(
+    () => ({
+      ...chartOptions,
+      xaxis: {
+        ...(chartOptions.xaxis || {}),
+        categories: chartCategories,
+      },
+    }),
+    [chartCategories]
+  );
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-orange-500">Sales Summary</h1>
@@ -265,7 +306,7 @@ export default function SalesSummaryPage({ initialReportData, dateRange }: any) 
         {isMounted && (
           <div className="w-full">
             <Chart
-              options={chartOptions}
+              options={mergedChartOptions}
               series={chartSeries}
               type="line"
               height={350}
