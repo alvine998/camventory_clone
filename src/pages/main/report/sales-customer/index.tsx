@@ -12,6 +12,8 @@ import { parse } from "cookie";
 import DataTable from "react-data-table-component";
 import Input from "@/components/Input";
 import { ColumnSalesCustomer } from "@/constants/column_sales-customer";
+import { useRouter } from "next/router";
+import Select from "@/components/Select";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -27,29 +29,44 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const { page = 1, limit = 100, search = "" } = query;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = "",
+      startDate = "",
+      endDate = "",
+    } = query;
 
-    const params = new URLSearchParams({
-      page: String(page),
-      limit: String(limit),
-      bulk: String(query.bulk || ""),
-      location: String(query.location || ""),
-    });
+    const startDateStr =
+      (startDate as string) || moment().format("DD/MM/YYYY");
+    const endDateStr =
+      (endDate as string) || moment().add(30, "days").format("DD/MM/YYYY");
 
-    if (typeof search === "string" && search.trim() !== "") {
-      params.set("search", search);
+    const startTimestamp = moment(startDateStr, "DD/MM/YYYY").unix();
+    const endTimestamp = moment(endDateStr, "DD/MM/YYYY").unix();
+
+    const params: any = {
+      page,
+      limit,
+      startDate: startTimestamp,
+      endDate: endTimestamp,
+    };
+
+    if (typeof sortBy === "string" && sortBy.trim() !== "") {
+      params.sortBy = sortBy;
     }
 
-    const categories = await axios.get(
-      `${CONFIG.API_URL}/v1/master/categories?${params.toString()}`,
+    const reportResponse = await axios.get(
+      `${CONFIG.API_URL}/v1/report/customer`,
       {
+        params,
         headers: {
           Authorization: `${token}`,
         },
       }
     );
 
-    if (categories?.status === 401) {
+    if (reportResponse?.status === 401) {
       return {
         redirect: {
           destination: "/",
@@ -58,10 +75,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    // Optionally validate token...
-    // Normalize the response to always be { data: Category[], total?: number, ... }
     return {
-      props: { categories: categories?.data?.data || [] },
+      props: {
+        reportData: reportResponse.data?.data || null,
+        dateRange: { start: startDateStr, end: endDateStr },
+        initialSortBy: sortBy || "",
+      },
     };
   } catch (error: any) {
     console.log(error);
@@ -73,9 +92,15 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    // Ensure consistent shape on error
     return {
-      props: { table: { data: [], total: 0 } },
+      props: {
+        reportData: null,
+        dateRange: {
+          start: moment().format("DD/MM/YYYY"),
+          end: moment().add(30, "days").format("DD/MM/YYYY"),
+        },
+        initialSortBy: "",
+      },
     };
   }
 };
@@ -93,19 +118,51 @@ const parseDateString = (dateStr: string): Date => {
   return date;
 };
 
-export default function SalesProductPage() {
+interface Props {
+  reportData: any;
+  dateRange: { start: string; end: string };
+  initialSortBy: string;
+}
+
+export default function SalesProductPage({
+  reportData,
+  dateRange,
+  initialSortBy,
+}: Props) {
+  const router = useRouter();
+  const { query } = router;
+
   const [date, setDate] = useState({
-    start: moment().format("DD/MM/YYYY"),
-    end: moment().add(30, "days").format("DD/MM/YYYY"),
+    start: dateRange?.start || moment().format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
   });
+  const [sortBy, setSortBy] = useState<string>(initialSortBy || "");
+
+  const currentPage = Number(query.page) || 1;
+  const rowsPerPage = Number(query.limit) || 10;
+
   // Function to handle pagination
-  const handlePageChange = () => {
-    // Handle page change logic here
+  const handlePageChange = (page: number) => {
+    router.push({
+      pathname: router.pathname,
+      query: {
+        ...query,
+        page,
+        limit: rowsPerPage,
+      },
+    });
   };
 
   // Function to handle rows per page change
-  const handleRowsPerPageChange = () => {
-    // Handle rows per page change logic here
+  const handleRowsPerPageChange = (newPerPage: number, page: number) => {
+    router.push({
+      pathname: router.pathname,
+      query: {
+        ...query,
+        page,
+        limit: newPerPage,
+      },
+    });
   };
   const [modal, setModal] = useState<useModal>();
   const [isMounted, setIsMounted] = useState(false);
@@ -136,7 +193,30 @@ export default function SalesProductPage() {
               {date.start} - {date.end}
             </p>
           </button>
-          <Input type="search" placeholder="Search Product" />
+          <Input type="search" placeholder="Search Customer" />
+          <Select
+            defaultValue={sortBy}
+            options={[
+              { label: "Total Transaction (High - Low)", value: "total_desc" },
+              { label: "Total Transaction (Low - High)", value: "total_asc" },
+              { label: "Total Visit (High - Low)", value: "visit_desc" },
+              { label: "Total Visit (Low - High)", value: "visit_asc" },
+            ]}
+            onChange={(value) => {
+              const selected = value as { value?: string } | null;
+              const sort = selected?.value || "";
+              setSortBy(sort);
+              router.push({
+                pathname: router.pathname,
+                query: {
+                  ...query,
+                  sortBy: sort,
+                  page: 1,
+                },
+              });
+            }}
+            placeholder="Urutkan Berdasarkan"
+          />
         </div>
         <div>
           <Button
@@ -157,59 +237,35 @@ export default function SalesProductPage() {
         <div className="mt-4">
           <DataTable
             columns={ColumnSalesCustomer}
-            data={[
-              {
-                customer_name: "John Doe",
-                phone_number: "081234567890",
-                total_visit: 10,
-                total_transaction: 1000000,
+            data={
+              reportData?.data_list?.map((item: any) => ({
+                customer_id: item.customer_id,
+                customer_name: item.name,
+                phone_number: item.phone_number,
+                total_visit: item.total_visit,
+                total_transaction: item.total,
                 action: (
                   <Button
                     type="button"
                     title="View"
                     variant="submit"
                     className="flex items-center gap-2"
+                    onClick={() =>
+                      router.push(
+                        `/main/report/sales-customer/${item.customer_id}`
+                      )
+                    }
                   >
                     <Eye className="w-4 h-4 text-white" />
                   </Button>
                 ),
-              },
-              {
-                customer_name: "Jane Doe",
-                phone_number: "081234567890",
-                total_visit: 10,
-                total_transaction: 1000000,
-                action: (
-                  <Button
-                    type="button"
-                    title="View"
-                    variant="submit"
-                    className="flex items-center gap-2"
-                  >
-                    <Eye className="w-4 h-4 text-white" />
-                  </Button>
-                ),
-              },
-              {
-                customer_name: "John Doe",
-                phone_number: "081234567890",
-                total_visit: 10,
-                total_transaction: 1000000,
-                action: (
-                  <Button
-                    type="button"
-                    title="View"
-                    variant="submit"
-                    className="flex items-center gap-2"
-                  >
-                    <Eye className="w-4 h-4 text-white" />
-                  </Button>
-                ),
-              },
-            ]}
+              })) || []
+            }
             pagination
             highlightOnHover
-            paginationTotalRows={0}
+            paginationDefaultPage={currentPage}
+            paginationPerPage={rowsPerPage}
+            paginationTotalRows={reportData?.count || 0}
             paginationRowsPerPageOptions={[10, 20, 50, 100]}
             paginationServer
             onChangePage={handlePageChange}
@@ -261,9 +317,22 @@ export default function SalesProductPage() {
                   throw new Error("Invalid date");
                 }
 
+                const startStr = format(startDate, "dd/MM/yyyy");
+                const endStr = format(endDate, "dd/MM/yyyy");
+
                 setDate({
-                  start: format(startDate, "dd/MM/yyyy"),
-                  end: format(endDate, "dd/MM/yyyy"),
+                  start: startStr,
+                  end: endStr,
+                });
+
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...query,
+                    startDate: startStr,
+                    endDate: endStr,
+                    page: 1,
+                  },
                 });
               } catch (error) {
                 console.error("Error setting date range:", error);
@@ -272,6 +341,15 @@ export default function SalesProductPage() {
                 setDate({
                   start: nowStr,
                   end: nowStr,
+                });
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...query,
+                    startDate: nowStr,
+                    endDate: nowStr,
+                    page: 1,
+                  },
                 });
               }
             }}

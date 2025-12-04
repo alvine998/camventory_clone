@@ -12,6 +12,8 @@ import { parse } from "cookie";
 import DataTable from "react-data-table-component";
 import Input from "@/components/Input";
 import { ColumnSalesBrand } from "@/constants/column_sales_brand";
+import Select from "@/components/Select";
+import { useRouter } from "next/router";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -27,21 +29,46 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const { page = 1, limit = 100, search = "" } = query;
 
-    const params = new URLSearchParams({
-      page: String(page),
-      limit: String(limit),
-      bulk: String(query.bulk || ""),
-      location: String(query.location || ""),
-    });
+    const {
+      page = 1,
+      limit = 10,
+      categoryID = "",
+      startDate = "",
+      endDate = "",
+    } = query;
 
-    if (typeof search === "string" && search.trim() !== "") {
-      params.set("search", search);
+    const startDateStr =
+      (startDate as string) || moment().format("DD/MM/YYYY");
+    const endDateStr =
+      (endDate as string) || moment().add(30, "days").format("DD/MM/YYYY");
+
+    const startTimestamp = moment(startDateStr, "DD/MM/YYYY").unix();
+    const endTimestamp = moment(endDateStr, "DD/MM/YYYY").unix();
+
+    const brandParams: any = {
+      page,
+      limit,
+      startDate: startTimestamp,
+      endDate: endTimestamp,
+    };
+
+    if (typeof categoryID === "string" && categoryID.trim() !== "") {
+      brandParams.categoryID = categoryID;
     }
 
+    const reportResponse = await axios.get(
+      `${CONFIG.API_URL}/v1/report/brand`,
+      {
+        params: brandParams,
+        headers: {
+          Authorization: `${token}`,
+        },
+      }
+    );
+
     const categories = await axios.get(
-      `${CONFIG.API_URL}/v1/master/categories?${params.toString()}`,
+      `${CONFIG.API_URL}/v1/master/categories?page=1&limit=100`,
       {
         headers: {
           Authorization: `${token}`,
@@ -49,7 +76,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       }
     );
 
-    if (categories?.status === 401) {
+    if (reportResponse?.status === 401 || categories?.status === 401) {
       return {
         redirect: {
           destination: "/",
@@ -58,10 +85,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    // Optionally validate token...
-    // Normalize the response to always be { data: Category[], total?: number, ... }
     return {
-      props: { categories: categories?.data?.data || [] },
+      props: {
+        reportData: reportResponse.data?.data || null,
+        categories: categories?.data?.data || [],
+        dateRange: { start: startDateStr, end: endDateStr },
+      },
     };
   } catch (error: any) {
     console.log(error);
@@ -73,9 +102,16 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    // Ensure consistent shape on error
+
     return {
-      props: { table: { data: [], total: 0 } },
+      props: {
+        reportData: null,
+        categories: [],
+        dateRange: {
+          start: moment().format("DD/MM/YYYY"),
+          end: moment().add(30, "days").format("DD/MM/YYYY"),
+        },
+      },
     };
   }
 };
@@ -93,19 +129,53 @@ const parseDateString = (dateStr: string): Date => {
   return date;
 };
 
-export default function SalesProductPage() {
+interface Props {
+  reportData: any;
+  categories: any[];
+  dateRange: { start: string; end: string };
+}
+
+export default function SalesProductPage({
+  reportData,
+  categories,
+  dateRange,
+}: Props) {
+  const router = useRouter();
+  const { query } = router;
+
   const [date, setDate] = useState({
-    start: moment().format("DD/MM/YYYY"),
-    end: moment().add(30, "days").format("DD/MM/YYYY"),
+    start: dateRange?.start || moment().format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
   });
+
+  const currentPage = Number(query.page) || 1;
+  const rowsPerPage = Number(query.limit) || 10;
+  const currentCategoryId =
+    (query.categoryID as string) ||
+    (categories && categories.length > 0 ? String(categories[0].id) : "");
+
   // Function to handle pagination
-  const handlePageChange = () => {
-    // Handle page change logic here
+  const handlePageChange = (page: number) => {
+    router.push({
+      pathname: router.pathname,
+      query: {
+        ...query,
+        page,
+        limit: rowsPerPage,
+      },
+    });
   };
 
   // Function to handle rows per page change
-  const handleRowsPerPageChange = () => {
-    // Handle rows per page change logic here
+  const handleRowsPerPageChange = (newPerPage: number, page: number) => {
+    router.push({
+      pathname: router.pathname,
+      query: {
+        ...query,
+        page,
+        limit: newPerPage,
+      },
+    });
   };
   const [modal, setModal] = useState<useModal>();
   const [isMounted, setIsMounted] = useState(false);
@@ -136,7 +206,27 @@ export default function SalesProductPage() {
               {date.start} - {date.end}
             </p>
           </button>
-          <Input type="search" placeholder="Search Product" />
+          <Input type="search" placeholder="Search Brand" />
+          <Select
+            defaultValue={currentCategoryId}
+            options={categories?.map((category) => ({
+              value: category.id,
+              label: category.name,
+            }))}
+            onChange={(value) => {
+              const selected = value as { value?: string | number } | null;
+              const categoryID = selected?.value ?? "";
+
+              router.push({
+                pathname: router.pathname,
+                query: {
+                  ...query,
+                  categoryID,
+                  page: 1,
+                },
+              });
+            }}
+          />
         </div>
         <div>
           <Button
@@ -157,25 +247,20 @@ export default function SalesProductPage() {
         <div className="mt-4">
           <DataTable
             columns={ColumnSalesBrand}
-            data={[
-              {
-                brand_name: "Canon",
-                total_rentals: 100,
-                net_sales: 1000000,
-                taxes: 100000,
-                sales: 900000,
-              },
-              {
-                brand_name: "Nikon",
-                total_rentals: 100,
-                net_sales: 1000000,
-                taxes: 100000,
-                sales: 900000,
-              },
-            ]}
+            data={
+              reportData?.data_list?.map((item: any) => ({
+                brand_name: item.name,
+                total_rentals: item.total,
+                net_sales: item.gross_sales,
+                taxes: item.taxes,
+                sales: item.sales,
+              })) || []
+            }
             pagination
             highlightOnHover
-            paginationTotalRows={0}
+            paginationDefaultPage={currentPage}
+            paginationPerPage={rowsPerPage}
+            paginationTotalRows={reportData?.count || 0}
             paginationRowsPerPageOptions={[10, 20, 50, 100]}
             paginationServer
             onChangePage={handlePageChange}
@@ -227,9 +312,22 @@ export default function SalesProductPage() {
                   throw new Error("Invalid date");
                 }
 
+                const startStr = format(startDate, "dd/MM/yyyy");
+                const endStr = format(endDate, "dd/MM/yyyy");
+
                 setDate({
-                  start: format(startDate, "dd/MM/yyyy"),
-                  end: format(endDate, "dd/MM/yyyy"),
+                  start: startStr,
+                  end: endStr,
+                });
+
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...query,
+                    startDate: startStr,
+                    endDate: endStr,
+                    page: 1,
+                  },
                 });
               } catch (error) {
                 console.error("Error setting date range:", error);
@@ -238,6 +336,15 @@ export default function SalesProductPage() {
                 setDate({
                   start: nowStr,
                   end: nowStr,
+                });
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...query,
+                    startDate: nowStr,
+                    endDate: nowStr,
+                    page: 1,
+                  },
                 });
               }
             }}

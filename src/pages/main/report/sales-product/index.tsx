@@ -15,6 +15,7 @@ import { toMoney } from "@/utils";
 import DataTable from "react-data-table-component";
 import Input from "@/components/Input";
 import { ColumnSalesProduct } from "@/constants/column_sales_product";
+import { useRouter } from "next/router";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -30,29 +31,44 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const { page = 1, limit = 100, search = "" } = query;
 
-    const params = new URLSearchParams({
-      page: String(page),
-      limit: String(limit),
-      bulk: String(query.bulk || ""),
-      location: String(query.location || ""),
-    });
+    const {
+      page = 1,
+      limit = 10,
+      productName = "",
+      sortBy = "",
+      startDate = "",
+      endDate = "",
+    } = query;
 
-    if (typeof search === "string" && search.trim() !== "") {
-      params.set("search", search);
-    }
+    const startDateStr =
+      (startDate as string) || moment().format("DD/MM/YYYY");
+    const endDateStr =
+      (endDate as string) || moment().add(30, "days").format("DD/MM/YYYY");
 
-    const categories = await axios.get(
-      `${CONFIG.API_URL}/v1/master/categories?${params.toString()}`,
+    const startTimestamp = moment(startDateStr, "DD/MM/YYYY").unix();
+    const endTimestamp = moment(endDateStr, "DD/MM/YYYY").unix();
+
+    const params: any = {
+      page,
+      limit,
+      startDate: startTimestamp,
+      endDate: endTimestamp,
+      productName,
+      sortBy,
+    };
+
+    const reportResponse = await axios.get(
+      `${CONFIG.API_URL}/v1/report/product`,
       {
+        params,
         headers: {
           Authorization: `${token}`,
         },
       }
     );
 
-    if (categories?.status === 401) {
+    if (reportResponse?.status === 401) {
       return {
         redirect: {
           destination: "/",
@@ -61,10 +77,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    // Optionally validate token...
-    // Normalize the response to always be { data: Category[], total?: number, ... }
     return {
-      props: { categories: categories?.data?.data || [] },
+      props: {
+        reportData: reportResponse.data?.data || null,
+        dateRange: { start: startDateStr, end: endDateStr },
+        initialProductName: productName || "",
+        initialSortBy: sortBy || "",
+      },
     };
   } catch (error: any) {
     console.log(error);
@@ -76,9 +95,16 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    // Ensure consistent shape on error
     return {
-      props: { table: { data: [], total: 0 } },
+      props: {
+        reportData: null,
+        dateRange: {
+          start: moment().format("DD/MM/YYYY"),
+          end: moment().add(30, "days").format("DD/MM/YYYY"),
+        },
+        initialProductName: "",
+        initialSortBy: "",
+      },
     };
   }
 };
@@ -96,19 +122,56 @@ const parseDateString = (dateStr: string): Date => {
   return date;
 };
 
-export default function SalesProductPage() {
+interface Props {
+  reportData: any;
+  dateRange: { start: string; end: string };
+  initialProductName: string;
+  initialSortBy: string;
+}
+
+export default function SalesProductPage({
+  reportData,
+  dateRange,
+  initialProductName,
+  initialSortBy,
+}: Props) {
+  const router = useRouter();
+  const { query } = router;
+
   const [date, setDate] = useState({
-    start: moment().format("DD/MM/YYYY"),
-    end: moment().add(30, "days").format("DD/MM/YYYY"),
+    start: dateRange?.start || moment().format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
   });
+  const [productName, setProductName] = useState<string>(
+    initialProductName || ""
+  );
+  const [sortBy, setSortBy] = useState<string>(initialSortBy || "");
+
+  const currentPage = Number(query.page) || 1;
+  const rowsPerPage = Number(query.limit) || 10;
+
   // Function to handle pagination
-  const handlePageChange = () => {
-    // Handle page change logic here
+  const handlePageChange = (page: number) => {
+    router.push({
+      pathname: router.pathname,
+      query: {
+        ...query,
+        page,
+        limit: rowsPerPage,
+      },
+    });
   };
-  
+
   // Function to handle rows per page change
-  const handleRowsPerPageChange = () => {
-    // Handle rows per page change logic here
+  const handleRowsPerPageChange = (newPerPage: number, page: number) => {
+    router.push({
+      pathname: router.pathname,
+      query: {
+        ...query,
+        page,
+        limit: newPerPage,
+      },
+    });
   };
   const [modal, setModal] = useState<useModal>();
   const [isMounted, setIsMounted] = useState(false);
@@ -122,22 +185,22 @@ export default function SalesProductPage() {
   const salesData = [
     {
       label: "Product Sold",
-      value: 151,
+      value: reportData?.summary_data?.total || 0,
       icon: "/icons/camera.svg",
     },
     {
       label: "Total Gross Sales",
-      value: 18646000,
+      value: reportData?.summary_data?.gross_sales || 0,
       icon: "/icons/growth-chart.svg",
     },
     {
       label: "Total Tax",
-      value: 0,
+      value: reportData?.summary_data?.taxes || 0,
       icon: "/icons/receipt.svg",
     },
     {
       label: "Total Sales",
-      value: 16873500,
+      value: reportData?.summary_data?.sales || 0,
       icon: "/icons/bill.svg",
     },
   ];
@@ -182,16 +245,32 @@ export default function SalesProductPage() {
               {date.start} - {date.end}
             </p>
           </button>
-          <Input type="search" placeholder="Search Product" />
+          <Input
+            type="search"
+            placeholder="Search Product"
+            value={productName}
+            onChange={(e) => {
+              const value = e.target.value;
+              setProductName(value);
+              router.push({
+                pathname: router.pathname,
+                query: {
+                  ...query,
+                  productName: value,
+                  page: 1,
+                },
+              });
+            }}
+          />
           <Select
             options={[
               {
                 label: "Product Name (A-Z)",
-                value: "product_name_asc",
+                value: "item_asc",
               },
               {
                 label: "Product Name (Z-A)",
-                value: "product_name_desc",
+                value: "item_desc",
               },
               {
                 label: "Category (A-Z)",
@@ -202,7 +281,20 @@ export default function SalesProductPage() {
                 value: "category_desc",
               },
             ]}
-            onChange={(value) => console.log(value)}
+            defaultValue={sortBy}
+            onChange={(value) => {
+              const selected = value as { value?: string } | null;
+              const sort = selected?.value || "";
+              setSortBy(sort);
+              router.push({
+                pathname: router.pathname,
+                query: {
+                  ...query,
+                  sortBy: sort,
+                  page: 1,
+                },
+              });
+            }}
             placeholder="Urutkan Berdasarkan"
           />
         </div>
@@ -225,21 +317,23 @@ export default function SalesProductPage() {
         <div className="mt-4">
           <DataTable
             columns={ColumnSalesProduct}
-            data={[
-              {
-                product_id: "1",
-                product_name: "Camera",
-                category: "Camera",
-                total_rentals: 151,
-                unit: "Pcs",
-                gross_sales: 18646000,
-                taxes: 0,
-                sales: 16873500,
-              },
-            ]}
+            data={
+              reportData?.data_list?.map((item: any, index: number) => ({
+                product_id: String(index + 1),
+                product_name: item.product_name,
+                category: item.category,
+                total_rentals: item.total,
+                unit: item.unit,
+                gross_sales: item.gross_sales,
+                taxes: item.taxes,
+                sales: item.sales,
+              })) || []
+            }
             pagination
             highlightOnHover
-            paginationTotalRows={0}
+            paginationDefaultPage={currentPage}
+            paginationPerPage={rowsPerPage}
+            paginationTotalRows={reportData?.count || 0}
             paginationRowsPerPageOptions={[10, 20, 50, 100]}
             paginationServer
             onChangePage={handlePageChange}
@@ -291,9 +385,22 @@ export default function SalesProductPage() {
                   throw new Error("Invalid date");
                 }
 
+                const startStr = format(startDate, "dd/MM/yyyy");
+                const endStr = format(endDate, "dd/MM/yyyy");
+
                 setDate({
-                  start: format(startDate, "dd/MM/yyyy"),
-                  end: format(endDate, "dd/MM/yyyy"),
+                  start: startStr,
+                  end: endStr,
+                });
+
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...query,
+                    startDate: startStr,
+                    endDate: endStr,
+                    page: 1,
+                  },
                 });
               } catch (error) {
                 console.error("Error setting date range:", error);
@@ -302,6 +409,15 @@ export default function SalesProductPage() {
                 setDate({
                   start: nowStr,
                   end: nowStr,
+                });
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...query,
+                    startDate: nowStr,
+                    endDate: nowStr,
+                    page: 1,
+                  },
                 });
               }
             }}
