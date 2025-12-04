@@ -14,6 +14,7 @@ import Image from "next/image";
 import { toMoney } from "@/utils";
 import DataTable from "react-data-table-component";
 import { ColumnSalesCategory } from "@/constants/column_sales_category";
+import { useRouter } from "next/router";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -135,6 +136,9 @@ interface Props {
 }
 
 export default function SalesCategoryPage({ reportData, categories, dateRange }: Props) {
+  const router = useRouter();
+  const { query } = router;
+
   const [date, setDate] = useState({
     start: dateRange?.start || moment().format("DD/MM/YYYY"),
     end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
@@ -147,15 +151,35 @@ export default function SalesCategoryPage({ reportData, categories, dateRange }:
     setIsMounted(true);
     return () => setIsMounted(false);
   }, []);
-  
+
+  const currentPage = Number(query.page) || 1;
+  const rowsPerPage = Number(query.limit) || 10;
+  const currentCategoryId =
+    (query.categoryID as string) ||
+    (categories && categories.length > 0 ? String(categories[0].id) : "");
+
   // Function to handle pagination
-  const handlePageChange = () => {
-    // Handle page change logic here
+  const handlePageChange = (page: number) => {
+    router.push({
+      pathname: router.pathname,
+      query: {
+        ...query,
+        page,
+        limit: rowsPerPage,
+      },
+    });
   };
-  
+
   // Function to handle rows per page change
-  const handleRowsPerPageChange = () => {
-    // Handle rows per page change logic here
+  const handleRowsPerPageChange = (newPerPage: number, page: number) => {
+    router.push({
+      pathname: router.pathname,
+      query: {
+        ...query,
+        page,
+        limit: newPerPage,
+      },
+    });
   };
 
   const salesData = [
@@ -201,12 +225,24 @@ export default function SalesCategoryPage({ reportData, categories, dateRange }:
             </p>
           </button>
           <Select
-            defaultValue={categories?.[0]}
+            defaultValue={currentCategoryId}
             options={categories?.map((category) => ({
               value: category.id,
               label: category.name,
             }))}
-            onChange={(value) => console.log(value)}
+            onChange={(value) => {
+              const selected = value as { value?: string | number } | null;
+              const categoryID = selected?.value ?? "";
+
+              router.push({
+                pathname: router.pathname,
+                query: {
+                  ...query,
+                  categoryID,
+                  page: 1,
+                },
+              });
+            }}
           />
         </div>
         <div>
@@ -256,6 +292,8 @@ export default function SalesCategoryPage({ reportData, categories, dateRange }:
               sales: item.sales,
             })) || []}
             pagination
+            paginationDefaultPage={currentPage}
+            paginationPerPage={rowsPerPage}
             highlightOnHover
             paginationTotalRows={reportData?.count || 0}
             paginationRowsPerPageOptions={[10, 20, 50, 100]}
@@ -309,9 +347,22 @@ export default function SalesCategoryPage({ reportData, categories, dateRange }:
                   throw new Error("Invalid date");
                 }
 
+                const startStr = format(startDate, "dd/MM/yyyy");
+                const endStr = format(endDate, "dd/MM/yyyy");
+
                 setDate({
-                  start: format(startDate, "dd/MM/yyyy"),
-                  end: format(endDate, "dd/MM/yyyy"),
+                  start: startStr,
+                  end: endStr,
+                });
+
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...query,
+                    startDate: startStr,
+                    endDate: endStr,
+                    page: 1,
+                  },
                 });
               } catch (error) {
                 console.error("Error setting date range:", error);
@@ -320,6 +371,15 @@ export default function SalesCategoryPage({ reportData, categories, dateRange }:
                 setDate({
                   start: nowStr,
                   end: nowStr,
+                });
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...query,
+                    startDate: nowStr,
+                    endDate: nowStr,
+                    page: 1,
+                  },
                 });
               }
             }}
