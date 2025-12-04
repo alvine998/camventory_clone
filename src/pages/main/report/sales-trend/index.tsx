@@ -1,8 +1,12 @@
 import { Circle, TrendingDown } from "lucide-react";
 import moment from "moment";
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Select from "@/components/Select";
+import axios from "axios";
+import { CONFIG } from "@/config";
+import { parse } from "cookie";
+import { GetServerSideProps } from "next";
 
 // Dynamically import ApexCharts to avoid SSR issues
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -72,28 +76,90 @@ const chartOptions: ApexCharts.ApexOptions = {
   },
 };
 
-// Sample data for the chart
-const chartSeries = [
-  {
-    name: "Sales",
-    type: "line",
-    data: Array.from(
-      { length: 30 },
-      () => Math.floor(Math.random() * 1000) + 500
-    ),
-  },
-  {
-    name: "Quantity",
-    type: "line",
-    data: Array.from(
-      { length: 30 },
-      () => Math.floor(Math.random() * 100) + 10
-    ),
-  },
-];
+interface TrendData {
+  date: number[];
+  prior_date: number[];
+  sum_by_date: number[];
+  sum_by_date_prior: number[];
+  diff: number[];
+  ratio: number[];
+  total_sum_by_date: number;
+  total_sum_by_date_prior: number;
+  ratio_result: number;
+}
 
-export default function SalesSummaryPage() {
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const { req, query } = ctx;
+  const cookies = parse(req.headers.cookie || "");
+  const token = cookies.token;
+  const filterBy = (query.filterBy as string) || "week";
+
+  try {
+    if (!token) {
+      return {
+        redirect: {
+          destination: "/",
+          permanent: false,
+        },
+      };
+    }
+
+    const response = await axios.get(`${CONFIG.API_URL}/v1/report/trend`, {
+      params: {
+        filterBy,
+      },
+      headers: {
+        Authorization: `${token}`,
+      },
+    });
+
+    if (response?.status === 401) {
+      return {
+        redirect: {
+          destination: "/",
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        initialTrendData: response.data?.data || null,
+        initialFilterBy: filterBy,
+      },
+    };
+  } catch (error: any) {
+    console.log(error);
+    if (error?.response?.status === 401) {
+      return {
+        redirect: {
+          destination: "/",
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        initialTrendData: null,
+        initialFilterBy: filterBy,
+      },
+    };
+  }
+};
+
+export default function SalesSummaryPage({
+  initialTrendData,
+  initialFilterBy = "week",
+}: {
+  initialTrendData: TrendData | null;
+  initialFilterBy?: string;
+}) {
   const [isMounted, setIsMounted] = useState(false);
+  const [trendData, setTrendData] = useState<TrendData | null>(initialTrendData);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [filterBy, setFilterBy] = useState<string>(initialFilterBy);
 
   // This ensures the component is mounted before rendering the chart
   useEffect(() => {
@@ -124,19 +190,124 @@ export default function SalesSummaryPage() {
     },
   ];
   const [selectType, setSelectType] = useState<string>("Sales");
+
+  const fetchTrendData = async (period: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setFilterBy(period);
+
+      const cookies = parse(document.cookie || "");
+      const token = cookies.token;
+
+      if (!token) {
+        setError("Token tidak ditemukan");
+        setLoading(false);
+        return;
+      }
+
+      const response = await axios.get(`${CONFIG.API_URL}/v1/report/trend`, {
+        params: {
+          filterBy: period,
+        },
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+
+      if (response.data.status === 1) {
+        setTrendData(response.data.data);
+      } else {
+        setError(response.data.error?.message || "Gagal mengambil data trend");
+      }
+    } catch (err: any) {
+      console.error("Error fetching trend data:", err);
+      setError(err.response?.data?.error?.message || "Gagal mengambil data trend");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Bangun data chart dari response API
+  const { chartCategories, chartSeries } = useMemo(() => {
+    const baseCategories =
+      (chartOptions.xaxis?.categories as string[]) ||
+      Array.from({ length: 30 }, (_, i) => {
+        const date = moment().subtract(29, "days").add(i, "days");
+        return date.format("DD MMM");
+      });
+
+    if (!trendData || !trendData.date || !trendData.sum_by_date) {
+      return {
+        chartCategories: baseCategories,
+        chartSeries: [
+          {
+            name: "Current Period",
+            type: "line",
+            data: baseCategories.map(() => 0),
+          },
+          {
+            name: "Prior Period",
+            type: "line",
+            data: baseCategories.map(() => 0),
+          },
+        ],
+      };
+    }
+
+    const chartCategories = trendData.date.map((ts) =>
+      moment(ts).isValid() ? moment(ts).format("DD MMM") : ""
+    );
+
+    const chartSeries = [
+      {
+        name: "Current Period",
+        type: "line",
+        data: trendData.sum_by_date ?? [],
+      },
+      {
+        name: "Prior Period",
+        type: "line",
+        data: trendData.sum_by_date_prior ?? [],
+      },
+    ];
+
+    return { chartCategories, chartSeries };
+  }, [trendData]);
+
+  const mergedChartOptions: ApexCharts.ApexOptions = useMemo(
+    () => ({
+      ...chartOptions,
+      xaxis: {
+        ...(chartOptions.xaxis || {}),
+        categories: chartCategories,
+      },
+    }),
+    [chartCategories]
+  );
+
+  const currentTotal = trendData?.total_sum_by_date ?? 0;
+  const priorTotal = trendData?.total_sum_by_date_prior ?? 0;
+  const ratioResult = trendData?.ratio_result ?? 0;
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-orange-500">Sales Trend</h1>
       {/* Header 1 */}
       <div className="flex items-center gap-2 mt-2">
         <Select
-          defaultValue={{ value: "today", label: "Today" }}
+          defaultValue={filterBy}
           options={periods}
-          onChange={(value) => console.log(value)}
+          onChange={(value) => {
+            const selected = value as { value?: string } | null;
+            if (selected?.value) {
+              fetchTrendData(selected.value);
+            }
+          }}
         />
         <h5>VS</h5>
         <Select
-          defaultValue={{ value: "today", label: "Today" }}
+          defaultValue={"week"}
           options={periods}
           onChange={(value) => console.log(value)}
         />
@@ -176,16 +347,20 @@ export default function SalesSummaryPage() {
         <div className="flex gap-2">
           <div className="rounded bg-orange-600 w-5 h-5"></div>
           <div>
-            <p className="text-sm text-gray-600">25 Jun 2025 - 02 Jul 2025</p>
-            <p className="font-semibold">Rp 15.825.000</p>
+            <p className="text-sm text-gray-600">Current Period</p>
+            <p className="font-semibold">
+              Rp{currentTotal.toLocaleString("id-ID")}
+            </p>
           </div>
         </div>
 
         <div className="flex gap-2">
           <div className="rounded bg-orange-600 w-5 h-5"></div>
           <div>
-            <p className="text-sm text-gray-600">17 Jun 2025 - 24 Jun 2025</p>
-            <p className="font-semibold">Rp 22.718.500</p>
+            <p className="text-sm text-gray-600">Prior Period</p>
+            <p className="font-semibold">
+              Rp{priorTotal.toLocaleString("id-ID")}
+            </p>
           </div>
         </div>
 
@@ -193,16 +368,24 @@ export default function SalesSummaryPage() {
           <div className="rounded border-orange-600 border p-1">
             <TrendingDown className="w-3 h-3 text-orange-600" />
           </div>
-          <p className="text-sm text-orange-600">30,34%</p>
+          <p className="text-sm text-orange-600">
+            {ratioResult.toFixed(2)}%
+          </p>
         </div>
       </div>
 
       {/* Chart Section */}
       <div className="mt-8 bg-white rounded-lg shadow p-6">
+        {loading && (
+          <p className="text-center text-gray-500 text-sm mb-2">Memuat data...</p>
+        )}
+        {error && !loading && (
+          <p className="text-center text-red-500 text-sm mb-2">{error}</p>
+        )}
         {isMounted && (
           <div className="w-full">
             <Chart
-              options={chartOptions}
+              options={mergedChartOptions}
               series={chartSeries}
               type="line"
               height={350}
