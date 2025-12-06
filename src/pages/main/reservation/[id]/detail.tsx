@@ -181,7 +181,7 @@ export default function Detail({ detail, query }: any) {
               <div className="flex gap-4 items-center py-4" key={index}>
                 <Image
                   src={
-                    CONFIG.IMAGE_URL + item?.item_image_path ||
+                    CONFIG.IMAGE_URL + "/" + item?.item_image_path ||
                     "/images/camera.png"
                   }
                   alt={"photo"}
