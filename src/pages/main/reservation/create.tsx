@@ -9,7 +9,7 @@ import { ArrowLeftIcon, PlusSquareIcon, Trash2Icon } from "lucide-react";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 // ✅ Types
@@ -122,6 +122,7 @@ export default function CreateReservationPage({
   const [filter, setFilter] = useState<Record<string, string>>({});
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const processedItemIdRef = useRef<string | null>(null);
   
   // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split("T")[0];
@@ -277,6 +278,113 @@ export default function CreateReservationPage({
       router.push(`?${queryFilter}`);
     }
   }, [filter, router]);
+
+  // Handle item from detail page (when navigating from Reserve button)
+  useEffect(() => {
+    const { itemId, itemType } = router.query;
+    
+    if (!itemId || !itemType || typeof itemId !== "string" || typeof itemType !== "string") {
+      processedItemIdRef.current = null;
+      return;
+    }
+    
+    // Skip if we already processed this itemId
+    if (processedItemIdRef.current === itemId) {
+      return;
+    }
+    
+    // Mark as processing immediately
+    processedItemIdRef.current = itemId;
+    
+    const addItemToList = (itemData: any) => {
+      setItems((currentItems) => {
+        // Check if item is already in the list
+        if (currentItems.some((i) => i.id === itemId)) {
+          return currentItems;
+        }
+        
+        // Add item to list
+        if (itemType === "single") {
+          return [...currentItems, { ...itemData, added: 1 }];
+        } else {
+          return [...currentItems, { ...itemData, qty: 1, isBulk: true, added: 1 }];
+        }
+      });
+      
+      // Clean up query params
+      const { itemId: _, itemType: __, itemName: ___, ...restQuery } = router.query;
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: restQuery,
+        },
+        undefined,
+        { shallow: true }
+      );
+    };
+    
+    // First, try to find in the loaded lists
+    const itemList = itemType === "single" ? singleItems : bulkItems;
+    const foundItem = itemList.find((item) => item.id === itemId);
+    
+    if (foundItem) {
+      // Item found in list, add it
+      addItemToList(foundItem);
+    } else {
+      // Item not found in list, fetch from API
+      const fetchItem = async () => {
+        try {
+          const cookies = parse(document.cookie || "");
+          const token = cookies.token;
+          
+          if (!token) {
+            console.error("No token found");
+            processedItemIdRef.current = null;
+            return;
+          }
+          
+          const endpoint = itemType === "single" 
+            ? `${CONFIG.API_URL}/v1/single-items/${itemId}`
+            : `${CONFIG.API_URL}/v1/bulk-items/${itemId}`;
+          
+          const response = await axios.get(endpoint, {
+            headers: { Authorization: token },
+          });
+          
+          const itemData = response.data?.data;
+          if (itemData) {
+            addItemToList(itemData);
+          } else {
+            processedItemIdRef.current = null;
+          }
+        } catch (error) {
+          console.error("Error fetching item:", error);
+          processedItemIdRef.current = null; // Reset on error so it can retry
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "Failed to load item details",
+            timer: 2000,
+            showConfirmButton: false,
+          });
+          
+          // Clean up query params even on error
+          const { itemId: _, itemType: __, itemName: ___, ...restQuery } = router.query;
+          router.replace(
+            {
+              pathname: router.pathname,
+              query: restQuery,
+            },
+            undefined,
+            { shallow: true }
+          );
+        }
+      };
+      
+      fetchItem();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.query.itemId, router.query.itemType, singleItems, bulkItems]);
 
   return (
     <div>

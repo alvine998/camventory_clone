@@ -7,6 +7,7 @@ import Image from "next/image";
 import { IItems } from "@/types/single_items";
 import Swal from "sweetalert2";
 import axios from "axios";
+import { useRouter } from "next/router";
 
 interface Props {
   detail: IItems;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function Header({ detail, query }: Props) {
+  const router = useRouter();
   const conditions = [
     {
       label: "Good",
@@ -36,6 +38,18 @@ export default function Header({ detail, query }: Props) {
       value: "TAKEOUT",
     },
   ];
+
+  const handleReserve = () => {
+    // Navigate to create reservation with item data
+    router.push({
+      pathname: "/main/reservation/create",
+      query: {
+        itemId: detail?.id,
+        itemType: query?.type || "single",
+        itemName: detail?.name || "",
+      },
+    });
+  };
 
   const handleChangeStatus = async (e: any) => {
     try {
@@ -91,7 +105,12 @@ export default function Header({ detail, query }: Props) {
                 <PencilIcon className="w-4 h-4 text-orange-500" />
                 <p className="text-orange-500 text-xs">Edit</p>
               </Button> */}
-              <Button className="flex items-center gap-1" variant="submit">
+              <Button
+                className="flex items-center gap-1"
+                variant="submit"
+                type="button"
+                onClick={handleReserve}
+              >
                 <PackageIcon className="w-4 h-4 text-white" />
                 <p className="text-white text-xs">Reserve</p>
               </Button>
