@@ -146,7 +146,7 @@ export default function SalesProductPage({
     router.push({
       pathname: router.pathname,
       query: {
-        ...query,
+        ...(typeof query === "object" && query !== null ? query : {}),
         page,
         limit: rowsPerPage,
       },
@@ -158,7 +158,7 @@ export default function SalesProductPage({
     router.push({
       pathname: router.pathname,
       query: {
-        ...query,
+        ...(typeof query === "object" && query !== null ? query : {}),
         page,
         limit: newPerPage,
       },
@@ -209,7 +209,7 @@ export default function SalesProductPage({
               router.push({
                 pathname: router.pathname,
                 query: {
-                  ...query,
+                  ...(typeof query === "object" && query !== null ? query : {}),
                   sortBy: sort,
                   page: 1,
                 },
@@ -238,34 +238,36 @@ export default function SalesProductPage({
           <DataTable
             columns={ColumnSalesCustomer}
             data={
-              reportData?.data_list?.map((item: any) => ({
-                customer_id: item.customer_id,
-                customer_name: item.name,
-                phone_number: item.phone_number,
-                total_visit: item.total_visit,
-                total_transaction: item.total,
-                action: (
-                  <Button
-                    type="button"
-                    title="View"
-                    variant="submit"
-                    className="flex items-center gap-2"
-                    onClick={() =>
-                      router.push(
-                        `/main/report/sales-customer/${item.customer_id}`
-                      )
-                    }
-                  >
-                    <Eye className="w-4 h-4 text-white" />
-                  </Button>
-                ),
-              })) || []
+              Array.isArray(reportData?.data_list)
+                ? reportData.data_list.map((item: any) => ({
+                    customer_id: item.customer_id,
+                    customer_name: item.name,
+                    phone_number: item.phone_number,
+                    total_visit: item.total_visit,
+                    total_transaction: item.total,
+                    action: (
+                      <Button
+                        type="button"
+                        title="View"
+                        variant="submit"
+                        className="flex items-center gap-2"
+                        onClick={() =>
+                          router.push(
+                            `/main/report/sales-customer/${item.customer_id}`
+                          )
+                        }
+                      >
+                        <Eye className="w-4 h-4 text-white" />
+                      </Button>
+                    ),
+                  }))
+                : []
             }
             pagination
             highlightOnHover
             paginationDefaultPage={currentPage}
             paginationPerPage={rowsPerPage}
-            paginationTotalRows={reportData?.count || 0}
+            paginationTotalRows={Number(reportData?.count) || 0}
             paginationRowsPerPageOptions={[10, 20, 50, 100]}
             paginationServer
             onChangePage={handlePageChange}
@@ -328,7 +330,7 @@ export default function SalesProductPage({
                 router.push({
                   pathname: router.pathname,
                   query: {
-                    ...query,
+                    ...(typeof query === "object" && query !== null ? query : {}),
                     startDate: startStr,
                     endDate: endStr,
                     page: 1,
@@ -345,7 +347,7 @@ export default function SalesProductPage({
                 router.push({
                   pathname: router.pathname,
                   query: {
-                    ...query,
+                    ...(typeof query === "object" && query !== null ? query : {}),
                     startDate: nowStr,
                     endDate: nowStr,
                     page: 1,

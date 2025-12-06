@@ -30,14 +30,14 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const { page = 1, limit = 10, search = "" } = query;
+    const { page = 1, limit = 10, search = undefined } = query;
 
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),
     });
 
-    if (typeof search === "string" && search.trim() !== "") {
+    if (typeof search === "string" && search.trim() !== "" && search.length > 3) {
       params.set("search", search);
     }
 
