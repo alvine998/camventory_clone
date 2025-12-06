@@ -312,7 +312,10 @@ export default function CreateReservationPage({
       });
       
       // Clean up query params
-      const { itemId: _, itemType: __, itemName: ___, ...restQuery } = router.query;
+      const restQuery = { ...router.query };
+      delete restQuery.itemId;
+      delete restQuery.itemType;
+      delete restQuery.itemName;
       router.replace(
         {
           pathname: router.pathname,
@@ -369,7 +372,10 @@ export default function CreateReservationPage({
           });
           
           // Clean up query params even on error
-          const { itemId: _, itemType: __, itemName: ___, ...restQuery } = router.query;
+          const restQuery = { ...router.query };
+          delete restQuery.itemId;
+          delete restQuery.itemType;
+          delete restQuery.itemName;
           router.replace(
             {
               pathname: router.pathname,
