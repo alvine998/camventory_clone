@@ -1,20 +1,15 @@
 import Button from "@/components/Button";
-import Input from "@/components/Input";
 import Modal from "@/components/Modal";
 import { XIcon } from "lucide-react";
 import React, { useState } from "react";
 import Swal from "sweetalert2";
 import axios from "axios";
-import { CONFIG } from "@/config";
-import { parse } from "cookie";
 
 interface Props {
   open: boolean;
   setOpen: (open: boolean) => void;
   itemId: string;
-  itemType: "single" | "bulk";
   status?: string;
-  token?: string;
   onSuccess?: () => void;
 }
 
@@ -22,9 +17,7 @@ export default function NotesModal({
   open,
   setOpen,
   itemId,
-  itemType,
   status,
-  token,
   onSuccess,
 }: Props) {
   const [notes, setNotes] = useState("");

@@ -105,7 +105,9 @@ export default function Header({ detail, query }: Props) {
                 height={20}
                 className={"w-auto h-auto flex-shrink-0"}
               />
-              <p className="text-xs text-gray-500 break-words break-all">{detail?.barcode}</p>
+              <p className="text-xs text-gray-500 break-words break-all">
+                {detail?.barcode}
+              </p>
             </div>
             <div className="flex gap-1 items-center flex-shrink-0">
               <Image
@@ -127,9 +129,7 @@ export default function Header({ detail, query }: Props) {
           open={notesModalOpen}
           setOpen={setNotesModalOpen}
           itemId={detail?.id}
-          itemType={query?.type || "single"}
           status={selectedStatus}
-          token={query?.token}
           onSuccess={() => {
             // Reset selected status after notes are saved
             setSelectedStatus("");

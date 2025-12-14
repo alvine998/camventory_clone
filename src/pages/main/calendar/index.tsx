@@ -1,35 +1,116 @@
-"use client";
-
 import {
   FilterIcon,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Calendar,
   CalendarDays,
   Clock,
   X,
 } from "lucide-react";
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import FullCalendar from "@fullcalendar/react";
+import React, { useState, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+
+// Dynamic import FullCalendar to avoid SSR issues
+const FullCalendar = dynamic(
+  () => import("@fullcalendar/react").then((mod) => mod.default),
+  { ssr: false }
+);
 import axios from "axios";
 import Modal from "@/components/Modal";
 import { CONFIG } from "@/config";
 import { parse } from "cookie";
 import moment from "moment";
+import { GetServerSideProps } from "next";
 
-export default function CalendarPage() {
-  const calendarRef = useRef<FullCalendar>(null);
+interface Props {
+  initialTimelineData: any[];
+  initialStartDate: number;
+  initialEndDate: number;
+}
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const { query, req } = ctx;
+  const cookies = parse(req.headers.cookie || "");
+  const token = cookies.token;
+
+  try {
+    if (!token) {
+      return {
+        redirect: {
+          destination: "/",
+          permanent: false,
+        },
+      };
+    }
+
+    // Get date range from query or use current month
+    const startDate = query.startDate ? Number(query.startDate) : moment().startOf("month").unix();
+    const endDate = query.endDate ? Number(query.endDate) : moment().endOf("month").unix();
+
+    // Fetch timeline data
+    const response = await axios.get(`${CONFIG.API_URL}/v1/timeline`, {
+      params: {
+        startDate: startDate,
+        endDate: endDate,
+      },
+      headers: {
+        Authorization: token,
+      },
+    });
+
+    if (response?.status === 401) {
+      return {
+        redirect: {
+          destination: "/",
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        initialTimelineData: response.data?.data || [],
+        initialStartDate: startDate,
+        initialEndDate: endDate,
+      },
+    };
+  } catch (error: any) {
+    console.log(error);
+    if (error?.response?.status === 401) {
+      return {
+        redirect: {
+          destination: "/",
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        initialTimelineData: [],
+        initialStartDate: moment().startOf("month").unix(),
+        initialEndDate: moment().endOf("month").unix(),
+      },
+    };
+  }
+};
+
+export default function CalendarPage({ initialTimelineData, initialStartDate, initialEndDate }: Props) {
+  const calendarApiRef = useRef<any>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<
     "dayGridMonth" | "timeGridWeek" | "timeGridDay"
   >("dayGridMonth");
-  const [timelineData, setTimelineData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [timelineData, setTimelineData] = useState<any[]>(initialTimelineData);
+  const [loading, setLoading] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const lastFetchRef = useRef<{ start: number; end: number } | null>(null);
 
   // Filter options
   const filterOptions = [
@@ -51,7 +132,22 @@ export default function CalendarPage() {
   // Fetch timeline data based on calendar view
   const fetchTimelineData = useCallback(async (startDate: Date, endDate: Date) => {
     try {
+      // Convert dates to Unix timestamps
+      const startTimestamp = moment(startDate).unix();
+      const endTimestamp = moment(endDate).unix();
+
+      // Prevent duplicate calls with same date range
+      if (
+        lastFetchRef.current &&
+        lastFetchRef.current.start === startTimestamp &&
+        lastFetchRef.current.end === endTimestamp
+      ) {
+        return;
+      }
+
+      lastFetchRef.current = { start: startTimestamp, end: endTimestamp };
       setLoading(true);
+
       const cookies = parse(document.cookie || "");
       const token = cookies.token;
 
@@ -62,9 +158,12 @@ export default function CalendarPage() {
         return;
       }
 
-      // Convert dates to Unix timestamps
-      const startTimestamp = moment(startDate).unix();
-      const endTimestamp = moment(endDate).unix();
+      if (!CONFIG.API_URL) {
+        console.error("API URL not configured");
+        setTimelineData([]);
+        setLoading(false);
+        return;
+      }
 
       const response = await axios.get(`${CONFIG.API_URL}/v1/timeline`, {
         params: {
@@ -82,13 +181,69 @@ export default function CalendarPage() {
         console.error("Failed to fetch timeline data:", response.data);
         setTimelineData([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching timeline data:", error);
       setTimelineData([]);
+      // Make sure loading is set to false even on error
+      if (error.response?.status === 401) {
+        console.error("Unauthorized - please login again");
+      }
     } finally {
       setLoading(false);
     }
   }, []);
+
+  // Handle dates change in calendar
+  const handleDatesSet = useCallback((dateInfo: any) => {
+    // Store calendar API reference
+    if (dateInfo.view && !calendarApiRef.current) {
+      calendarApiRef.current = dateInfo.view.calendar;
+    }
+    
+    // Fetch data when calendar dates change (but skip initial load since we have SSR data)
+    if (dateInfo && dateInfo.start && dateInfo.end) {
+      const startTimestamp = moment(dateInfo.start).unix();
+      const endTimestamp = moment(dateInfo.end).unix();
+      
+      // Only fetch if date range changed from initial SSR data
+      if (
+        startTimestamp !== initialStartDate ||
+        endTimestamp !== initialEndDate
+      ) {
+        fetchTimelineData(dateInfo.start, dateInfo.end);
+      }
+    }
+  }, [fetchTimelineData, initialStartDate, initialEndDate]);
+
+  // Get icon based on status
+  function getStatusIcon(status: string) {
+    if (!status) return null;
+    
+    switch (status.toLowerCase()) {
+      case "checkout":
+        return "hourglass";
+      case "booked":
+      case "confirmed":
+        return "settings";
+      case "checkin":
+      case "completed":
+        return "check";
+      default:
+        return null;
+    }
+  }
+
+  // Format event title like "10:00 B247082 | Fajar"
+  function formatEventTitle(item: any): string {
+    const startTime = moment(item.start_date).format("HH:mm");
+    const bookId = item.book_id || "";
+    const customerName = item.customer_name || "";
+    // If book_id is empty, just show time and customer name
+    if (!bookId) {
+      return `${startTime} | ${customerName}`;
+    }
+    return `${startTime} ${bookId} | ${customerName}`;
+  }
 
   // Convert timeline data to FullCalendar events with filtering
   const calendarEvents = timelineData
@@ -122,7 +277,7 @@ export default function CalendarPage() {
     })
     .map((item) => ({
       id: item.id,
-      title: `${item.item_name} - ${item.customer_name}`,
+      title: formatEventTitle(item),
       start: new Date(item.start_date),
       end: new Date(item.end_date),
       backgroundColor: getStatusColor(item.status),
@@ -130,27 +285,28 @@ export default function CalendarPage() {
       textColor: "#ffffff",
       extendedProps: {
         timelineItem: item,
+        statusIcon: getStatusIcon(item.status),
       },
     }));
 
-  // Get color based on timeline item status
+  // Get color based on timeline item status (matching the image colors)
   function getStatusColor(status: string): string {
     if (!status) return "#3b82f6"; // default blue
     
     switch (status.toLowerCase()) {
       case "booked":
       case "confirmed":
-        return "#10b981"; // green
+        return "#fbbf24"; // yellow (like in image)
       case "checkout":
-        return "#f59e0b"; // yellow/orange
+        return "#60a5fa"; // light blue
       case "checkin":
       case "completed":
-        return "#6b7280"; // gray
+        return "#34d399"; // light green
       case "cancel":
       case "cancelled":
         return "#ef4444"; // red
       default:
-        return "#3b82f6"; // blue
+        return "#3b82f6"; // dark blue
     }
   }
 
@@ -158,50 +314,68 @@ export default function CalendarPage() {
   const handleViewChange = useCallback((
     view: "dayGridMonth" | "timeGridWeek" | "timeGridDay"
   ) => {
-    if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi();
-      calendarApi.changeView(view);
+    if (calendarApiRef.current) {
+      calendarApiRef.current.changeView(view);
       setCurrentView(view);
       
       // Fetch new data for the new view
-      const calendarView = calendarApi.view;
+      const calendarView = calendarApiRef.current.view;
       fetchTimelineData(calendarView.activeStart, calendarView.activeEnd);
     }
   }, [fetchTimelineData]);
 
   // Navigation handlers
-  const handlePrev = useCallback(() => {
-    if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi();
-      calendarApi.prev();
-      setCurrentDate(calendarApi.getDate());
+  const handlePrevYear = useCallback(() => {
+    if (calendarApiRef.current) {
+      calendarApiRef.current.prevYear();
+      setCurrentDate(calendarApiRef.current.getDate());
       
       // Fetch new data for the new date range
-      const view = calendarApi.view;
+      const view = calendarApiRef.current.view;
+      fetchTimelineData(view.activeStart, view.activeEnd);
+    }
+  }, [fetchTimelineData]);
+
+  const handlePrev = useCallback(() => {
+    if (calendarApiRef.current) {
+      calendarApiRef.current.prev();
+      setCurrentDate(calendarApiRef.current.getDate());
+      
+      // Fetch new data for the new date range
+      const view = calendarApiRef.current.view;
       fetchTimelineData(view.activeStart, view.activeEnd);
     }
   }, [fetchTimelineData]);
 
   const handleNext = useCallback(() => {
-    if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi();
-      calendarApi.next();
-      setCurrentDate(calendarApi.getDate());
+    if (calendarApiRef.current) {
+      calendarApiRef.current.next();
+      setCurrentDate(calendarApiRef.current.getDate());
       
       // Fetch new data for the new date range
-      const view = calendarApi.view;
+      const view = calendarApiRef.current.view;
+      fetchTimelineData(view.activeStart, view.activeEnd);
+    }
+  }, [fetchTimelineData]);
+
+  const handleNextYear = useCallback(() => {
+    if (calendarApiRef.current) {
+      calendarApiRef.current.nextYear();
+      setCurrentDate(calendarApiRef.current.getDate());
+      
+      // Fetch new data for the new date range
+      const view = calendarApiRef.current.view;
       fetchTimelineData(view.activeStart, view.activeEnd);
     }
   }, [fetchTimelineData]);
 
   const handleToday = useCallback(() => {
-    if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi();
-      calendarApi.today();
-      setCurrentDate(calendarApi.getDate());
+    if (calendarApiRef.current) {
+      calendarApiRef.current.today();
+      setCurrentDate(calendarApiRef.current.getDate());
       
       // Fetch new data for the new date range
-      const view = calendarApi.view;
+      const view = calendarApiRef.current.view;
       fetchTimelineData(view.activeStart, view.activeEnd);
     }
   }, [fetchTimelineData]);
@@ -258,8 +432,16 @@ export default function CalendarPage() {
       <div className="flex items-center gap-2 justify-between">
         <div className="flex items-center gap-2">
           <button
+            onClick={handlePrevYear}
+            className="p-2 bg-white rounded border border-gray-300 hover:bg-gray-50 transition-colors"
+            title="Previous Year"
+          >
+            <ChevronsLeft className="w-4 h-4" />
+          </button>
+          <button
             onClick={handlePrev}
             className="p-2 bg-white rounded border border-gray-300 hover:bg-gray-50 transition-colors"
+            title="Previous Month"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -272,8 +454,16 @@ export default function CalendarPage() {
           <button
             onClick={handleNext}
             className="p-2 bg-white rounded border border-gray-300 hover:bg-gray-50 transition-colors"
+            title="Next Month"
           >
             <ChevronRight className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleNextYear}
+            className="p-2 bg-white rounded border border-gray-300 hover:bg-gray-50 transition-colors"
+            title="Next Year"
+          >
+            <ChevronsRight className="w-4 h-4" />
           </button>
         </div>
         {/* View Switcher */}
@@ -333,16 +523,23 @@ export default function CalendarPage() {
         <div className="flex items-center gap-2">
           <div
             className="w-3 h-3 rounded"
-            style={{ backgroundColor: "#10b981" }}
+            style={{ backgroundColor: "#fbbf24" }}
           ></div>
-          <span>Confirmed</span>
+          <span>Booked/Confirmed</span>
         </div>
         <div className="flex items-center gap-2">
           <div
             className="w-3 h-3 rounded"
-            style={{ backgroundColor: "#f59e0b" }}
+            style={{ backgroundColor: "#60a5fa" }}
           ></div>
-          <span>Pending</span>
+          <span>Checkout</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div
+            className="w-3 h-3 rounded"
+            style={{ backgroundColor: "#34d399" }}
+          ></div>
+          <span>Check In/Completed</span>
         </div>
         <div className="flex items-center gap-2">
           <div
@@ -350,13 +547,6 @@ export default function CalendarPage() {
             style={{ backgroundColor: "#ef4444" }}
           ></div>
           <span>Cancelled</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-3 h-3 rounded"
-            style={{ backgroundColor: "#6b7280" }}
-          ></div>
-          <span>Completed</span>
         </div>
       </div>
 
@@ -368,7 +558,6 @@ export default function CalendarPage() {
           </div>
         ) : (
           <FullCalendar
-            ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             initialView={currentView}
             headerToolbar={{
@@ -408,14 +597,53 @@ export default function CalendarPage() {
             eventDidMount={(info) => {
               // Add custom styling or tooltips here if needed
               const timelineItem = info.event.extendedProps.timelineItem;
+              const statusIcon = info.event.extendedProps.statusIcon;
+              
               if (timelineItem) {
                 info.el.title = `${timelineItem.item_name} - ${timelineItem.customer_name} (${timelineItem.book_id})`;
               }
+
+              // Add icon to event if available
+              if (statusIcon && info.el) {
+                const titleEl = info.el.querySelector(".fc-event-title");
+                if (titleEl && !titleEl.querySelector(".event-icon")) {
+                  const iconElement = document.createElement("span");
+                  iconElement.className = "event-icon";
+                  iconElement.style.marginRight = "4px";
+                  iconElement.style.display = "inline-flex";
+                  iconElement.style.alignItems = "center";
+                  iconElement.style.verticalAlign = "middle";
+                  
+                  // Create icon based on status using lucide-react style
+                  if (statusIcon === "hourglass") {
+                    // Hourglass icon
+                    iconElement.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M12 2v4M12 18v4M7 2l5 5-5 5m10-10l-5 5 5 5"></path></svg>`;
+                  } else if (statusIcon === "settings") {
+                    // Settings/cogwheel icon
+                    iconElement.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+                  } else if (statusIcon === "check") {
+                    // Checkmark icon
+                    iconElement.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>`;
+                  }
+                  
+                  // Insert icon at the beginning of event title
+                  titleEl.insertBefore(iconElement, titleEl.firstChild);
+                }
+              }
             }}
-            datesSet={useCallback((dateInfo: any) => {
-              // Fetch data when calendar dates change (e.g., when user navigates)
-              fetchTimelineData(dateInfo.start, dateInfo.end);
-            }, [fetchTimelineData])}
+            nowIndicator={true}
+            dayCellClassNames={(arg) => {
+              // Highlight today's date with orange circle
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const cellDate = new Date(arg.date);
+              cellDate.setHours(0, 0, 0, 0);
+              if (cellDate.getTime() === today.getTime()) {
+                return "fc-day-today";
+              }
+              return "";
+            }}
+            datesSet={handleDatesSet}
           />
         )}
       </div>
