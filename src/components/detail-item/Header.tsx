@@ -1,13 +1,12 @@
 import { PackageIcon } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
 import Button from "../Button";
 import Badge from "../Badge";
 import Select from "../Select";
 import Image from "next/image";
 import { IItems } from "@/types/single_items";
-import Swal from "sweetalert2";
-import axios from "axios";
 import { useRouter } from "next/router";
+import NotesModal from "../modals/items/NotesModal";
 
 interface Props {
   detail: IItems;
@@ -16,6 +15,8 @@ interface Props {
 
 export default function Header({ detail, query }: Props) {
   const router = useRouter();
+  const [notesModalOpen, setNotesModalOpen] = useState<boolean>(false);
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
   const conditions = [
     {
       label: "Good",
@@ -51,33 +52,12 @@ export default function Header({ detail, query }: Props) {
     });
   };
 
-  const handleChangeStatus = async (e: any) => {
-    try {
-      await axios.patch(
-        `/api/items/update-status`,
-        {
-          status: e.value,
-          id: detail?.id,
-        },
-        {
-          headers: {
-            Authorization: `${query.token}`,
-          },
-        }
-      );
-      Swal.fire({
-        icon: "success",
-        title: "Status Items updated successfully",
-        showConfirmButton: false,
-        timer: 1500,
-      });
-    } catch (error) {
-      console.log(error);
-      Swal.fire({
-        icon: "error",
-        title: "Error updating status",
-      });
-    }
+  const handleChangeStatus = (e: any) => {
+    // Store selected status and open notes modal
+    // Status will be updated when notes are submitted
+    const newStatus = e.value;
+    setSelectedStatus(newStatus);
+    setNotesModalOpen(true);
   };
   return (
     <div>
@@ -116,18 +96,18 @@ export default function Header({ detail, query }: Props) {
               </Button>
             </div>
           </div>
-          <div className="flex gap-4 mt-2">
-            <div className="flex gap-1 items-center">
+          <div className="flex gap-4 mt-2 flex-wrap">
+            <div className="flex gap-1 items-center min-w-0">
               <Image
                 alt="icon"
                 src={"/icons/barcode.svg"}
                 width={20}
                 height={20}
-                className={"w-auto h-auto"}
+                className={"w-auto h-auto flex-shrink-0"}
               />
-              <p className="text-xs text-gray-500">{detail?.serial_number}</p>
+              <p className="text-xs text-gray-500 break-words break-all">{detail?.barcode}</p>
             </div>
-            <div className="flex gap-1 items-center">
+            <div className="flex gap-1 items-center flex-shrink-0">
               <Image
                 alt="icon"
                 src={"/icons/box_gray.svg"}
@@ -140,6 +120,24 @@ export default function Header({ detail, query }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Notes Modal */}
+      {notesModalOpen && (
+        <NotesModal
+          open={notesModalOpen}
+          setOpen={setNotesModalOpen}
+          itemId={detail?.id}
+          itemType={query?.type || "single"}
+          status={selectedStatus}
+          token={query?.token}
+          onSuccess={() => {
+            // Reset selected status after notes are saved
+            setSelectedStatus("");
+            // Optionally refresh data or show success message
+            console.log("Notes and status updated successfully");
+          }}
+        />
+      )}
     </div>
   );
 }

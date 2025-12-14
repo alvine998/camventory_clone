@@ -9,14 +9,16 @@ import {
   Clock,
   X,
 } from "lucide-react";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { IReservation } from "@/types/reservation";
 import axios from "axios";
 import Modal from "@/components/Modal";
+import { CONFIG } from "@/config";
+import { parse } from "cookie";
+import moment from "moment";
 
 export default function CalendarPage() {
   const calendarRef = useRef<FullCalendar>(null);
@@ -24,7 +26,7 @@ export default function CalendarPage() {
   const [currentView, setCurrentView] = useState<
     "dayGridMonth" | "timeGridWeek" | "timeGridDay"
   >("dayGridMonth");
-  const [reservations, setReservations] = useState<IReservation[]>([]);
+  const [timelineData, setTimelineData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
@@ -46,122 +48,171 @@ export default function CalendarPage() {
     { id: "checkin-done", label: "Check In / Done", value: "completed" },
   ];
 
-  // Fetch reservations data
-  useEffect(() => {
-    const fetchReservations = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get("/api/reservation");
-        setReservations(response.data.data || []);
-      } catch (error) {
-        console.error("Error fetching reservations:", error);
-        setReservations([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Fetch timeline data based on calendar view
+  const fetchTimelineData = useCallback(async (startDate: Date, endDate: Date) => {
+    try {
+      setLoading(true);
+      const cookies = parse(document.cookie || "");
+      const token = cookies.token;
 
-    fetchReservations();
+      if (!token) {
+        console.error("No authentication token found");
+        setTimelineData([]);
+        setLoading(false);
+        return;
+      }
+
+      // Convert dates to Unix timestamps
+      const startTimestamp = moment(startDate).unix();
+      const endTimestamp = moment(endDate).unix();
+
+      const response = await axios.get(`${CONFIG.API_URL}/v1/timeline`, {
+        params: {
+          startDate: startTimestamp,
+          endDate: endTimestamp,
+        },
+        headers: {
+          Authorization: token,
+        },
+      });
+
+      if (response.data.status === 1) {
+        setTimelineData(response.data.data || []);
+      } else {
+        console.error("Failed to fetch timeline data:", response.data);
+        setTimelineData([]);
+      }
+    } catch (error) {
+      console.error("Error fetching timeline data:", error);
+      setTimelineData([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Convert reservations to FullCalendar events with filtering
-  const calendarEvents = reservations
-    .filter((reservation) => {
+  // Convert timeline data to FullCalendar events with filtering
+  const calendarEvents = timelineData
+    .filter((item) => {
       // If no filters are active, show all events
       if (activeFilters.length === 0) return true;
 
-      // Check if reservation status matches any active filter
+      // Check if item status matches any active filter
       return activeFilters.some((filter) => {
         switch (filter) {
           case "confirmed":
-            return reservation.status.toLowerCase() === "confirmed";
+            return item.status?.toLowerCase() === "booked" || item.status?.toLowerCase() === "confirmed";
           case "overdue-reservation":
             return (
-              reservation.status.toLowerCase() === "overdue" &&
-              new Date(reservation.start_date) < new Date()
+              (item.status?.toLowerCase() === "booked" || item.status?.toLowerCase() === "confirmed") &&
+              new Date(item.start_date) < new Date()
             );
           case "checkout":
-            return reservation.status.toLowerCase() === "checkout";
+            return item.status?.toLowerCase() === "checkout";
           case "overdue-checkout":
             return (
-              reservation.status.toLowerCase() === "overdue" &&
-              new Date(reservation.end_date) < new Date()
+              item.status?.toLowerCase() === "checkout" &&
+              new Date(item.end_date) < new Date()
             );
           case "completed":
-            return reservation.status.toLowerCase() === "completed";
+            return item.status?.toLowerCase() === "checkin" || item.status?.toLowerCase() === "completed";
           default:
             return true;
         }
       });
     })
-    .map((reservation) => ({
-      id: reservation.id,
-      title: `Reservation #${reservation.book_id}`,
-      start: new Date(reservation.start_date),
-      end: new Date(reservation.end_date),
-      backgroundColor: getStatusColor(reservation.status),
-      borderColor: getStatusColor(reservation.status),
+    .map((item) => ({
+      id: item.id,
+      title: `${item.item_name} - ${item.customer_name}`,
+      start: new Date(item.start_date),
+      end: new Date(item.end_date),
+      backgroundColor: getStatusColor(item.status),
+      borderColor: getStatusColor(item.status),
       textColor: "#ffffff",
       extendedProps: {
-        reservation: reservation,
+        timelineItem: item,
       },
     }));
 
-  // Get color based on reservation status
+  // Get color based on timeline item status
   function getStatusColor(status: string): string {
+    if (!status) return "#3b82f6"; // default blue
+    
     switch (status.toLowerCase()) {
+      case "booked":
       case "confirmed":
         return "#10b981"; // green
-      case "pending":
-        return "#f59e0b"; // yellow
-      case "cancelled":
-        return "#ef4444"; // red
+      case "checkout":
+        return "#f59e0b"; // yellow/orange
+      case "checkin":
       case "completed":
         return "#6b7280"; // gray
+      case "cancel":
+      case "cancelled":
+        return "#ef4444"; // red
       default:
         return "#3b82f6"; // blue
     }
   }
 
   // View switching handler
-  const handleViewChange = (
+  const handleViewChange = useCallback((
     view: "dayGridMonth" | "timeGridWeek" | "timeGridDay"
   ) => {
     if (calendarRef.current) {
-      calendarRef.current.getApi().changeView(view);
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.changeView(view);
       setCurrentView(view);
+      
+      // Fetch new data for the new view
+      const calendarView = calendarApi.view;
+      fetchTimelineData(calendarView.activeStart, calendarView.activeEnd);
     }
-  };
+  }, [fetchTimelineData]);
 
   // Navigation handlers
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     if (calendarRef.current) {
-      calendarRef.current.getApi().prev();
-      setCurrentDate(calendarRef.current.getApi().getDate());
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.prev();
+      setCurrentDate(calendarApi.getDate());
+      
+      // Fetch new data for the new date range
+      const view = calendarApi.view;
+      fetchTimelineData(view.activeStart, view.activeEnd);
     }
-  };
+  }, [fetchTimelineData]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (calendarRef.current) {
-      calendarRef.current.getApi().next();
-      setCurrentDate(calendarRef.current.getApi().getDate());
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.next();
+      setCurrentDate(calendarApi.getDate());
+      
+      // Fetch new data for the new date range
+      const view = calendarApi.view;
+      fetchTimelineData(view.activeStart, view.activeEnd);
     }
-  };
+  }, [fetchTimelineData]);
 
-  const handleToday = () => {
+  const handleToday = useCallback(() => {
     if (calendarRef.current) {
-      calendarRef.current.getApi().today();
-      setCurrentDate(calendarRef.current.getApi().getDate());
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.today();
+      setCurrentDate(calendarApi.getDate());
+      
+      // Fetch new data for the new date range
+      const view = calendarApi.view;
+      fetchTimelineData(view.activeStart, view.activeEnd);
     }
-  };
+  }, [fetchTimelineData]);
 
   // Event click handler
   const handleEventClick = (clickInfo: any) => {
-    const reservation = clickInfo.event.extendedProps.reservation;
+    const timelineItem = clickInfo.event.extendedProps.timelineItem;
     // You can implement a modal or navigation to reservation details here
-    console.log("Clicked reservation:", reservation);
+    console.log("Clicked timeline item:", timelineItem);
     alert(
-      `Reservation #${reservation.book_id}\nCustomer: ${reservation.ref_customer.name}\nStatus: ${reservation.status}`
+      `Item: ${timelineItem.item_name}\nCustomer: ${timelineItem.customer_name}\nBook ID: ${timelineItem.book_id}\nStatus: ${timelineItem.status}\nBarcode: ${timelineItem.barcode}`
     );
   };
 
@@ -356,8 +407,15 @@ export default function CalendarPage() {
             allDaySlot={false}
             eventDidMount={(info) => {
               // Add custom styling or tooltips here if needed
-              info.el.title = `Reservation #${info.event.extendedProps.reservation.book_id} - ${info.event.extendedProps.reservation.ref_customer.name}`;
+              const timelineItem = info.event.extendedProps.timelineItem;
+              if (timelineItem) {
+                info.el.title = `${timelineItem.item_name} - ${timelineItem.customer_name} (${timelineItem.book_id})`;
+              }
             }}
+            datesSet={useCallback((dateInfo: any) => {
+              // Fetch data when calendar dates change (e.g., when user navigates)
+              fetchTimelineData(dateInfo.start, dateInfo.end);
+            }, [fetchTimelineData])}
           />
         )}
       </div>

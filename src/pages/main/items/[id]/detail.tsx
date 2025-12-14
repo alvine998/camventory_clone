@@ -249,17 +249,19 @@ export default function Detail({ params, detail, query }: any) {
 
             <div className="mt-4 grid lg:grid-cols-5 grid-cols-1 gap-10 w-full">
               {singleInformation.map((item, index) => (
-                <div key={index} className="flex gap-2 items-center">
-                  <p className="text-xs">{item.label}</p>
+                <div key={index} className={`flex gap-2 ${item.label === "Barcode" ? "flex-col items-start" : "items-center"}`}>
+                  <p className="text-xs flex-shrink-0">{item.label}</p>
                   {item.label === "Image" ? (
                     <Image
                       alt="icon"
                       src={typeof item?.value === "string" ? item.value : ""}
                       width={50}
                       height={50}
-                      className={"w-auto h-auto"}
+                      className={"w-[100px] h-[100px]"}
                       unoptimized
                     />
+                  ) : item.label === "Barcode" ? (
+                    <p className="text-xs font-bold break-words break-all max-w-full">{item.value}</p>
                   ) : (
                     <p className="text-xs font-bold">{item.value}</p>
                   )}{" "}
@@ -285,7 +287,7 @@ export default function Detail({ params, detail, query }: any) {
                   src={"/icons/send-2.svg"}
                   width={20}
                   height={20}
-                  className={"w-auto h-auto"}
+                  className={"w-[20px] h-[20px]"}
                   unoptimized
                 />
                 <p className="text-xs text-orange-500">Action</p>
@@ -297,7 +299,7 @@ export default function Detail({ params, detail, query }: any) {
               src={itemDetail?.full_path_image || ""}
               width={50}
               height={50}
-              className={"w-auto h-auto"}
+              className={"w-[100px] h-[100px]"}
               unoptimized
             />
 
@@ -306,18 +308,20 @@ export default function Detail({ params, detail, query }: any) {
                 {itemInformation.map((item, index) => (
                   <div
                     key={index}
-                    className="flex justify-between items-center w-full"
+                    className={`flex ${item.label === "Barcode" ? "flex-col items-start gap-1" : "justify-between items-center"} w-full`}
                   >
-                    <p className="text-xs">{item.label}</p>
+                    <p className="text-xs flex-shrink-0">{item.label}</p>
                     {item.label === "Image" ? (
                       <Image
                         alt="icon"
                         src={typeof item?.value === "string" ? item.value : ""}
                         width={50}
                         height={50}
-                        className={"w-auto h-auto"}
+                        className={"w-[50px] h-[50px]"}
                         unoptimized
                       />
+                    ) : item.label === "Barcode" ? (
+                      <p className="text-xs font-bold break-words break-all max-w-full">{item.value}</p>
                     ) : (
                       <p className="text-xs font-bold">{item.value}</p>
                     )}{" "}
@@ -328,18 +332,20 @@ export default function Detail({ params, detail, query }: any) {
                 {itemInformation2.map((item, index) => (
                   <div
                     key={index}
-                    className="flex justify-between items-center"
+                    className={`flex ${item.label === "Barcode" ? "flex-col items-start gap-1" : "justify-between items-center"}`}
                   >
-                    <p className="text-xs">{item.label}</p>
+                    <p className="text-xs flex-shrink-0">{item.label}</p>
                     {item.label === "Image" ? (
                       <Image
                         alt="icon"
                         src={item?.value || ""}
                         width={50}
                         height={50}
-                        className={"w-auto h-auto"}
+                        className={"w-[100px] h-[100px]"}
                         unoptimized
                       />
+                    ) : item.label === "Barcode" ? (
+                      <p className="text-xs font-bold break-words break-all max-w-full">{item.value}</p>
                     ) : (
                       <p className="text-xs font-bold">{item.value}</p>
                     )}
@@ -386,20 +392,21 @@ export default function Detail({ params, detail, query }: any) {
               <div className="mt-4 flex flex-col gap-2">
                 {trackers?.map((tracker, index) => (
                   <div
-                    className="flex justify-between items-center"
+                    className="flex justify-between items-center flex-wrap gap-2"
                     key={index}
                   >
-                    <div className="flex flex-row gap-2 items-center">
+                    <div className="flex flex-row gap-2 items-center flex-wrap min-w-0 flex-1">
                       <Image
                         alt="icon"
                         src="/icons/barcode.svg"
                         width={20}
                         height={20}
                         unoptimized
+                        className="flex-shrink-0"
                       />
-                      <p className="text-xs">{tracker.value}</p>
+                      <p className="text-xs break-words break-all">{tracker.value}</p>
                     </div>
-                    <button>
+                    <button className="flex-shrink-0">
                       <TrashIcon color="red" className="w-4 h-4" />
                     </button>
                   </div>
