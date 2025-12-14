@@ -13,6 +13,7 @@ import { IReservation } from "@/types/reservation";
 import CancelModal from "../modals/reservation/CancelModal";
 import axios from "axios";
 import Swal from "sweetalert2";
+import { getStatusBadgeColor } from "@/utils";
 
 interface Props {
   detail: IReservation;
@@ -26,11 +27,11 @@ export default function HeaderReservation({ detail }: Props) {
 
   const handleCancelReservation = async (description: string) => {
     setIsLoading(true);
-    
+
     try {
-      await axios.patch('/api/reservation/cancel', {
+      await axios.patch("/api/reservation/cancel", {
         reason: description,
-        id: detail?.id
+        id: detail?.id,
       });
 
       Swal.fire({
@@ -48,7 +49,9 @@ export default function HeaderReservation({ detail }: Props) {
       Swal.fire({
         icon: "error",
         title: "Cancel Failed",
-        text: error.response?.data?.message || "An error occurred while cancelling the reservation",
+        text:
+          error.response?.data?.message ||
+          "An error occurred while cancelling the reservation",
       });
     } finally {
       setIsLoading(false);
@@ -74,8 +77,11 @@ export default function HeaderReservation({ detail }: Props) {
           <div className="flex justify-between gap-4">
             <div className="flex gap-5 items-center">
               <h5>{detail?.book_id ?? "NK0001"}</h5>
-              <Badge text={detail?.status || "Booked"} color="warning">
-                <p className="text-xs text-yellow-600">Booked</p>
+              <Badge
+                text={detail?.status || "Booked"}
+                color={getStatusBadgeColor(detail?.status)}
+              >
+                {detail?.status}
               </Badge>
             </div>
             <div className="flex gap-2 items-center">
