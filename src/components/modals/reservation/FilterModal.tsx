@@ -37,6 +37,8 @@ export default function FilterModal({
     { value: "completed", label: "Completed" },
     { value: "overdue", label: "Overdue" },
     { value: "booked", label: "Booked" },
+    { value: "checkin", label: "Check In" },
+    { value: "checkout", label: "Check Out" },
   ];
 
   // Location options
