@@ -105,51 +105,49 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
 const ReservationItem = ({ reservation }: any) => {
   return (
-    <div key={reservation.id}>
-      <div className="mt-2 border-t border-gray-300 py-4">
-        <div className="border border-gray-300 rounded p-4 w-full flex gap-2 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <UserCircle2Icon className="w-8 h-8 text-gray-500" />
-            <div>
-              <label className="text-gray-500 text-xs" htmlFor="customer_name">
-                Customer
-              </label>
-              <p className="text-xs font-bold">{reservation.customer_name}</p>
-            </div>
+    <div key={reservation.id} className="mt-2">
+      <div className="border border-gray-300 rounded p-4 w-full flex gap-2 items-center justify-between">
+        <div className="flex items-center gap-2">
+          <UserCircle2Icon className="w-8 h-8 text-gray-500" />
+          <div>
+            <label className="text-gray-500 text-xs" htmlFor="customer_name">
+              Customer
+            </label>
+            <p className="text-xs font-bold">{reservation.customer_name}</p>
           </div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-orange-300 flex items-center justify-center p-1">
-              <CalendarIcon className="w-5 h-5 text-orange-600" />
-            </div>
-            <div>
-              <label className="text-gray-500 text-xs" htmlFor="startdate">
-                From
-              </label>
-              <p className="text-xs font-bold">
-                {moment(reservation.start_date).format("MMM DD, YYYY")}
-              </p>
-            </div>
-            <div>
-              <label className="text-gray-500 text-xs" htmlFor="enddate">
-                To
-              </label>
-              <p className="text-xs font-bold">
-                {moment(reservation.end_date).format("MMM DD, YYYY")}
-              </p>
-            </div>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-orange-300 flex items-center justify-center p-1">
+            <CalendarIcon className="w-5 h-5 text-orange-600" />
           </div>
+          <div>
+            <label className="text-gray-500 text-xs" htmlFor="startdate">
+              From
+            </label>
+            <p className="text-xs font-bold">
+              {moment(reservation.start_date).format("MMM DD, YYYY")}
+            </p>
+          </div>
+          <div>
+            <label className="text-gray-500 text-xs" htmlFor="enddate">
+              To
+            </label>
+            <p className="text-xs font-bold">
+              {moment(reservation.end_date).format("MMM DD, YYYY")}
+            </p>
+          </div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-orange-300 flex items-center justify-center p-1">
-              <MapPinIcon className="w-5 h-5 text-orange-600" />
-            </div>
-            <div>
-              <label className="text-gray-500 text-xs" htmlFor="location">
-                Location
-              </label>
-              <p className="text-xs font-bold">{reservation.location || "-"}</p>
-            </div>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-orange-300 flex items-center justify-center p-1">
+            <MapPinIcon className="w-5 h-5 text-orange-600" />
+          </div>
+          <div>
+            <label className="text-gray-500 text-xs" htmlFor="location">
+              Location
+            </label>
+            <p className="text-xs font-bold">{reservation.location || "-"}</p>
           </div>
         </div>
       </div>
@@ -182,6 +180,7 @@ export default function Reservations({
               </p>
             </div>
           </div>
+          <div className="mt-2 border-t border-gray-300"></div>
           {reservation?.count > 0 ? (
             reservation?.data?.map((item: any) => (
               <ReservationItem key={item.id} reservation={item} />
