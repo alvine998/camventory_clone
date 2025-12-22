@@ -10,6 +10,8 @@ import axios from "axios";
 import { CONFIG } from "@/config";
 import { parse } from "cookie";
 import { GetServerSideProps } from "next";
+import { useRouter } from "next/router";
+import Swal from "sweetalert2";
 
 // Dynamically import ApexCharts to avoid SSR issues
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -72,8 +74,8 @@ const parseDateString = (dateStr: string): Date => {
 };
 
 interface ReportData {
-  date: string | null;
-  sum_by_date: Record<string, number> | null;
+  date: number[] | null;
+  sum_by_date: number[] | null;
   total_sum_by_date: number;
   tax: number;
 }
@@ -101,7 +103,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     const startTimestamp = moment(startDate, "DD/MM/YYYY").unix();
     const endTimestamp = moment(endDate, "DD/MM/YYYY").unix();
 
-    const response = await axios.get(`${CONFIG.API_URL}/v1/report/`, {
+    const response = await axios.get(`${CONFIG.API_URL}/v1/report/summary`, {
       params: {
         startDate: startTimestamp,
         endDate: endTimestamp,
@@ -110,7 +112,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         Authorization: `${token}`,
       },
     });
-
+    console.log(response.data);
+    console.log(startTimestamp, endTimestamp, 'startTimestamp, endTimestamp');
     if (response?.status === 401) {
       return {
         redirect: {
@@ -124,6 +127,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       props: {
         initialReportData: response.data?.data || null,
         dateRange: { start: startDate, end: endDate },
+        token: token,
       },
     };
   } catch (error: any) {
@@ -143,13 +147,21 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           start: moment().format("DD/MM/YYYY"),
           end: moment().add(30, "days").format("DD/MM/YYYY"),
         },
+        token: null,
+        errorMessage: error?.response?.data?.error?.message || "Failed to fetch report data",
       },
     };
   }
 };
 
-export default function SalesSummaryPage({ initialReportData, dateRange }: any) {
+export default function SalesSummaryPage({ initialReportData, dateRange, errorMessage }: any) {
+  const router = useRouter();
+  const { query } = router;
   const [date, setDate] = useState({
+    start: dateRange?.start || moment().format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
+  });
+  const [tempDate, setTempDate] = useState({
     start: dateRange?.start || moment().format("DD/MM/YYYY"),
     end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
   });
@@ -157,49 +169,29 @@ export default function SalesSummaryPage({ initialReportData, dateRange }: any) 
   const [isMounted, setIsMounted] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(initialReportData);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(errorMessage || null);
 
-  // Fetch report data from API
-  const fetchReportData = async () => {
-    try {
+  // Update reportData when initialReportData changes (from SSR)
+  useEffect(() => {
+    if (initialReportData) {
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
+      setReportData(initialReportData);
       setLoading(true);
-      setError(null);
-      
-      // Get token from cookies
-      const cookies = parse(document.cookie);
-      const token = cookies.token;
-      
-      if (!token) {
-        setError("No authentication token found");
-        return;
-      }
-      
-      // Convert dates to Unix timestamps
-      const startTimestamp = moment(date.start, "DD/MM/YYYY").unix();
-      const endTimestamp = moment(date.end, "DD/MM/YYYY").unix();
-      
-      const response = await axios.get(`${CONFIG.API_URL}/v1/report/`, {
-        params: {
-          startDate: startTimestamp,
-          endDate: endTimestamp,
-        },
-        headers: {
-          Authorization: `${token}`,
-        },
-      });
-
-      if (response.data.status === 1) {
-        setReportData(response.data.data);
-      } else {
-        setError(response.data.error?.message || "Failed to fetch report data");
-      }
-    } catch (err: any) {
-      console.error("Error fetching report data:", err);
-      setError(err.response?.data?.error?.message || "Failed to fetch report data");
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [initialReportData]);
+
+  useEffect(() => {
+    if (errorMessage) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Oops...',
+        text: errorMessage,
+      });
+      setError(errorMessage);
+    }
+  }, [errorMessage]);
 
   // This ensures the component is mounted before rendering the chart
   useEffect(() => {
@@ -207,48 +199,47 @@ export default function SalesSummaryPage({ initialReportData, dateRange }: any) 
     return () => setIsMounted(false);
   }, []);
 
-  // Fetch data when date range changes (only on client-side)
-  useEffect(() => {
-    if (isMounted && (date.start !== dateRange?.start || date.end !== dateRange?.end)) {
-      fetchReportData();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMounted, date]);
+  // No need for client-side fetch since SSR will handle it via router.push
 
   // Build chart data from API response
   const { chartCategories, chartSeries } = useMemo(() => {
     const emptyResult = {
-      chartCategories: chartOptions.xaxis?.categories as string[],
+      chartCategories: [] as string[],
       chartSeries: [
         {
           name: "Sales",
-          data:
-            (chartOptions.xaxis?.categories as string[])?.map(() => 0) ?? [],
+          data: [] as number[],
         },
       ],
     };
 
-    if (!reportData || !reportData.sum_by_date) {
+    if (!reportData || !reportData.date || !reportData.sum_by_date) {
       return emptyResult;
     }
 
-    // Sort dates ascending (tries to handle ISO or generic date strings)
-    const entries = Object.entries(reportData.sum_by_date).sort(
-      ([dateA], [dateB]) =>
-        moment(dateA, moment.ISO_8601).valueOf() -
-        moment(dateB, moment.ISO_8601).valueOf()
+    // date and sum_by_date are arrays with corresponding indices
+    // date contains Unix timestamps, sum_by_date contains sales values
+    const dateArray = reportData.date || [];
+    const sumArray = reportData.sum_by_date || [];
+
+    // Zip the arrays together and sort by date
+    const entries = dateArray
+      .map((timestamp, index) => ({
+        date: timestamp,
+        value: sumArray[index] ?? 0,
+      }))
+      .sort((a, b) => a.date - b.date); // Sort by timestamp
+
+    // Format dates for chart categories
+    const chartCategories = entries.map(({ date }) =>
+      moment.unix(date).format("DD MMM")
     );
 
-    const chartCategories = entries.map(([date]) =>
-      moment(date, moment.ISO_8601).isValid()
-        ? moment(date, moment.ISO_8601).format("DD MMM")
-        : date
-    );
-
+    // Extract sales values
     const chartSeries = [
       {
         name: "Sales",
-        data: entries.map(([, value]) => value ?? 0),
+        data: entries.map(({ value }) => value ?? 0),
       },
     ];
 
@@ -280,7 +271,7 @@ export default function SalesSummaryPage({ initialReportData, dateRange }: any) 
           >
             <CalendarDays className="w-4 h-4 text-gray-500" />
             <p className="text-sm text-gray-500">
-              {date.start} - {date.end}
+              {moment(date.start, "DD/MM/YYYY").format("DD MMM YYYY")} - {moment(date.end, "DD/MM/YYYY").format("DD MMM YYYY")}
             </p>
           </button>
         </div>
@@ -394,40 +385,132 @@ export default function SalesSummaryPage({ initialReportData, dateRange }: any) 
       {modal?.key === "date" && (
         <Modal
           open={modal?.open}
-          setOpen={() => setModal({ open: false, key: "", data: {} })}
+          setOpen={() => {
+            setModal({ open: false, key: "", data: {} });
+            // Reset temp date to current date when closing
+            setTempDate({
+              start: date.start,
+              end: date.end,
+            });
+          }}
           size="xl"
         >
-          <DateRangePicker 
-            date={{
-              start: parseDateString(date.start),
-              end: parseDateString(date.end)
-            }} 
-            setDate={(dateRange) => {
-              try {
-                // Convert the received date range to the expected format
-                const startDate = dateRange.start ? new Date(dateRange.start) : new Date();
-                const endDate = dateRange.end ? new Date(dateRange.end) : new Date();
-                
-                // Ensure dates are valid
-                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-                  throw new Error('Invalid date');
+          <div className="p-6">
+            <DateRangePicker 
+              date={{
+                start: parseDateString(tempDate.start),
+                end: parseDateString(tempDate.end)
+              }} 
+              setDate={(dateRange) => {
+                try {
+                  // DateRangePicker sends dates in 'dd/MM/yyyy' format as strings
+                  // Validate using moment to ensure dates are valid
+                  const startMoment = dateRange.start 
+                    ? moment(dateRange.start, "DD/MM/YYYY")
+                    : moment();
+                  const endMoment = dateRange.end 
+                    ? moment(dateRange.end, "DD/MM/YYYY")
+                    : moment();
+                  
+                  // Ensure dates are valid
+                  if (!startMoment.isValid() || !endMoment.isValid()) {
+                    throw new Error('Invalid date');
+                  }
+                  
+                  // Update temporary date (not the actual date yet)
+                  // DateRangePicker already sends in 'dd/MM/yyyy' format, so use directly
+                  setTempDate({
+                    start: dateRange.start || startMoment.format('DD/MM/YYYY'),
+                    end: dateRange.end || endMoment.format('DD/MM/YYYY')
+                  });
+                } catch (error) {
+                  console.error('Error setting date range:', error);
+                  // Fallback to current date if parsing fails
+                  const now = moment();
+                  setTempDate({
+                    start: now.format('DD/MM/YYYY'),
+                    end: now.format('DD/MM/YYYY')
+                  });
                 }
-                
-                setDate({
-                  start: format(startDate, 'dd/MM/yyyy'),
-                  end: format(endDate, 'dd/MM/yyyy')
-                });
-              } catch (error) {
-                console.error('Error setting date range:', error);
-                const now = new Date();
-                const nowStr = format(now, 'dd/MM/yyyy');
-                setDate({
-                  start: nowStr,
-                  end: nowStr
-                });
-              }
-            }}
-          />
+              }}
+            />
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => {
+                  setModal({ open: false, key: "", data: {} });
+                  // Reset temp date to current date when canceling
+                  setTempDate({
+                    start: date.start,
+                    end: date.end,
+                  });
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    // Convert the date range to the expected format
+                    const startDate = tempDate.start
+                      ? new Date(moment(tempDate.start, "DD/MM/YYYY").format("YYYY-MM-DD"))
+                      : new Date();
+                    const endDate = tempDate.end
+                      ? new Date(moment(tempDate.end, "DD/MM/YYYY").format("YYYY-MM-DD"))
+                      : new Date();
+
+                    // Ensure dates are valid
+                    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                      throw new Error("Invalid date");
+                    }
+
+                    const startStr = tempDate.start;
+                    const endStr = tempDate.end;
+
+                    // Update local state
+                    setDate({
+                      start: startStr,
+                      end: endStr,
+                    });
+
+                    // Close modal
+                    setModal({ open: false, key: "", data: {} });
+
+                    // Update URL query parameters to trigger SSR
+                    router.push({
+                      pathname: router.pathname,
+                      query: {
+                        ...(typeof query === "object" && query ? query : {}),
+                        startDate: startStr,
+                        endDate: endStr,
+                      },
+                    });
+                  } catch (error) {
+                    console.error("Error setting date range:", error);
+                    const now = new Date();
+                    const nowStr = format(now, "dd/MM/yyyy");
+                    setDate({
+                      start: nowStr,
+                      end: nowStr,
+                    });
+                    router.push({
+                      pathname: router.pathname,
+                      query: {
+                        ...(typeof query === "object" && query ? query : {}),
+                        startDate: nowStr,
+                        endDate: nowStr,
+                      },
+                    });
+                  }
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+              >
+                Simpan
+              </button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>
