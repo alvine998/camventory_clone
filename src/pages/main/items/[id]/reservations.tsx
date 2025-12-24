@@ -33,6 +33,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     let result = null;
     let reservation = null;
+    let logs = null;
+    
     if (query.type === "bulk" && params) {
       result = await axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
         headers: {
@@ -64,6 +66,25 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           },
         }
       );
+      
+      // Fetch logs for single items
+      try {
+        const logsResponse = await axios.get(
+          `${CONFIG.API_URL}/v1/single-items/${params.id}/logs?limit=100&page=1`,
+          {
+            headers: {
+              Authorization: `${token}`,
+            },
+          }
+        );
+        if (logsResponse.status === 200) {
+          logs = logsResponse.data;
+        }
+      } catch (logsError: any) {
+        console.log("Error fetching logs:", logsError);
+        // Logs are optional, so we continue even if they fail
+        logs = null;
+      }
     } else {
       throw new Error(`Invalid query.type: ${query.type}`);
     }
@@ -85,6 +106,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         detail: result?.data,
         query,
         reservation: reservation?.data?.data,
+        logs,
       },
     };
   } catch (error: any) {
@@ -160,8 +182,11 @@ export default function Reservations({
   detail,
   query,
   reservation,
+  logs,
 }: any) {
   console.log(reservation, "detail reservations");
+  const logsData = logs?.data || [];
+  
   return (
     <div className="p-2">
       <Header detail={detail?.data} query={query} />
@@ -195,10 +220,47 @@ export default function Reservations({
           <div className="border border-gray-300 rounded p-4">
             <h1 className="text-lg font-bold">Extra Information</h1>
             <div className="mt-2 border-t border-gray-300">
-              <div className="p-2 mt-2 border rounded-full w-full border-gray-300 flex items-center">
-                <MapPin className="w-5 h-5" />
-                <p className="text-sm ml-2">Cipadung</p>
-              </div>
+              {query?.type === "single" ? (
+                <div className="mt-4 max-h-[300px] overflow-y-auto">
+                  {logsData.length > 0 ? (
+                    <div className="flex flex-col gap-3">
+                      {logsData.map((log: any, index: number) => (
+                        <div key={log.id || index} className="border border-gray-200 rounded p-3">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-bold text-orange-500">
+                                  {log.action || "-"}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {moment.unix(log.created_at).format("DD MMM YYYY, HH:mm")}
+                                </span>
+                              </div>
+                              {log.note && (
+                                <p className="text-xs text-gray-700 mb-1">{log.note}</p>
+                              )}
+                              {log.reason && (
+                                <p className="text-xs text-gray-500 italic">
+                                  Reason: {log.reason}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center py-8">
+                      <p className="text-gray-500 text-sm">No logs found</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-2 mt-2 border rounded-full w-full border-gray-300 flex items-center">
+                  <MapPin className="w-5 h-5" />
+                  <p className="text-sm ml-2">Cipadung</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

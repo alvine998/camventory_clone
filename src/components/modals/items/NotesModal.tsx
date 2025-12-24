@@ -44,6 +44,7 @@ export default function NotesModal({
         await axios.patch(`/api/items/update-status`, {
           status: status,
           id: itemId,
+          notes: notes,
         });
       } catch (statusError: any) {
         console.error("Error updating status:", statusError);
