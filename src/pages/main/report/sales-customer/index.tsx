@@ -2,7 +2,6 @@ import Button from "@/components/Button";
 import DateRangePicker from "@/components/DateRangePicker";
 import Modal, { useModal } from "@/components/Modal";
 import { CalendarDays, Eye, Upload } from "lucide-react";
-import { format } from "date-fns";
 import moment from "moment";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
@@ -37,8 +36,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       endDate = "",
     } = query;
 
-    const startDateStr =
-      (startDate as string) || moment().format("DD/MM/YYYY");
+    const startDateStr = (startDate as string) || moment().format("DD/MM/YYYY");
     const endDateStr =
       (endDate as string) || moment().add(30, "days").format("DD/MM/YYYY");
 
@@ -78,6 +76,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     return {
       props: {
         reportData: reportResponse.data?.data || null,
+        meta: reportResponse.data?.meta || null,
         dateRange: { start: startDateStr, end: endDateStr },
         initialSortBy: sortBy || "",
       },
@@ -95,6 +94,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     return {
       props: {
         reportData: null,
+        meta: null,
         dateRange: {
           start: moment().format("DD/MM/YYYY"),
           end: moment().add(30, "days").format("DD/MM/YYYY"),
@@ -120,23 +120,37 @@ const parseDateString = (dateStr: string): Date => {
 
 interface Props {
   reportData: any;
+  meta: any;
   dateRange: { start: string; end: string };
   initialSortBy: string;
 }
 
-export default function SalesProductPage({
+export default function SalesCustomerPage({
   reportData,
+  meta,
   dateRange,
   initialSortBy,
 }: Props) {
   const router = useRouter();
   const { query } = router;
 
-  const [date, setDate] = useState({
+  const [date] = useState({
+    start: dateRange?.start || moment().format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
+  });
+  const [tempDate, setTempDate] = useState({
     start: dateRange?.start || moment().format("DD/MM/YYYY"),
     end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
   });
   const [sortBy, setSortBy] = useState<string>(initialSortBy || "");
+
+  // Update tempDate when date changes (from SSR)
+  useEffect(() => {
+    setTempDate({
+      start: date.start,
+      end: date.end,
+    });
+  }, [date.start, date.end]);
 
   const currentPage = Number(query.page) || 1;
   const rowsPerPage = Number(query.limit) || 10;
@@ -184,13 +198,19 @@ export default function SalesProductPage({
           <button
             type="button"
             onClick={() => {
+              // Initialize tempDate with current date when opening modal
+              setTempDate({
+                start: date.start,
+                end: date.end,
+              });
               setModal({ open: true, key: "date", data: date });
             }}
             className="border border-gray-300 rounded px-2 pr-16 py-2 flex items-center justify-start gap-2"
           >
             <CalendarDays className="w-4 h-4 text-gray-500" />
             <p className="text-sm text-gray-500">
-              {date.start} - {date.end}
+              {moment(tempDate.start, "DD/MM/YYYY").format("DD MMM YYYY")} -{" "}
+              {moment(tempDate.end, "DD/MM/YYYY").format("DD MMM YYYY")}
             </p>
           </button>
           <Input type="search" placeholder="Search Customer" />
@@ -267,7 +287,9 @@ export default function SalesProductPage({
             highlightOnHover
             paginationDefaultPage={currentPage}
             paginationPerPage={rowsPerPage}
-            paginationTotalRows={Number(reportData?.count) || 0}
+            paginationTotalRows={
+              Number(meta?.total_data) || Number(reportData?.count) || 0
+            }
             paginationRowsPerPageOptions={[10, 20, 50, 100]}
             paginationServer
             onChangePage={handlePageChange}
@@ -296,66 +318,83 @@ export default function SalesProductPage({
       {modal?.key === "date" && (
         <Modal
           open={modal?.open}
-          setOpen={() => setModal({ open: false, key: "", data: {} })}
+          setOpen={() => {
+            setModal({ open: false, key: "", data: {} });
+            // Reset temp date to current date when closing
+            setTempDate({
+              start: date.start,
+              end: date.end,
+            });
+          }}
           size="xl"
         >
-          <DateRangePicker
-            date={{
-              start: parseDateString(date.start),
-              end: parseDateString(date.end),
-            }}
-            setDate={(dateRange) => {
-              try {
-                // Convert the received date range to the expected format
-                const startDate = dateRange.start
-                  ? new Date(dateRange.start)
-                  : new Date();
-                const endDate = dateRange.end
-                  ? new Date(dateRange.end)
-                  : new Date();
+          <div className="p-6">
+            <DateRangePicker
+              date={{
+                start: parseDateString(tempDate.start),
+                end: parseDateString(tempDate.end),
+              }}
+              setDate={(dateRange) => {
+                try {
+                  // DateRangePicker sends dates in 'dd/MM/yyyy' format as strings
+                  if (!dateRange.start || !dateRange.end) {
+                    return; // Don't update if dates are not complete
+                  }
 
-                // Ensure dates are valid
-                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-                  throw new Error("Invalid date");
+                  // Validate using moment to ensure dates are valid
+                  const startMoment = moment(dateRange.start, "DD/MM/YYYY");
+                  const endMoment = moment(dateRange.end, "DD/MM/YYYY");
+
+                  // Ensure dates are valid
+                  if (!startMoment.isValid() || !endMoment.isValid()) {
+                    throw new Error("Invalid date");
+                  }
+
+                  // Update temporary date (not the actual date yet)
+                  // DateRangePicker already sends in 'dd/MM/yyyy' format, so use directly
+                  setTempDate({
+                    start: dateRange.start,
+                    end: dateRange.end,
+                  });
+                } catch (error) {
+                  console.error("Error setting date range:", error);
                 }
-
-                const startStr = format(startDate, "dd/MM/yyyy");
-                const endStr = format(endDate, "dd/MM/yyyy");
-
-                setDate({
-                  start: startStr,
-                  end: endStr,
-                });
-
-                router.push({
-                  pathname: router.pathname,
-                  query: {
-                    ...(typeof query === "object" && query !== null ? query : {}),
-                    startDate: startStr,
-                    endDate: endStr,
-                    page: 1,
-                  },
-                });
-              } catch (error) {
-                console.error("Error setting date range:", error);
-                const now = new Date();
-                const nowStr = format(now, "dd/MM/yyyy");
-                setDate({
-                  start: nowStr,
-                  end: nowStr,
-                });
-                router.push({
-                  pathname: router.pathname,
-                  query: {
-                    ...(typeof query === "object" && query !== null ? query : {}),
-                    startDate: nowStr,
-                    endDate: nowStr,
-                    page: 1,
-                  },
-                });
-              }
-            }}
-          />
+              }}
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                variant="white"
+                onClick={() => {
+                  setModal({ open: false, key: "", data: {} });
+                  setTempDate({
+                    start: date.start,
+                    end: date.end,
+                  });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="submit"
+                onClick={() => {
+                  setModal({ open: false, key: "", data: {} });
+                  router.push({
+                    pathname: router.pathname,
+                    query: {
+                      ...(typeof query === "object" && query !== null
+                        ? query
+                        : {}),
+                      startDate: tempDate.start,
+                      endDate: tempDate.end,
+                      page: 1,
+                    },
+                  });
+                }}
+              >
+                Simpan
+              </Button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>
