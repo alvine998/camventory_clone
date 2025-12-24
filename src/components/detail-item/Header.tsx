@@ -7,6 +7,7 @@ import Image from "next/image";
 import { IItems } from "@/types/single_items";
 import { useRouter } from "next/router";
 import NotesModal from "../modals/items/NotesModal";
+import Barcode from "react-barcode";
 
 interface Props {
   detail: IItems;
@@ -81,6 +82,18 @@ export default function Header({ detail, query }: Props) {
               {/* <Button
                 className="flex items-center gap-1 border border-orange-500"
                 variant="custom-color"
+                type="button"
+                onClick={handleGenerateBarcode}
+                disabled={generatingBarcode}
+              >
+                <QrCode className="w-4 h-4 text-orange-500" />
+                <p className="text-orange-500 text-xs">
+                  {generatingBarcode ? "Generating..." : "Generate Barcode"}
+                </p>
+              </Button> */}
+              {/* <Button
+                className="flex items-center gap-1 border border-orange-500"
+                variant="custom-color"
               >
                 <PencilIcon className="w-4 h-4 text-orange-500" />
                 <p className="text-orange-500 text-xs">Edit</p>
@@ -96,20 +109,35 @@ export default function Header({ detail, query }: Props) {
               </Button>
             </div>
           </div>
-          <div className="flex gap-4 mt-2 flex-wrap">
+          <div className="flex gap-4 mt-2 flex-wrap items-start">
             <div className="flex gap-1 items-center min-w-0">
-              <Image
-                alt="icon"
-                src={"/icons/barcode.svg"}
-                width={20}
-                height={20}
-                className={"w-auto h-auto flex-shrink-0"}
-              />
-              <p className="text-xs text-gray-500 break-words break-all">
-                {detail?.barcode}
-              </p>
+              {detail?.barcode ? (
+                <div className="flex flex-col items-start gap-1">
+                  <Barcode
+                    value={detail.barcode}
+                    format="CODE128"
+                    width={1}
+                    height={20}
+                    displayValue={true}
+                    fontSize={12}
+                  />
+                </div>
+              ) : (
+                <div className="flex gap-1 items-center min-w-0">
+                  <Image
+                    alt="icon"
+                    src={"/icons/barcode.svg"}
+                    width={20}
+                    height={20}
+                    className={"w-auto h-auto flex-shrink-0"}
+                  />
+                  <p className="text-xs text-gray-500 break-words break-all">
+                    No barcode
+                  </p>
+                </div>
+              )}
             </div>
-            <div className="flex gap-1 items-center flex-shrink-0">
+            <div className="flex gap-1 items-center flex-shrink-0 mt-2">
               <Image
                 alt="icon"
                 src={"/icons/box_gray.svg"}

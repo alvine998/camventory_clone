@@ -18,6 +18,7 @@ import { GetServerSideProps } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
+import Barcode from "react-barcode";
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { req, params, query } = ctx;
   const cookies = parse(req.headers.cookie || "");
@@ -261,7 +262,20 @@ export default function Detail({ params, detail, query }: any) {
                       unoptimized
                     />
                   ) : item.label === "Barcode" ? (
-                    <p className="text-xs font-bold break-words break-all max-w-full">{item.value}</p>
+                    item.value ? (
+                      <div className="flex flex-col items-start gap-1">
+                          <Barcode
+                            value={item.value}
+                            format="CODE128"
+                            width={1}
+                            height={20}
+                            displayValue={true}
+                            fontSize={12}
+                          />
+                      </div>
+                    ) : (
+                      <p className="text-xs font-bold text-gray-400">No barcode</p>
+                    )
                   ) : (
                     <p className="text-xs font-bold">{item.value}</p>
                   )}{" "}
@@ -321,7 +335,20 @@ export default function Detail({ params, detail, query }: any) {
                         unoptimized
                       />
                     ) : item.label === "Barcode" ? (
-                      <p className="text-xs font-bold break-words break-all max-w-full">{item.value}</p>
+                      item.value ? (
+                        <div className="flex flex-col items-start gap-1">
+                          <Barcode
+                            value={item.value}
+                            format="CODE128"
+                            width={1}
+                            height={20}
+                            displayValue={true}
+                            fontSize={12}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-xs font-bold text-gray-400">No barcode</p>
+                      )
                     ) : (
                       <p className="text-xs font-bold">{item.value}</p>
                     )}{" "}
@@ -345,7 +372,20 @@ export default function Detail({ params, detail, query }: any) {
                         unoptimized
                       />
                     ) : item.label === "Barcode" ? (
-                      <p className="text-xs font-bold break-words break-all max-w-full">{item.value}</p>
+                      item.value ? (
+                        <div className="flex flex-col items-start gap-1">
+                          <Barcode
+                            value={item.value}
+                            format="CODE128"
+                            width={1}
+                            height={20}
+                            displayValue={true}
+                            fontSize={12}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-xs font-bold text-gray-400">No barcode</p>
+                      )
                     ) : (
                       <p className="text-xs font-bold">{item.value}</p>
                     )}
