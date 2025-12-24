@@ -15,6 +15,7 @@ import { ColumnReservation } from "@/constants/column_reservation";
 import moment from "moment";
 import TooltipComponent from "@/components/TooltipComponent";
 import { getStatusBadgeColor } from "@/utils";
+import Select from "@/components/Select";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -40,6 +41,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       location = "",
       startDate = "",
       endDate = "",
+      order_by = "",
     } = query;
 
     const params = new URLSearchParams({
@@ -77,6 +79,47 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       if (!isNaN(endTimestamp) && endTimestamp > 0) {
         params.set("end_date", String(endTimestamp));
       }
+    }
+
+    // Parse and validate order_by parameter
+    let orderByParam: string | null = null;
+
+    // Valid columns and directions
+    const validColumns = ["start_date", "end_date", "created_at", "id"];
+    const validDirections = ["asc", "desc"];
+
+    // Handle order_by="" or order_by= (empty string means default)
+    if (typeof order_by === "string") {
+      if (order_by.trim() === "") {
+        // Empty string means default (created_at DESC), but we still send it to API
+        orderByParam = "";
+      } else {
+        // Parse format: column:direction
+        const parts = order_by.split(":");
+        if (parts.length === 2) {
+          const column = parts[0].trim();
+          const direction = parts[1].trim().toLowerCase();
+
+          // Validate column and direction
+          if (
+            validColumns.includes(column) &&
+            validDirections.includes(direction)
+          ) {
+            orderByParam = order_by;
+          } else {
+            // Invalid format, use default (null means don't send parameter)
+            orderByParam = null;
+          }
+        } else {
+          // Invalid format, use default (null means don't send parameter)
+          orderByParam = null;
+        }
+      }
+    }
+    // If orderByParam is null, don't send order_by parameter (API defaults to created_at DESC)
+
+    if (orderByParam !== null) {
+      params.set("order_by", orderByParam);
     }
 
     const table = await axios.get(
@@ -193,19 +236,19 @@ export default function ReservationPage({ table, customers }: any) {
     const cleanFilter: any = {};
     Object.entries(filter).forEach(([key, value]) => {
       // Skip invalid date values (NaN or empty)
-      if (key === 'startDate' || key === 'endDate') {
+      if (key === "startDate" || key === "endDate") {
         const timestamp = Number(value);
         if (!isNaN(timestamp) && timestamp > 0) {
           cleanFilter[key] = value;
         }
-      } else if (value !== undefined && value !== null && value !== '') {
+      } else if (value !== undefined && value !== null && value !== "") {
         cleanFilter[key] = value;
       }
     });
-    
+
     const queryFilter = new URLSearchParams(cleanFilter).toString();
     const currentQuery = new URLSearchParams(window.location.search).toString();
-    
+
     // Only push if the filter has actually changed
     if (queryFilter !== currentQuery) {
       router.push(`?${queryFilter}`).catch(() => {
@@ -222,6 +265,11 @@ export default function ReservationPage({ table, customers }: any) {
       limit: router.query.limit || 10,
     };
 
+    // Preserve order_by if it exists
+    if (filter.order_by !== undefined) {
+      newFilters.order_by = filter.order_by;
+    }
+
     if (appliedFilters.customer?.value) {
       newFilters.customer_id = appliedFilters.customer.value;
     }
@@ -236,8 +284,11 @@ export default function ReservationPage({ table, customers }: any) {
     }
     if (appliedFilters.startDate) {
       // Date input returns YYYY-MM-DD format, set to 00:00:00 and convert to Unix epoch (seconds)
-      const startMoment = moment(appliedFilters.startDate, "YYYY-MM-DD", true)
-        .startOf('day'); // Sets to 00:00:00
+      const startMoment = moment(
+        appliedFilters.startDate,
+        "YYYY-MM-DD",
+        true
+      ).startOf("day"); // Sets to 00:00:00
       if (startMoment.isValid()) {
         const startTimestamp = startMoment.unix();
         if (!isNaN(startTimestamp) && startTimestamp > 0) {
@@ -247,8 +298,11 @@ export default function ReservationPage({ table, customers }: any) {
     }
     if (appliedFilters.endDate) {
       // Date input returns YYYY-MM-DD format, set to 23:59:59 and convert to Unix epoch (seconds)
-      const endMoment = moment(appliedFilters.endDate, "YYYY-MM-DD", true)
-        .endOf('day'); // Sets to 23:59:59
+      const endMoment = moment(
+        appliedFilters.endDate,
+        "YYYY-MM-DD",
+        true
+      ).endOf("day"); // Sets to 23:59:59
       if (endMoment.isValid()) {
         const endTimestamp = endMoment.unix();
         if (!isNaN(endTimestamp) && endTimestamp > 0) {
@@ -276,6 +330,58 @@ export default function ReservationPage({ table, customers }: any) {
             <Filter className="w-4 h-4" />
             Filter
           </Button>
+          <div className="w-48">
+            <Select
+              options={[
+                { value: "", label: "Default (Created At DESC)" },
+                { value: "created_at:asc", label: "Created At (ASC)" },
+                { value: "created_at:desc", label: "Created At (DESC)" },
+                { value: "start_date:asc", label: "Start Date (ASC)" },
+                { value: "start_date:desc", label: "Start Date (DESC)" },
+                { value: "end_date:asc", label: "End Date (ASC)" },
+                { value: "end_date:desc", label: "End Date (DESC)" },
+                { value: "id:asc", label: "ID (ASC)" },
+                { value: "id:desc", label: "ID (DESC)" },
+              ]}
+              value={
+                typeof filter.order_by === "string"
+                  ? {
+                      value: filter.order_by,
+                      label:
+                        filter.order_by === ""
+                          ? "Default (Latest Created)"
+                          : filter.order_by === "created_at:asc"
+                          ? "Created At (Oldest Created)"
+                          : filter.order_by === "created_at:desc"
+                          ? "Created At (Latest Created)"
+                          : filter.order_by === "start_date:asc"
+                          ? "Start Date (Oldest Start Date)"
+                          : filter.order_by === "start_date:desc"
+                          ? "Start Date (Latest Start Date)"
+                          : filter.order_by === "end_date:asc"
+                          ? "End Date (Oldest End Date)"
+                          : filter.order_by === "end_date:desc"
+                          ? "End Date (Latest End Date)"
+                          : "Default (Latest Created)",
+                    }
+                  : { value: "", label: "Default (Created At DESC)" }
+              }
+              onChange={(selectedOption: any) => {
+                const newOrderBy = selectedOption?.value || "";
+                setFilter((prev: any) => {
+                  const newFilter = { ...prev, page: 1 }; // Reset to page 1 when sorting changes
+                  if (newOrderBy) {
+                    newFilter.order_by = newOrderBy;
+                  } else {
+                    delete newFilter.order_by;
+                  }
+                  return newFilter;
+                });
+              }}
+              placeholder="Sort by..."
+              isClearable={false}
+            />
+          </div>
         </div>
         <div className="md:w-auto w-full">
           <Button
@@ -303,7 +409,14 @@ export default function ReservationPage({ table, customers }: any) {
               onChangePage={(page) =>
                 setFilter((prev: any) => ({ ...prev, page }))
               }
-              onChangeRowsPerPage={(limit, page) => setFilter({ limit, page })}
+              onChangeRowsPerPage={(limit, page) => {
+                const newFilter: any = { limit, page };
+                // Preserve order_by if it exists
+                if (filter.order_by !== undefined) {
+                  newFilter.order_by = filter.order_by;
+                }
+                setFilter(newFilter);
+              }}
               customStyles={{
                 headCells: {
                   style: {
@@ -358,7 +471,11 @@ export default function ReservationPage({ table, customers }: any) {
               typeof filter.startDate === "string" && filter.startDate
                 ? (() => {
                     const timestamp = Number(filter.startDate);
-                    if (!isNaN(timestamp) && timestamp > 0 && moment.unix(timestamp).isValid()) {
+                    if (
+                      !isNaN(timestamp) &&
+                      timestamp > 0 &&
+                      moment.unix(timestamp).isValid()
+                    ) {
                       // Date input expects YYYY-MM-DD format
                       return moment.unix(timestamp).format("YYYY-MM-DD");
                     }
@@ -369,7 +486,11 @@ export default function ReservationPage({ table, customers }: any) {
               typeof filter.endDate === "string" && filter.endDate
                 ? (() => {
                     const timestamp = Number(filter.endDate);
-                    if (!isNaN(timestamp) && timestamp > 0 && moment.unix(timestamp).isValid()) {
+                    if (
+                      !isNaN(timestamp) &&
+                      timestamp > 0 &&
+                      moment.unix(timestamp).isValid()
+                    ) {
                       // Date input expects YYYY-MM-DD format
                       return moment.unix(timestamp).format("YYYY-MM-DD");
                     }
