@@ -77,6 +77,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       }
     );
 
+    console.log(reportResponse?.data);
+    console.log(`${CONFIG.API_URL}/v1/report/category?${params.toString()}`);
+
     if (reportResponse?.status === 401 || categories?.status === 401) {
       return {
         redirect: {
@@ -270,7 +273,7 @@ export default function SalesCategoryPage({
         <div>
           <Button
             type="button"
-            onClick={() => {}}
+            onClick={() => { }}
             title="Export Excel"
             variant="submit"
             className="flex items-center gap-2"

@@ -75,6 +75,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
+    console.log(reportResponse?.data);
+    console.log(`${CONFIG.API_URL}/v1/report/product?page=${page}&limit=${limit}&startDate=${startTimestamp}&endDate=${endTimestamp}&productName=${productName}&sortBy=${sortBy}`);
     return {
       props: {
         reportData: reportResponse.data?.data || null,
@@ -317,7 +319,7 @@ export default function SalesProductPage({
         <div>
           <Button
             type="button"
-            onClick={() => {}}
+            onClick={() => { }}
             title="Export Excel"
             variant="submit"
             className="flex items-center gap-2"
