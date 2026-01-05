@@ -58,3 +58,31 @@ export interface RefUser {
   last_login: Date;
   updated_at: Date;
 }
+
+// Calendar API Types
+export interface ICalendarItem {
+  name: string;
+}
+
+export interface ICalendarReservation {
+  reservation_id: string;
+  admin_name: string;
+  pickup_location: string;
+  start_date: string;
+  end_date: string;
+  status: string;
+  customer_name: string;
+  book_id: string;
+  list_item: ICalendarItem[];
+}
+
+export interface ICalendarResponse {
+  message: string;
+  status: number;
+  data: ICalendarReservation[];
+  error: {
+    code: number;
+    message: string;
+    status: boolean;
+  };
+}
