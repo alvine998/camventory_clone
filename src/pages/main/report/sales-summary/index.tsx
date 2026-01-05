@@ -12,6 +12,7 @@ import { parse } from "cookie";
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import Swal from "sweetalert2";
+import { exportToExcel, formatCurrency } from "@/utils/exportToExcel";
 
 // Dynamically import ApexCharts to avoid SSR issues
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -278,7 +279,38 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
         <div>
           <Button
             type="button"
-            onClick={() => {}}
+            onClick={() => {
+              if (!reportData || !reportData.date || !reportData.sum_by_date) {
+                alert('No data available to export');
+                return;
+              }
+
+              const dateArray = reportData.date || [];
+              const sumArray = reportData.sum_by_date || [];
+              const entries = dateArray.map((timestamp: number, index: number) => ({
+                date: moment.unix(timestamp).format("DD MMM YYYY"),
+                sales: sumArray[index] ?? 0,
+              }));
+
+              exportToExcel({
+                filename: `Sales_Summary_Report_${moment(date.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(date.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
+                sheetName: 'Sales Summary',
+                columns: [
+                  { header: 'Date', key: 'date', width: 20 },
+                  { header: 'Sales', key: 'sales_formatted', width: 20 },
+                ],
+                data: entries.map(entry => ({
+                  date: entry.date,
+                  sales_formatted: formatCurrency(entry.sales),
+                })),
+                summaryData: [
+                  { label: 'Report Period', value: `${moment(date.start, "DD/MM/YYYY").format("DD MMM YYYY")} - ${moment(date.end, "DD/MM/YYYY").format("DD MMM YYYY")}` },
+                  { label: 'Total Gross Sales', value: formatCurrency(reportData?.total_sum_by_date || 0) },
+                  { label: 'Tax', value: formatCurrency(reportData?.tax || 0) },
+                  { label: 'Total Sales', value: formatCurrency((reportData?.total_sum_by_date || 0) + (reportData?.tax || 0)) },
+                ],
+              });
+            }}
             title="Export Excel"
             variant="submit"
             className="flex items-center gap-2"
@@ -396,27 +428,27 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
           size="xl"
         >
           <div className="p-6">
-            <DateRangePicker 
+            <DateRangePicker
               date={{
                 start: parseDateString(tempDate.start),
                 end: parseDateString(tempDate.end)
-              }} 
+              }}
               setDate={(dateRange) => {
                 try {
                   // DateRangePicker sends dates in 'dd/MM/yyyy' format as strings
                   // Validate using moment to ensure dates are valid
-                  const startMoment = dateRange.start 
+                  const startMoment = dateRange.start
                     ? moment(dateRange.start, "DD/MM/YYYY")
                     : moment();
-                  const endMoment = dateRange.end 
+                  const endMoment = dateRange.end
                     ? moment(dateRange.end, "DD/MM/YYYY")
                     : moment();
-                  
+
                   // Ensure dates are valid
                   if (!startMoment.isValid() || !endMoment.isValid()) {
                     throw new Error('Invalid date');
                   }
-                  
+
                   // Update temporary date (not the actual date yet)
                   // DateRangePicker already sends in 'dd/MM/yyyy' format, so use directly
                   setTempDate({

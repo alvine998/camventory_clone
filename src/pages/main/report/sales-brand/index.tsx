@@ -13,6 +13,7 @@ import Input from "@/components/Input";
 import { ColumnSalesBrand } from "@/constants/column_sales_brand";
 import Select from "@/components/Select";
 import { useRouter } from "next/router";
+import { exportToExcel, formatCurrency } from "@/utils/exportToExcel";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -247,7 +248,29 @@ export default function SalesProductPage({
         <div>
           <Button
             type="button"
-            onClick={() => {}}
+            onClick={() => {
+              exportToExcel({
+                filename: `Sales_Brand_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
+                sheetName: 'Sales Brand',
+                columns: [
+                  { header: 'Brand Name', key: 'brand_name', width: 30 },
+                  { header: 'Total Rentals', key: 'total_rentals', width: 15 },
+                  { header: 'Net Sales', key: 'net_sales_formatted', width: 20 },
+                  { header: 'Taxes', key: 'taxes_formatted', width: 20 },
+                  { header: 'Sales', key: 'sales_formatted', width: 20 },
+                ],
+                data: reportData?.data_list?.map((item: any) => ({
+                  brand_name: item.name,
+                  total_rentals: item.total,
+                  net_sales_formatted: formatCurrency(item.gross_sales),
+                  taxes_formatted: formatCurrency(item.taxes),
+                  sales_formatted: formatCurrency(item.sales),
+                })) || [],
+                summaryData: [
+                  { label: 'Report Period', value: `${moment(tempDate.start, "DD/MM/YYYY").format("DD MMM YYYY")} - ${moment(tempDate.end, "DD/MM/YYYY").format("DD MMM YYYY")}` },
+                ],
+              });
+            }}
             title="Export Excel"
             variant="submit"
             className="flex items-center gap-2"

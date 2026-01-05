@@ -15,6 +15,7 @@ import DataTable from "react-data-table-component";
 import Input from "@/components/Input";
 import { ColumnSalesProduct } from "@/constants/column_sales_product";
 import { useRouter } from "next/router";
+import { exportToExcel, formatCurrency } from "@/utils/exportToExcel";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -319,7 +320,39 @@ export default function SalesProductPage({
         <div>
           <Button
             type="button"
-            onClick={() => { }}
+            onClick={() => {
+              exportToExcel({
+                filename: `Sales_Product_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
+                sheetName: 'Sales Product',
+                columns: [
+                  { header: 'No', key: 'product_id', width: 10 },
+                  { header: 'Product Name', key: 'product_name', width: 30 },
+                  { header: 'Category', key: 'category', width: 20 },
+                  { header: 'Total Rentals', key: 'total_rentals', width: 15 },
+                  { header: 'Unit', key: 'unit', width: 10 },
+                  { header: 'Gross Sales', key: 'gross_sales_formatted', width: 20 },
+                  { header: 'Taxes', key: 'taxes_formatted', width: 20 },
+                  { header: 'Sales', key: 'sales_formatted', width: 20 },
+                ],
+                data: reportData?.data_list?.map((item: any, index: number) => ({
+                  product_id: index + 1,
+                  product_name: item.product_name,
+                  category: item.category,
+                  total_rentals: item.total,
+                  unit: item.unit,
+                  gross_sales_formatted: formatCurrency(item.gross_sales),
+                  taxes_formatted: formatCurrency(item.taxes),
+                  sales_formatted: formatCurrency(item.sales),
+                })) || [],
+                summaryData: [
+                  { label: 'Report Period', value: `${moment(tempDate.start, "DD/MM/YYYY").format("DD MMM YYYY")} - ${moment(tempDate.end, "DD/MM/YYYY").format("DD MMM YYYY")}` },
+                  { label: 'Product Sold', value: reportData?.summary_data?.total || 0 },
+                  { label: 'Total Gross Sales', value: formatCurrency(reportData?.summary_data?.gross_sales || 0) },
+                  { label: 'Total Tax', value: formatCurrency(reportData?.summary_data?.taxes || 0) },
+                  { label: 'Total Sales', value: formatCurrency(reportData?.summary_data?.sales || 0) },
+                ],
+              });
+            }}
             title="Export Excel"
             variant="submit"
             className="flex items-center gap-2"

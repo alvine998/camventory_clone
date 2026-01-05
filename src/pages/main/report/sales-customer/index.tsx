@@ -13,6 +13,7 @@ import Input from "@/components/Input";
 import { ColumnSalesCustomer } from "@/constants/column_sales-customer";
 import { useRouter } from "next/router";
 import Select from "@/components/Select";
+import { exportToExcel } from "@/utils/exportToExcel";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -241,7 +242,29 @@ export default function SalesCustomerPage({
         <div>
           <Button
             type="button"
-            onClick={() => {}}
+            onClick={() => {
+              exportToExcel({
+                filename: `Sales_Customer_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
+                sheetName: 'Sales Customer',
+                columns: [
+                  { header: 'Customer Name', key: 'customer_name', width: 30 },
+                  { header: 'Phone Number', key: 'phone_number', width: 20 },
+                  { header: 'Total Visit', key: 'total_visit', width: 15 },
+                  { header: 'Total Transaction', key: 'total_transaction', width: 20 },
+                ],
+                data: Array.isArray(reportData?.data_list)
+                  ? reportData.data_list.map((item: any) => ({
+                    customer_name: item.name,
+                    phone_number: item.phone_number,
+                    total_visit: item.total_visit,
+                    total_transaction: item.total,
+                  }))
+                  : [],
+                summaryData: [
+                  { label: 'Report Period', value: `${moment(tempDate.start, "DD/MM/YYYY").format("DD MMM YYYY")} - ${moment(tempDate.end, "DD/MM/YYYY").format("DD MMM YYYY")}` },
+                ],
+              });
+            }}
             title="Export Excel"
             variant="submit"
             className="flex items-center gap-2"
@@ -260,27 +283,27 @@ export default function SalesCustomerPage({
             data={
               Array.isArray(reportData?.data_list)
                 ? reportData.data_list.map((item: any) => ({
-                    customer_id: item.customer_id,
-                    customer_name: item.name,
-                    phone_number: item.phone_number,
-                    total_visit: item.total_visit,
-                    total_transaction: item.total,
-                    action: (
-                      <Button
-                        type="button"
-                        title="View"
-                        variant="submit"
-                        className="flex items-center gap-2"
-                        onClick={() =>
-                          router.push(
-                            `/main/report/sales-customer/${item.customer_id}`
-                          )
-                        }
-                      >
-                        <Eye className="w-4 h-4 text-white" />
-                      </Button>
-                    ),
-                  }))
+                  customer_id: item.customer_id,
+                  customer_name: item.name,
+                  phone_number: item.phone_number,
+                  total_visit: item.total_visit,
+                  total_transaction: item.total,
+                  action: (
+                    <Button
+                      type="button"
+                      title="View"
+                      variant="submit"
+                      className="flex items-center gap-2"
+                      onClick={() =>
+                        router.push(
+                          `/main/report/sales-customer/${item.customer_id}`
+                        )
+                      }
+                    >
+                      <Eye className="w-4 h-4 text-white" />
+                    </Button>
+                  ),
+                }))
                 : []
             }
             pagination
