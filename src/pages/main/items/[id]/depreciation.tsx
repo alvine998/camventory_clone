@@ -162,57 +162,58 @@ export default function Depreciation({ params, detail, query }: any) {
     const residualValueRaw = Number(itemDetail?.residual_value ?? 0);
     const usefulLifeRaw = Number(
       itemDetail?.depreciation_years ??
-        itemDetail?.useful_life_years ??
-        itemDetail?.lifespan_years ??
-        itemDetail?.life_year ??
-        0
+      itemDetail?.useful_life_years ??
+      itemDetail?.lifespan_years ??
+      itemDetail?.life_year ??
+      0
     );
 
     const usefulLifeYears = usefulLifeRaw > 0 ? usefulLifeRaw : 5; // Default to 5 years if not provided
 
     const purchaseDateMoment = parsePurchaseDate(itemDetail?.purchase_date);
+    const MONTHLY_RATE = 0.003; // 0.3% per month
     const totalMonths = Math.max(1, Math.round(usefulLifeYears * 12));
-    const totalDepreciableAmount = Math.max(0, purchasePriceRaw - Math.max(0, residualValueRaw));
-    const monthlyDepreciationRaw = totalMonths > 0 ? totalDepreciableAmount / totalMonths : 0;
 
     const schedule: DepreciationPoint[] = [];
-    let previousBookValue = purchasePriceRaw;
+    let currentBookValue = purchasePriceRaw;
+    let accumulatedDepreciation = 0;
 
-    for (let month = 0; month <= totalMonths; month++) {
-      const currentBookValue = Math.max(
-        purchasePriceRaw - monthlyDepreciationRaw * month,
-        Math.max(0, residualValueRaw)
-      );
+    // Point 0: Purchase
+    schedule.push({
+      label: purchaseDateMoment.format("MMM YYYY"),
+      dateISO: purchaseDateMoment.toISOString(),
+      bookValue: Math.round(currentBookValue),
+      depreciationExpense: 0,
+      accumulatedDepreciation: 0,
+    });
 
-      const depreciationExpense =
-        month === 0 ? 0 : Math.max(0, previousBookValue - currentBookValue);
+    for (let month = 1; month <= totalMonths; month++) {
+      const previousBookValue = currentBookValue;
+      // Formula: Value_new = Value_old * (1 - 0.003)
+      currentBookValue = previousBookValue * (1 - MONTHLY_RATE);
 
-      const accumulatedDepreciation = Math.min(
-        totalDepreciableAmount,
-        Math.max(0, purchasePriceRaw - currentBookValue)
-      );
+      const depreciationExpense = previousBookValue - currentBookValue;
+      accumulatedDepreciation += depreciationExpense;
 
       const period = purchaseDateMoment.clone().add(month, "months");
 
       schedule.push({
         label: period.format("MMM YYYY"),
         dateISO: period.toISOString(),
-        bookValue: Number(currentBookValue.toFixed(0)),
-        depreciationExpense: Number(depreciationExpense.toFixed(0)),
-        accumulatedDepreciation: Number(accumulatedDepreciation.toFixed(0)),
+        bookValue: Math.round(currentBookValue),
+        depreciationExpense: Math.round(depreciationExpense),
+        accumulatedDepreciation: Math.round(accumulatedDepreciation),
       });
-
-      previousBookValue = currentBookValue;
     }
 
     return {
       schedule,
-      monthlyDepreciation: monthlyDepreciationRaw,
+      monthlyDepreciation: 0, // Not applicable for declining balance in the same way
       residualValue: residualValueRaw,
       purchasePrice: purchasePriceRaw,
       usefulLifeYears,
       purchaseDate: purchaseDateMoment,
-      totalDepreciableAmount,
+      totalDepreciableAmount: accumulatedDepreciation,
     };
   }, [itemDetail]);
 
@@ -275,7 +276,7 @@ export default function Depreciation({ params, detail, query }: any) {
         },
       },
       title: {
-        text: "Straight-Line Depreciation",
+        text: "Depreciation Projection (0.3% Monthly)",
         align: "center",
         style: {
           fontSize: "18px",
