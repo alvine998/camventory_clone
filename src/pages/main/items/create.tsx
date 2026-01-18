@@ -8,6 +8,7 @@ import { parse } from "cookie";
 import { XIcon } from "lucide-react";
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -132,7 +133,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
   useEffect(() => {
     const queryFilter = new URLSearchParams(filter).toString();
     router.push(`?${queryFilter}`);
-  }, [filter]);
+  }, [filter, router]);
 
   const onSubmit = async (e: any) => {
     e.preventDefault();
@@ -200,13 +201,13 @@ export default function AdministratorPage({ brands, categories }: Props) {
         qty: Number(formData?.qty) || null,
         purchase_date: formData?.purchase_date
           ? Math.floor(
-              new Date(formData?.purchase_date.toString()).getTime() / 1000
-            )
+            new Date(formData?.purchase_date.toString()).getTime() / 1000
+          )
           : null,
         warranty_date: formData?.warranty_date
           ? Math.floor(
-              new Date(formData?.warranty_date.toString()).getTime() / 1000
-            )
+            new Date(formData?.warranty_date.toString()).getTime() / 1000
+          )
           : null,
       };
 
@@ -219,9 +220,8 @@ export default function AdministratorPage({ brands, categories }: Props) {
       Swal.fire({
         icon: "success",
         title: "Item Created Successfully",
-        text: `The ${
-          type === "bulk" ? "bulk" : "single"
-        } item has been created successfully.`,
+        text: `The ${type === "bulk" ? "bulk" : "single"
+          } item has been created successfully.`,
         showConfirmButton: false,
         timer: 1500,
       });
@@ -369,9 +369,8 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   fullWidth
                   readOnly
                   required
-                  value={`${filter?.brand?.label || "Item Name"} ${
-                    filter?.model || ""
-                  }`}
+                  value={`${filter?.brand?.label || "Item Name"} ${filter?.model || ""
+                    }`}
                 />
                 <Select
                   options={[
@@ -389,7 +388,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   fullWidth
                   required
                   name="location"
-                  // onChange={(e) => setFilter({ brand: e })}
+                // onChange={(e) => setFilter({ brand: e })}
                 />
               </div>
               <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
@@ -476,7 +475,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                     fullWidth
                     required
                     name="categoryID"
-                    // onChange={(e) => setFilter({ brand: e })}
+                  // onChange={(e) => setFilter({ brand: e })}
                   />
                 )}
               </div>
@@ -505,11 +504,12 @@ export default function AdministratorPage({ brands, categories }: Props) {
                     >
                       <XIcon className="w-4 h-4" color="white" />
                     </button>
-                    <img
+                    <Image
                       src={url}
                       alt={`Uploaded ${i}`}
                       width={150}
-                      className="rounded"
+                      height={150}
+                      className="rounded object-cover"
                     />
                   </div>
                 ))}

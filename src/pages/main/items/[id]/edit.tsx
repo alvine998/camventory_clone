@@ -8,6 +8,7 @@ import { parse } from "cookie";
 import { ArrowLeftIcon, XIcon } from "lucide-react";
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import moment from "moment";
@@ -41,13 +42,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       }),
       query.type === "bulk" && params?.id
         ? axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
-            headers: { Authorization: `${token}` },
-          })
+          headers: { Authorization: `${token}` },
+        })
         : query.type === "single" && params?.id
-        ? axios.get(`${CONFIG.API_URL}/v1/single-items/${params.id}`, {
+          ? axios.get(`${CONFIG.API_URL}/v1/single-items/${params.id}`, {
             headers: { Authorization: `${token}` },
           })
-        : Promise.resolve({ data: { data: null } }),
+          : Promise.resolve({ data: { data: null } }),
     ]);
 
     return {
@@ -93,26 +94,26 @@ export default function EditItemPage({
 
   const initialBrand: OptionType | null = itemData?.brandID
     ? {
-        value: itemData.brandID,
-        label: itemData?.name?.split(" ")[0] || "",
-      }
+      value: itemData.brandID,
+      label: itemData?.name?.split(" ")[0] || "",
+    }
     : null;
 
   const initialCategory: OptionType | null =
     type === "individual" && itemData?.categoryID
       ? {
-          value: itemData.categoryID,
-          label: categories?.find((item: any) => item.id === itemData.categoryID)?.name || "",
-        }
+        value: itemData.categoryID,
+        label: categories?.find((item: any) => item.id === itemData.categoryID)?.name || "",
+      }
       : null;
 
   const initialLocation: OptionType | null = itemData?.location
     ? {
-        value: itemData.location,
-        label:
-          itemData.location.charAt(0).toUpperCase() +
-          itemData.location.slice(1),
-      }
+      value: itemData.location,
+      label:
+        itemData.location.charAt(0).toUpperCase() +
+        itemData.location.slice(1),
+    }
     : null;
 
   const [selectedBrand, setSelectedBrand] = useState<OptionType | null>(
@@ -317,20 +318,20 @@ export default function EditItemPage({
         qty: type === "bulk" ? Number(qty) : undefined,
         purchase_date: formData?.purchase_date
           ? Math.floor(
-              new Date(formData?.purchase_date.toString()).getTime() / 1000
-            )
+            new Date(formData?.purchase_date.toString()).getTime() / 1000
+          )
           : itemData?.purchase_date
-          ? moment(itemData.purchase_date).unix()
-          : null,
+            ? moment(itemData.purchase_date).unix()
+            : null,
         warranty_date:
           type === "individual"
             ? formData?.warranty_date
               ? Math.floor(
-                  new Date(formData?.warranty_date.toString()).getTime() / 1000
-                )
+                new Date(formData?.warranty_date.toString()).getTime() / 1000
+              )
               : itemData?.warranty_date
-              ? moment(itemData.warranty_date).unix()
-              : null
+                ? moment(itemData.warranty_date).unix()
+                : null
             : undefined,
       };
 
@@ -517,9 +518,8 @@ export default function EditItemPage({
                   readOnly
                   required
                   value={
-                    `${selectedBrand?.label || itemData?.name || "Item Name"} ${
-                      model || ""
-                    }`
+                    `${selectedBrand?.label || itemData?.name || "Item Name"} ${model || ""
+                      }`
                       .trim()
                       .replace(/\s+/g, " ")
                   }
@@ -671,11 +671,12 @@ export default function EditItemPage({
                     >
                       <XIcon className="w-4 h-4" color="white" />
                     </button>
-                    <img
+                    <Image
                       src={url}
                       alt={`Uploaded ${i}`}
                       width={150}
-                      className="rounded"
+                      height={150}
+                      className="rounded object-cover"
                     />
                   </div>
                 ))}

@@ -8,6 +8,12 @@ import {
   CalendarDays,
   Clock,
   X,
+  ChevronUp,
+  ChevronDown,
+  FileText,
+  CheckCircle,
+  Clock as ClockIcon,
+  Hourglass,
 } from "lucide-react";
 import React, { useState, useRef, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
@@ -101,7 +107,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   }
 };
 
-export default function CalendarPage({ initialTimelineData, initialStartDate, initialEndDate }: Props) {
+export default function CalendarPage({ initialTimelineData, initialStartDate }: Props) {
   const calendarApiRef = useRef<any>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<
@@ -111,7 +117,12 @@ export default function CalendarPage({ initialTimelineData, initialStartDate, in
   const [loading, setLoading] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showListModal, setShowListModal] = useState(false);
+  const [selectedDateEvents, setSelectedDateEvents] = useState<ICalendarReservation[]>([]);
+  const [selectedDateStr, setSelectedDateStr] = useState("");
   const [selectedReservation, setSelectedReservation] = useState<ICalendarReservation | null>(null);
+  const [adminDetailsExpanded, setAdminDetailsExpanded] = useState(true);
+  const [loanDetailsExpanded, setLoanDetailsExpanded] = useState(true);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const lastFetchRef = useRef<{ start: number; end: number } | null>(null);
 
@@ -155,8 +166,7 @@ export default function CalendarPage({ initialTimelineData, initialStartDate, in
       const token = cookies.token;
 
       if (!token) {
-        console.error("No authentication token found");
-        setTimelineData([]);
+        console.warn("No authentication token found for client-side fetch");
         setLoading(false);
         return;
       }
@@ -186,8 +196,7 @@ export default function CalendarPage({ initialTimelineData, initialStartDate, in
       }
     } catch (error: any) {
       console.error("Error fetching calendar data:", error);
-      setTimelineData([]);
-      // Make sure loading is set to false even on error
+      // Don't clear data on error to keep SSR/previous data
       if (error.response?.status === 401) {
         console.error("Unauthorized - please login again");
       }
@@ -205,18 +214,16 @@ export default function CalendarPage({ initialTimelineData, initialStartDate, in
 
     // Fetch data when calendar dates change (but skip initial load since we have SSR data)
     if (dateInfo && dateInfo.start && dateInfo.end) {
-      const startTimestamp = moment(dateInfo.start).unix();
-      const endTimestamp = moment(dateInfo.end).unix();
+      // Only fetch if date range changed significantly from initial SSR data
+      // FullCalendar usually starts a few days before the 1st
+      const startMonth = moment.unix(initialStartDate).month();
+      const currentMonth = moment(dateInfo.start).add(7, "days").month(); // Middle of visible range
 
-      // Only fetch if date range changed from initial SSR data
-      if (
-        startTimestamp !== initialStartDate ||
-        endTimestamp !== initialEndDate
-      ) {
+      if (startMonth !== currentMonth) {
         fetchTimelineData(dateInfo.start, dateInfo.end);
       }
     }
-  }, [fetchTimelineData, initialStartDate, initialEndDate]);
+  }, [fetchTimelineData, initialStartDate]);
 
   // Get icon based on status
   function getStatusIcon(status: string) {
@@ -394,8 +401,19 @@ export default function CalendarPage({ initialTimelineData, initialStartDate, in
 
   // Date click handler
   const handleDateClick = (dateClickInfo: any) => {
-    console.log("Date clicked:", dateClickInfo.dateStr);
-    // You can implement creating new reservations here
+    const clickedDate = moment(dateClickInfo.date).format("YYYY-MM-DD");
+    const eventsOnDate = timelineData.filter(item =>
+      moment(item.start_date).format("YYYY-MM-DD") === clickedDate ||
+      moment(item.end_date).format("YYYY-MM-DD") === clickedDate ||
+      (moment(clickedDate).isAfter(moment(item.start_date).startOf('day')) &&
+        moment(clickedDate).isBefore(moment(item.end_date).endOf('day')))
+    );
+
+    if (eventsOnDate.length > 0) {
+      setSelectedDateEvents(eventsOnDate);
+      setSelectedDateStr(moment(dateClickInfo.date).format("MMMM DD, YYYY"));
+      setShowListModal(true);
+    }
   };
 
   // Filter handlers
@@ -570,7 +588,19 @@ export default function CalendarPage({ initialTimelineData, initialStartDate, in
             dateClick={handleDateClick}
             height="auto"
             dayMaxEvents={currentView === "dayGridMonth" ? 3 : false}
-            moreLinkClick="popover"
+            moreLinkClick={(arg) => {
+              const clickedDate = moment(arg.date).format("YYYY-MM-DD");
+              const eventsOnDate = timelineData.filter(item =>
+                moment(item.start_date).format("YYYY-MM-DD") === clickedDate ||
+                moment(item.end_date).format("YYYY-MM-DD") === clickedDate ||
+                (moment(clickedDate).isAfter(moment(item.start_date).startOf('day')) &&
+                  moment(clickedDate).isBefore(moment(item.end_date).endOf('day')))
+              );
+              setSelectedDateEvents(eventsOnDate);
+              setSelectedDateStr(moment(arg.date).format("MMMM DD, YYYY"));
+              setShowListModal(true);
+              return "none";
+            }}
             eventDisplay="block"
             dayHeaderFormat={{ weekday: "short" }}
             slotMinTime="08:00:00"
@@ -634,13 +664,13 @@ export default function CalendarPage({ initialTimelineData, initialStartDate, in
             }}
             nowIndicator={true}
             dayCellClassNames={(arg) => {
-              // Highlight today's date with orange circle
               const today = new Date();
               today.setHours(0, 0, 0, 0);
               const cellDate = new Date(arg.date);
               cellDate.setHours(0, 0, 0, 0);
               if (cellDate.getTime() === today.getTime()) {
-                return "fc-day-today";
+                // fc-day-today is handled by FullCalendar natively, but we ensure it's there
+                return "fc-day-today today-marked";
               }
               return "";
             }}
@@ -712,19 +742,74 @@ export default function CalendarPage({ initialTimelineData, initialStartDate, in
         </div>
       </Modal>
 
-      {/* Reservation Detail Modal */}
-      <Modal open={showDetailModal} setOpen={setShowDetailModal} size="lg">
-        <div className="p-6">
+      {/* List of Loan Modal */}
+      <Modal open={showListModal} setOpen={setShowListModal} size="md">
+        <div className="p-4 sm:p-6">
           {/* Modal Header */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-orange-600">
-              Reservation Details
+            <h3 className="text-xl font-bold text-orange-500">
+              List of Loan
+            </h3>
+            <button
+              onClick={() => setShowListModal(false)}
+              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-6 h-6 text-gray-400" />
+            </button>
+          </div>
+
+          {/* Separator */}
+          <div className="border-t border-gray-200 mb-6"></div>
+
+          <div className="space-y-6">
+            <h4 className="text-lg font-bold text-gray-900">{selectedDateStr}</h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {selectedDateEvents.map((event) => (
+                <button
+                  key={event.reservation_id}
+                  onClick={() => {
+                    setSelectedReservation(event);
+                    setShowListModal(false);
+                    setShowDetailModal(true);
+                  }}
+                  className="flex items-center gap-2 p-2 rounded-md text-white text-xs font-bold transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ backgroundColor: getStatusColor(event.status) }}
+                >
+                  <div className="flex-shrink-0">
+                    {event.status.toLowerCase() === "booked" || event.status.toLowerCase() === "confirmed" ? (
+                      <FileText className="w-4 h-4" />
+                    ) : event.status.toLowerCase() === "checkout" ? (
+                      <Hourglass className="w-4 h-4" />
+                    ) : event.status.toLowerCase() === "checkin" || event.status.toLowerCase() === "completed" ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <ClockIcon className="w-4 h-4" />
+                    )}
+                  </div>
+                  <span className="truncate">
+                    {formatEventTitle(event)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Reservation Detail Modal */}
+      <Modal open={showDetailModal} setOpen={setShowDetailModal} size="md">
+        <div className="p-4 sm:p-6">
+          {/* Modal Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-orange-500">
+              Loan Data Details
             </h3>
             <button
               onClick={() => setShowDetailModal(false)}
               className="p-1 hover:bg-gray-100 rounded-full transition-colors"
             >
-              <X className="w-5 h-5 text-gray-400" />
+              <X className="w-6 h-6 text-gray-400" />
             </button>
           </div>
 
@@ -732,127 +817,100 @@ export default function CalendarPage({ initialTimelineData, initialStartDate, in
           <div className="border-t border-gray-200 mb-6"></div>
 
           {selectedReservation && (
-            <div className="space-y-6">
-              {/* Status Badge */}
-              <div className="flex items-center gap-3">
-                <span
-                  className="px-4 py-2 rounded-full text-sm font-semibold text-white"
-                  style={{ backgroundColor: getStatusColor(selectedReservation.status) }}
+            <div className="space-y-4">
+              {/* Admin Details Section */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div
+                  className="flex items-center justify-between cursor-pointer mb-2"
+                  onClick={() => setAdminDetailsExpanded(!adminDetailsExpanded)}
                 >
-                  {selectedReservation.status.toUpperCase()}
-                </span>
-                <span className="text-gray-500 text-sm">
-                  Book ID: <span className="font-semibold text-gray-900">{selectedReservation.book_id}</span>
-                </span>
-              </div>
-
-              {/* Reservation Info Grid */}
-              <div className="grid grid-cols-2 gap-6">
-                {/* Left Column */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Reservation ID</label>
-                    <p className="mt-1 text-sm text-gray-900 font-mono bg-gray-50 p-2 rounded">
-                      {selectedReservation.reservation_id}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Customer Name</label>
-                    <p className="mt-1 text-base text-gray-900 font-semibold">
-                      {selectedReservation.customer_name}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Admin</label>
-                    <p className="mt-1 text-base text-gray-900">
-                      {selectedReservation.admin_name}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Pickup Location</label>
-                    <p className="mt-1 text-base text-gray-900">
-                      {selectedReservation.pickup_location}
-                    </p>
+                  <h4 className="font-bold text-gray-900 text-base">Admin Details</h4>
+                  <div className="bg-orange-500 rounded-full p-1 text-white">
+                    {adminDetailsExpanded ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
                   </div>
                 </div>
 
-                {/* Right Column */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Start Date</label>
-                    <p className="mt-1 text-base text-gray-900">
-                      {moment(selectedReservation.start_date).format("MMMM DD, YYYY")}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {moment(selectedReservation.start_date).format("HH:mm")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">End Date</label>
-                    <p className="mt-1 text-base text-gray-900">
-                      {moment(selectedReservation.end_date).format("MMMM DD, YYYY")}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {moment(selectedReservation.end_date).format("HH:mm")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Duration</label>
-                    <p className="mt-1 text-base text-gray-900">
-                      {moment(selectedReservation.end_date).diff(moment(selectedReservation.start_date), 'days')} day(s)
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Separator */}
-              <div className="border-t border-gray-200"></div>
-
-              {/* Items List */}
-              <div>
-                <label className="text-sm font-medium text-gray-500 mb-3 block">
-                  Reserved Items ({selectedReservation.list_item.length})
-                </label>
-                <div className="space-y-2">
-                  {selectedReservation.list_item.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
-                    >
-                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                        <span className="text-orange-600 font-semibold text-sm">{index + 1}</span>
-                      </div>
-                      <span className="text-gray-900 font-medium">{item.name}</span>
+                {adminDetailsExpanded && (
+                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1">Admin Name</p>
+                      <p className="font-bold text-gray-900">{selectedReservation.admin_name || "-"}</p>
                     </div>
-                  ))}
-                </div>
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1">Job Location</p>
+                      <p className="font-bold text-gray-900">{selectedReservation.pickup_location || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1">Pickup Location</p>
+                      <p className="font-bold text-gray-900">{selectedReservation.pickup_location || "-"}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Separator */}
-              <div className="border-t border-gray-200"></div>
+              {/* Loan Details Section */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div
+                  className="flex items-center justify-between cursor-pointer mb-2"
+                  onClick={() => setLoanDetailsExpanded(!loanDetailsExpanded)}
+                >
+                  <h4 className="font-bold text-gray-900 text-base">Loan Details</h4>
+                  <div className="bg-orange-500 rounded-full p-1 text-white">
+                    {loanDetailsExpanded ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </div>
+                </div>
 
-              {/* Footer Actions */}
-              <div className="flex items-center justify-end gap-3">
-                <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => {
-                    // Navigate to reservation edit page or perform action
-                    console.log("View/Edit reservation:", selectedReservation.reservation_id);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
-                >
-                  View Full Details
-                </button>
+                {loanDetailsExpanded && (
+                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                      <div>
+                        <p className="text-sm text-gray-400 mb-1">Loan Name</p>
+                        <p className="font-bold text-gray-900">{selectedReservation.customer_name || "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400 mb-1">Stard Date</p>
+                        <p className="font-bold text-gray-900">
+                          {selectedReservation.start_date ? moment(selectedReservation.start_date).format("HH:mm, DD MMM YYYY") : "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400 mb-1">End Date</p>
+                        <p className="font-bold text-gray-900">
+                          {selectedReservation.end_date ? moment(selectedReservation.end_date).format("HH:mm, DD MMM YYYY") : "-"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <p className="text-sm text-gray-400 mb-2">List of Loan Items</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          {selectedReservation.list_item?.map((item, index) => (
+                            <li key={index} className="text-gray-900 font-bold">
+                              {item.name}
+                            </li>
+                          )) || <li className="text-gray-900 font-bold">-</li>}
+                        </ul>
+                      </div>
+                      <div className="flex flex-col md:items-center">
+                        <div>
+                          <p className="text-sm text-gray-400 mb-2">Booking Code</p>
+                          <div className="inline-block px-4 py-1 bg-green-50 text-green-500 border border-green-200 rounded-full font-bold">
+                            {selectedReservation.book_id || "-"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
