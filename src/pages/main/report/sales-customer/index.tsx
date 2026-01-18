@@ -9,7 +9,6 @@ import { CONFIG } from "@/config";
 import { GetServerSideProps } from "next";
 import { parse } from "cookie";
 import DataTable from "react-data-table-component";
-import Input from "@/components/Input";
 import { ColumnSalesCustomer } from "@/constants/column_sales-customer";
 import { useRouter } from "next/router";
 import Select from "@/components/Select";
@@ -214,7 +213,7 @@ export default function SalesCustomerPage({
               {moment(tempDate.end, "DD/MM/YYYY").format("DD MMM YYYY")}
             </p>
           </button>
-          <Input type="search" placeholder="Search Customer" />
+          {/* <Input type="search" placeholder="Search Customer" /> */}
           <Select
             defaultValue={sortBy}
             options={[

@@ -11,7 +11,6 @@ import { parse } from "cookie";
 import DataTable from "react-data-table-component";
 import Input from "@/components/Input";
 import { ColumnSalesBrand } from "@/constants/column_sales_brand";
-import Select from "@/components/Select";
 import { useRouter } from "next/router";
 import { exportToExcel, formatCurrency } from "@/utils/exportToExcel";
 
@@ -130,13 +129,13 @@ const parseDateString = (dateStr: string): Date => {
 
 interface Props {
   reportData: any;
-  categories: any[];
+  // categories: any[];
   dateRange: { start: string; end: string };
 }
 
 export default function SalesProductPage({
   reportData,
-  categories,
+  // categories,
   dateRange,
 }: Props) {
   const router = useRouter();
@@ -163,9 +162,9 @@ export default function SalesProductPage({
 
   const currentPage = Number(query.page) || 1;
   const rowsPerPage = Number(query.limit) || 10;
-  const currentCategoryId =
+  /* const currentCategoryId =
     (query.categoryID as string) ||
-    (categories && categories.length > 0 ? String(categories[0].id) : "");
+    (categories && categories.length > 0 ? String(categories[0].id) : ""); */
 
   // Function to handle pagination
   const handlePageChange = (page: number) => {
@@ -224,7 +223,7 @@ export default function SalesProductPage({
             </p>
           </button>
           <Input type="search" placeholder="Search Brand" />
-          <Select
+          {/* <Select
             defaultValue={currentCategoryId}
             options={categories?.map((category) => ({
               value: category.id,
@@ -243,7 +242,7 @@ export default function SalesProductPage({
                 },
               });
             }}
-          />
+          /> */}
         </div>
         <div>
           <Button
