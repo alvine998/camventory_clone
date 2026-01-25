@@ -46,11 +46,15 @@ export default function HeaderReservation({ detail }: Props) {
       router.push("/main/reservation");
     } catch (error: any) {
       console.error("Cancel error:", error);
+      const apiMessage = error.response?.data?.message;
+      const errorMessage = typeof apiMessage === 'object' ? apiMessage.message : apiMessage;
+
       Swal.fire({
         icon: "error",
         title: "Cancel Failed",
         text:
-          error.response?.data?.message ||
+          errorMessage ||
+          error.message ||
           "An error occurred while cancelling the reservation",
       });
     } finally {
@@ -96,15 +100,17 @@ export default function HeaderReservation({ detail }: Props) {
                 <PencilIcon className="w-4 h-4 text-orange-500" />
                 <p className="text-xs text-orange-500">Edit</p>
               </Button>
-              <Button
-                variant="custom-color"
-                className="flex items-center gap-1 border border-orange-500"
-                type="button"
-                onClick={() => setShowCancelModal(true)}
-              >
-                <XCircleIcon className="w-4 h-4 text-orange-500" />
-                <p className="text-xs text-orange-500">Cancel</p>
-              </Button>
+              {detail?.status?.toUpperCase() === "BOOKED" && (
+                <Button
+                  variant="custom-color"
+                  className="flex items-center gap-1 border border-orange-500"
+                  type="button"
+                  onClick={() => setShowCancelModal(true)}
+                >
+                  <XCircleIcon className="w-4 h-4 text-orange-500" />
+                  <p className="text-xs text-orange-500">Cancel</p>
+                </Button>
+              )}
               <Button variant="submit" className="flex items-center gap-1">
                 <ShoppingCartIcon className="w-4 h-4 text-white" />
                 <p className="text-xs text-white">Checkout</p>

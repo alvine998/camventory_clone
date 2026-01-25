@@ -72,16 +72,14 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         headers: { Authorization: token },
       }),
       axios.get(
-        `${CONFIG.API_URL}/v1/bulk-items?page=${page}&limit=${limit}${
-          search ? `&search=${search}` : ""
+        `${CONFIG.API_URL}/v1/bulk-items?page=${page}&limit=${limit}${search ? `&search=${search}` : ""
         }`,
         {
           headers: { Authorization: token },
         }
       ),
       axios.get(
-        `${CONFIG.API_URL}/v1/single-items?page=${page}&limit=${limit}${
-          search ? `&search=${search}` : ""
+        `${CONFIG.API_URL}/v1/single-items?page=${page}&limit=${limit}${search ? `&search=${search}` : ""
         }`,
         {
           headers: { Authorization: token },
@@ -207,7 +205,7 @@ export default function EditReservationPage({
       console.error("Update error:", error);
       const errorMessage =
         error.response?.data?.message &&
-        typeof error.response?.data?.message === "string"
+          typeof error.response?.data?.message === "string"
           ? error.response?.data?.message
           : error.response?.data?.message?.message || "An error occurred while updating the reservation";
 
@@ -364,7 +362,7 @@ export default function EditReservationPage({
                   >
                     <div className="flex gap-2 items-center">
                       <Image
-                        src={CONFIG.IMAGE_URL + item.item_image_path}
+                        src={CONFIG.IMAGE_URL + "/" + item.item_image_path}
                         alt={item.item_id}
                         width={50}
                         height={50}
