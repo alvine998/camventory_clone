@@ -16,22 +16,36 @@ interface Props {
     end: Date | string;
   };
   setDate: (date: { start: string; end: string }) => void;
+  showHeader?: boolean;
+  className?: string;
 }
 
-export default function DateRangePicker({ date, setDate }: Props) {
+export default function DateRangePicker({
+  date,
+  setDate,
+  showHeader = true,
+  className
+}: Props) {
   const [range, setRange] = useState<DateRangeType>({
-    from: date?.start ? (date.start instanceof Date ? date.start : new Date(date.start)) : new Date(),
-    to: date?.end ? (date.end instanceof Date ? date.end : new Date(date.end)) : new Date(),
+    from: date?.start ? (date.start instanceof Date ? date.start : new Date(date.start)) : (null as any),
+    to: date?.end ? (date.end instanceof Date ? date.end : new Date(date.end)) : (null as any),
   });
+
+  // Sync internal range with props (especially for reset)
+  useEffect(() => {
+    if (!date?.start && !date?.end) {
+      setRange({ from: (null as any), to: (null as any) });
+    }
+  }, [date?.start, date?.end]);
 
   // Update parent when range changes
   useEffect(() => {
     const updateParent = () => {
-      if (!range) return;
-      
-      const from = range.from || new Date();
+      if (!range || !range.from) return;
+
+      const from = range.from;
       const to = range.to || from;
-      
+
       if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
         setDate({
           start: format(from, 'dd/MM/yyyy'),
@@ -39,14 +53,14 @@ export default function DateRangePicker({ date, setDate }: Props) {
         });
       }
     };
-    
+
     updateParent();
   }, [range, setDate]);
-  
+
   // Handle date selection
   const handleSelect = (selectedRange: DateRange | undefined) => {
     if (!selectedRange) return;
-    
+
     setRange({
       from: selectedRange.from || new Date(),
       to: selectedRange.to || selectedRange.from || new Date()
@@ -54,8 +68,8 @@ export default function DateRangePicker({ date, setDate }: Props) {
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4 p-6 bg-white shadow rounded-xl w-fit mx-auto">
-      <h2 className="text-lg font-semibold">Pilih Rentang Tanggal</h2>
+    <div className={className || "flex flex-col items-center space-y-4 p-6 bg-white shadow rounded-xl w-fit mx-auto"}>
+      {showHeader && <h2 className="text-lg font-semibold text-center">Pilih Rentang Tanggal</h2>}
 
       <DayPicker
         mode="range"
@@ -66,7 +80,7 @@ export default function DateRangePicker({ date, setDate }: Props) {
         defaultMonth={range?.from}
       />
 
-      <div className="text-sm text-gray-600">
+      {/* <div className="text-sm text-gray-600">
         {range?.from && range?.to ? (
           <p>
             Dari:{" "}
@@ -81,7 +95,7 @@ export default function DateRangePicker({ date, setDate }: Props) {
         ) : (
           <p>Silakan pilih rentang tanggal</p>
         )}
-      </div>
+      </div> */}
     </div>
   );
 }

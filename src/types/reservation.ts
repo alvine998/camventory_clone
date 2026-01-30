@@ -40,6 +40,7 @@ export interface RefCustomer {
   updated_by: string;
   phone_number: string;
   instagram_acc: string;
+  status: string;
 }
 
 export interface RefUser {

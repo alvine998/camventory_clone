@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Modal from "@/components/Modal";
 import Select from "@/components/Select";
+import DateRangePicker from "@/components/DateRangePicker";
+import moment from "moment";
+import { CalendarDays } from "lucide-react";
 
 interface FilterModalProps {
   open: boolean;
@@ -10,10 +13,10 @@ interface FilterModalProps {
   customers?: any[];
 }
 
-export default function FilterModal({ 
-  open, 
-  setOpen, 
-  onApply, 
+export default function FilterModal({
+  open,
+  setOpen,
+  onApply,
   initialFilters = {},
   customers = []
 }: FilterModalProps) {
@@ -25,20 +28,32 @@ export default function FilterModal({
     endDate: initialFilters.endDate || "",
   });
 
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const datePickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        datePickerRef.current &&
+        !datePickerRef.current.contains(event.target as Node)
+      ) {
+        setIsDatePickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const [customerOptions, setCustomerOptions] = useState<any[]>([]);
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
 
   // Status options
   const statusOptions = [
     { value: "all", label: "All" },
-    { value: "confirmed", label: "Confirmed" },
-    { value: "pending", label: "Pending" },
-    { value: "cancelled", label: "Cancelled" },
-    { value: "completed", label: "Completed" },
-    { value: "overdue", label: "Overdue" },
+    { value: "cancelled", label: "Cancel" },
     { value: "booked", label: "Booked" },
+    { value: "checkout", label: "Checkout" },
     { value: "checkin", label: "Check In" },
-    { value: "checkout", label: "Check Out" },
   ];
 
   // Location options
@@ -52,19 +67,19 @@ export default function FilterModal({
   useEffect(() => {
     if (customers && customers.length > 0) {
       let filteredCustomers = customers;
-      
+
       // Filter customers based on search term
       if (customerSearchTerm && customerSearchTerm.length >= 3) {
         filteredCustomers = customers.filter((customer: any) =>
           customer.name.toLowerCase().includes(customerSearchTerm.toLowerCase())
         );
       }
-      
+
       const options = filteredCustomers.map((customer: any) => ({
         value: customer.id,
         label: customer.name,
       }));
-      setCustomerOptions([{value: "", label: "All Customers"}, ...options]);
+      setCustomerOptions([{ value: "", label: "All Customers" }, ...options]);
     }
   }, [customers, customerSearchTerm]);
 
@@ -82,6 +97,7 @@ export default function FilterModal({
       endDate: "",
     });
     setCustomerSearchTerm("");
+    setIsDatePickerOpen(false);
   };
 
   const handleApply = () => {
@@ -94,7 +110,7 @@ export default function FilterModal({
   };
 
   return (
-    <Modal open={open} setOpen={setOpen} size="md">
+    <Modal open={open} setOpen={setOpen} size="xl">
       <div className="p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -108,7 +124,7 @@ export default function FilterModal({
         </div>
 
         {/* Filter Fields */}
-        <div className="space-y-4">
+        <div className="space-y-6 relative" ref={datePickerRef}>
           {/* Customer */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -117,16 +133,16 @@ export default function FilterModal({
             <Select
               options={customerOptions}
               value={filters.customer}
-              onChange={(selectedOption) => 
+              onChange={(selectedOption) =>
                 setFilters(prev => ({ ...prev, customer: selectedOption }))
               }
               placeholder="Customer"
               isClearable
               isLoading={false}
               onInputChange={handleCustomerSearch}
-              noOptionsMessage={() => 
-                customerSearchTerm.length < 3 
-                  ? "Type at least 3 characters to search" 
+              noOptionsMessage={() =>
+                customerSearchTerm.length < 3
+                  ? "Type at least 3 characters to search"
                   : "No customers found"
               }
               fullWidth
@@ -144,7 +160,7 @@ export default function FilterModal({
                 <Select
                   options={statusOptions}
                   value={filters.status}
-                  onChange={(selectedOption) => 
+                  onChange={(selectedOption) =>
                     setFilters(prev => ({ ...prev, status: selectedOption }))
                   }
                   defaultValue={{ value: "all", label: "All" }}
@@ -164,7 +180,7 @@ export default function FilterModal({
                 <Select
                   options={locationOptions}
                   value={filters.location}
-                  onChange={(selectedOption) => 
+                  onChange={(selectedOption) =>
                     setFilters(prev => ({ ...prev, location: selectedOption }))
                   }
                   defaultValue={{ value: "all", label: "All" }}
@@ -176,33 +192,82 @@ export default function FilterModal({
             </div>
           </div>
 
-          {/* Start Date and End Date Row */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Start Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={filters.startDate}
-                onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
-              />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Date Range
+            </label>
+            <div
+              onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm cursor-pointer flex justify-between items-center bg-white"
+            >
+              <span
+                className={filters.startDate ? "text-gray-900" : "text-gray-400"}
+              >
+                {filters.startDate && filters.endDate
+                  ? `${moment(filters.startDate).format("DD/MM/YYYY")} - ${moment(
+                    filters.endDate
+                  ).format("DD/MM/YYYY")}`
+                  : "Select Date Range"}
+              </span>
+              <CalendarDays className="w-4 h-4 text-gray-400" />
             </div>
 
-            {/* End Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
-              />
-            </div>
+            {isDatePickerOpen && (
+              <div className="absolute z-20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-2xl border p-4">
+                <div className="flex justify-between items-center mb-4 border-b pb-2">
+                  <h4 className="font-bold text-gray-800">Select Date Range</h4>
+                  <button
+                    onClick={() => setIsDatePickerOpen(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <DateRangePicker
+                  showHeader={false}
+                  className="w-full flex flex-col items-center"
+                  date={{
+                    start: filters.startDate
+                      ? moment(
+                        filters.startDate,
+                        filters.startDate.includes("/")
+                          ? "DD/MM/YYYY"
+                          : "YYYY-MM-DD"
+                      ).toDate()
+                      : (null as any),
+                    end: filters.endDate
+                      ? moment(
+                        filters.endDate,
+                        filters.endDate.includes("/")
+                          ? "DD/MM/YYYY"
+                          : "YYYY-MM-DD"
+                      ).toDate()
+                      : (null as any),
+                  }}
+                  setDate={(date: { start: string; end: string }) => {
+                    setFilters((prev) => ({
+                      ...prev,
+                      startDate: date.start
+                        ? moment(date.start, "DD/MM/YYYY").format("YYYY-MM-DD")
+                        : null,
+                      endDate: date.end
+                        ? moment(date.end, "DD/MM/YYYY").format("YYYY-MM-DD")
+                        : null,
+                    }));
+                  }}
+                />
+                {/* <div className="mt-4 flex justify-center">
+                  <button
+                    onClick={() => setIsDatePickerOpen(false)}
+                    className="bg-orange-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors shadow-md"
+                  >
+                    Done
+                  </button>
+                </div> */}
+              </div>
+            )}
           </div>
         </div>
 

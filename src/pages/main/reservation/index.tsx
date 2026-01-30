@@ -2,7 +2,6 @@ import Button from "@/components/Button";
 import { useModal } from "@/components/Modal";
 import CustomerDeleteModal from "@/components/modals/customer/delete";
 import FilterModal from "@/components/modals/reservation/FilterModal";
-import Badge from "@/components/Badge";
 import { CONFIG } from "@/config";
 import axios from "axios";
 import { parse } from "cookie";
@@ -13,8 +12,6 @@ import React, { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
 import { ColumnReservation } from "@/constants/column_reservation";
 import moment from "moment";
-import TooltipComponent from "@/components/TooltipComponent";
-import { getStatusBadgeColor } from "@/utils";
 import Select from "@/components/Select";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
@@ -132,8 +129,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     );
 
     const customers = await axios.get(
-      `${CONFIG.API_URL}/v1/customers?page=1&limit=10${
-        customer ? `&search=${customer}` : ""
+      `${CONFIG.API_URL}/v1/customers?page=1&limit=10${customer ? `&search=${customer}` : ""
       }`,
       {
         headers: {
@@ -185,48 +181,103 @@ export default function ReservationPage({ table, customers }: any) {
 
   const data = [...table?.data].map((item, index) => ({
     ...item,
-    rental_duration: `${(item.end_date - item.start_date) / 86400} ${
-      (item.end_date - item.start_date) / 86400 == 1 ? "Day" : "Days"
-    }`,
-    start_date: (
-      <div>
-        <h5 className="font-bold">
+    customer_name_comp: (
+      <div className="flex flex-col gap-1 py-4">
+        <span className="font-bold text-gray-800">
+          {item.ref_customer?.name || "-"}
+        </span>
+        <div
+          className={`text-[10px] px-2 py-0.5 rounded-full border w-fit font-medium ${item.ref_customer?.status?.toLowerCase() === "member"
+            ? "bg-yellow-50 text-yellow-600 border-yellow-200"
+            : item.ref_customer?.status?.toLowerCase() === "blacklist"
+              ? "bg-red-50 text-red-600 border-red-200"
+              : "bg-blue-50 text-blue-600 border-blue-200"
+            }`}
+        >
+          {item.ref_customer?.status?.toLowerCase() === "member"
+            ? "Loyal Member"
+            : item.ref_customer?.status?.toLowerCase() === "blacklist"
+              ? "Blacklist Member"
+              : "Reguler Member"}
+        </div>
+      </div>
+    ),
+    rental_duration: `${(item.end_date - item.start_date) / 86400} Hari`,
+    transaction_date_comp: (
+      <div className="text-gray-600">
+        {moment(item.created_at * 1000).format("DD/MM/YYYY")}
+      </div>
+    ),
+    start_date_comp: (
+      <div className="py-2">
+        <h5 className="font-bold text-gray-800">
           {moment(item.start_date * 1000).format("DD MMM")}
         </h5>
-        <p className="text-gray-500">
-          {moment(item.start_date * 1000).format("ddd HH:mm")}
+        <p className="text-gray-400 text-xs">
+          {moment(item.start_date * 1000).format("ddd hh:mm A")}
         </p>
       </div>
     ),
-    end_date: (
-      <div>
-        <h5 className="font-bold">
+    end_date_comp: (
+      <div className="py-2">
+        <h5 className="font-bold text-gray-800">
           {moment(item.end_date * 1000).format("DD MMM")}
         </h5>
-        <p className="text-gray-500">
-          {moment(item.end_date * 1000).format("ddd HH:mm")}
+        <p className="text-gray-400 text-xs">
+          {moment(item.end_date * 1000).format("ddd hh:mm A")}
         </p>
       </div>
     ),
-    status: (
-      <Badge color={getStatusBadgeColor(item.status)} text={item.status}>
+    taking_goods_comp: (
+      <div className="py-2">
+        <h5 className="font-bold text-gray-800">
+          {moment(item.start_date * 1000).format("DD MMM")}
+        </h5>
+        <p className="text-gray-400 text-xs">
+          {moment(item.start_date * 1000).format("ddd hh:mm A")}
+        </p>
+      </div>
+    ),
+    returned_items_comp: (
+      <div className="py-2">
+        <h5 className="font-bold text-gray-800">
+          {moment(item.end_date * 1000).format("DD MMM")}
+        </h5>
+        <p className="text-gray-400 text-xs">
+          {moment(item.end_date * 1000).format("ddd hh:mm A")}
+        </p>
+      </div>
+    ),
+    status_comp: (
+      <div
+        className={`px-3 py-1 rounded-full border text-[11px] font-bold w-fit uppercase ${item.status?.toLowerCase() === "booked"
+          ? "bg-yellow-50 text-yellow-500 border-yellow-500"
+          : item.status?.toLowerCase() === "cancel" ||
+            item.status?.toLowerCase() === "cancelled"
+            ? "bg-red-50 text-red-500 border-red-500"
+            : item.status?.toLowerCase() === "checkout" ||
+              item.status?.toLowerCase() === "completed"
+              ? "bg-blue-50 text-blue-500 border-blue-500"
+              : "bg-purple-50 text-purple-500 border-purple-500" // Check In or others
+          }`}
+      >
         {item.status}
-      </Badge>
+      </div>
+    ),
+    employee_name: (
+      <span className="text-gray-700">{item.ref_user?.name || "-"}</span>
     ),
     action: (
       <div key={index} className="flex gap-2">
-        <TooltipComponent content="View details">
-          <Button
-            className="bg-orange-50 text-orange-500"
-            variant="custom-color"
-            type="button"
-            onClick={() => {
-              router.push(`/main/reservation/${item.id}/detail`);
-            }}
-          >
-            <EyeIcon className="w-4 h-4" />
-          </Button>
-        </TooltipComponent>
+        <button
+          className="p-2 bg-white border border-orange-200 rounded-full text-orange-500 hover:bg-orange-50 transition-colors shadow-sm"
+          type="button"
+          onClick={() => {
+            router.push(`/main/reservation/${item.id}/detail`);
+          }}
+        >
+          <EyeIcon className="w-4 h-4" />
+        </button>
       </div>
     ),
   }));
@@ -346,24 +397,24 @@ export default function ReservationPage({ table, customers }: any) {
               value={
                 typeof filter.order_by === "string"
                   ? {
-                      value: filter.order_by,
-                      label:
-                        filter.order_by === ""
-                          ? "Default (Latest Created)"
-                          : filter.order_by === "created_at:asc"
+                    value: filter.order_by,
+                    label:
+                      filter.order_by === ""
+                        ? "Default (Latest Created)"
+                        : filter.order_by === "created_at:asc"
                           ? "Created At (Oldest Created)"
                           : filter.order_by === "created_at:desc"
-                          ? "Created At (Latest Created)"
-                          : filter.order_by === "start_date:asc"
-                          ? "Start Date (Oldest Start Date)"
-                          : filter.order_by === "start_date:desc"
-                          ? "Start Date (Latest Start Date)"
-                          : filter.order_by === "end_date:asc"
-                          ? "End Date (Oldest End Date)"
-                          : filter.order_by === "end_date:desc"
-                          ? "End Date (Latest End Date)"
-                          : "Default (Latest Created)",
-                    }
+                            ? "Created At (Latest Created)"
+                            : filter.order_by === "start_date:asc"
+                              ? "Start Date (Oldest Start Date)"
+                              : filter.order_by === "start_date:desc"
+                                ? "Start Date (Latest Start Date)"
+                                : filter.order_by === "end_date:asc"
+                                  ? "End Date (Oldest End Date)"
+                                  : filter.order_by === "end_date:desc"
+                                    ? "End Date (Latest End Date)"
+                                    : "Default (Latest Created)",
+                  }
                   : { value: "", label: "Default (Created At DESC)" }
               }
               onChange={(selectedOption: any) => {
@@ -453,11 +504,11 @@ export default function ReservationPage({ table, customers }: any) {
             customer:
               typeof filter.customer_id === "string" && filter.customer_id
                 ? {
-                    value: filter.customer_id,
-                    label:
-                      customers.find((c: any) => c.id === filter.customer_id)
-                        ?.name || filter.customer_id,
-                  }
+                  value: filter.customer_id,
+                  label:
+                    customers.find((c: any) => c.id === filter.customer_id)
+                      ?.name || filter.customer_id,
+                }
                 : null,
             status:
               typeof filter.status === "string" && filter.status !== "all"
@@ -470,32 +521,32 @@ export default function ReservationPage({ table, customers }: any) {
             startDate:
               typeof filter.startDate === "string" && filter.startDate
                 ? (() => {
-                    const timestamp = Number(filter.startDate);
-                    if (
-                      !isNaN(timestamp) &&
-                      timestamp > 0 &&
-                      moment.unix(timestamp).isValid()
-                    ) {
-                      // Date input expects YYYY-MM-DD format
-                      return moment.unix(timestamp).format("YYYY-MM-DD");
-                    }
-                    return "";
-                  })()
+                  const timestamp = Number(filter.startDate);
+                  if (
+                    !isNaN(timestamp) &&
+                    timestamp > 0 &&
+                    moment.unix(timestamp).isValid()
+                  ) {
+                    // Date input expects YYYY-MM-DD format
+                    return moment.unix(timestamp).format("YYYY-MM-DD");
+                  }
+                  return "";
+                })()
                 : "",
             endDate:
               typeof filter.endDate === "string" && filter.endDate
                 ? (() => {
-                    const timestamp = Number(filter.endDate);
-                    if (
-                      !isNaN(timestamp) &&
-                      timestamp > 0 &&
-                      moment.unix(timestamp).isValid()
-                    ) {
-                      // Date input expects YYYY-MM-DD format
-                      return moment.unix(timestamp).format("YYYY-MM-DD");
-                    }
-                    return "";
-                  })()
+                  const timestamp = Number(filter.endDate);
+                  if (
+                    !isNaN(timestamp) &&
+                    timestamp > 0 &&
+                    moment.unix(timestamp).isValid()
+                  ) {
+                    // Date input expects YYYY-MM-DD format
+                    return moment.unix(timestamp).format("YYYY-MM-DD");
+                  }
+                  return "";
+                })()
                 : "",
           }}
         />
