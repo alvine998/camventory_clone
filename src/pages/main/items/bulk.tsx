@@ -27,17 +27,23 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const { page = 1, limit = 10, search = "" } = query;
+    const { page = 1, limit = 10, search = "", location } = query;
 
     const params = new URLSearchParams({
       page: String(page),
-      limit: String(limit),
-      location: String(query.location || ""),
-      search: String(query.search || ""),
+      limit: String(limit)
     });
 
     if (typeof search === "string" && search.trim() !== "") {
       params.set("search", search);
+    }
+
+    if (
+      typeof location === "string" &&
+      location.trim() !== "" &&
+      location !== "all"
+    ) {
+      params.set("location", location);
     }
 
     const table = await axios.get(
@@ -228,14 +234,14 @@ export default function AdministratorPage({ table }: any) {
           </select>
           {(filter.search ||
             (filter.location && filter.location !== "all")) && (
-            <button
-              type="button"
-              className="px-4 py-2 text-red-500 hover:text-red-600 font-medium transition-colors duration-200"
-              onClick={handleResetFilter}
-            >
-              Reset Filters
-            </button>
-          )}
+              <button
+                type="button"
+                className="px-4 py-2 text-red-500 hover:text-red-600 font-medium transition-colors duration-200"
+                onClick={handleResetFilter}
+              >
+                Reset Filters
+              </button>
+            )}
         </div>
         <Button
           variant="custom-color"
@@ -255,11 +261,10 @@ export default function AdministratorPage({ table }: any) {
             return (
               <button
                 key={tab.href}
-                className={`px-4 py-2 font-medium text-sm ${
-                  isActive
-                    ? "border-b-2 border-orange-500 text-orange-600"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
+                className={`px-4 py-2 font-medium text-sm ${isActive
+                  ? "border-b-2 border-orange-500 text-orange-600"
+                  : "text-gray-500 hover:text-gray-700"
+                  }`}
                 onClick={() => router.push(tab.href)}
               >
                 {tab.label}
