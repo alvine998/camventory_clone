@@ -50,7 +50,6 @@ export default function FilterModal({
   // Status options
   const statusOptions = [
     { value: "all", label: "All" },
-    { value: "cancelled", label: "Cancel" },
     { value: "booked", label: "Booked" },
     { value: "checkout", label: "Checkout" },
     { value: "checkin", label: "Check In" },
