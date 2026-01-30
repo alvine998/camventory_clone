@@ -2,10 +2,15 @@ import Badge from "@/components/Badge";
 import HeaderReservation from "@/components/detail-reservation/Header";
 import Input from "@/components/Input";
 import { CONFIG } from "@/config";
-import { IReservation } from "@/types/reservation";
+import { IReservation, IReservationLogResponse } from "@/types/reservation";
 import axios from "axios";
 import { parse } from "cookie";
-import { Calendar1Icon, CalendarIcon } from "lucide-react";
+import {
+  Calendar1Icon,
+  CalendarIcon,
+  Mail,
+  MapPin,
+} from "lucide-react";
 import moment from "moment";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
@@ -34,21 +39,32 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    const result = await axios.get(
-      `${CONFIG.API_URL}/v1/reservation/${params.id}`,
-      {
+    const [result, logsResult] = await Promise.all([
+      axios.get(`${CONFIG.API_URL}/v1/reservation/${params.id}`, {
         headers: {
           Authorization: `${token}`,
         },
-      }
-    );
+      }),
+      axios.get(`${CONFIG.API_URL}/v1/reservation/${params.id}/logs`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      }),
+    ]);
 
     if (result.status !== 200) {
       throw new Error(`API request failed with status code ${result.status}`);
     }
 
     // Optionally validate token...
-    return { props: { params, detail: result?.data, query } };
+    return {
+      props: {
+        params,
+        detail: result?.data,
+        logs: logsResult?.data || null,
+        query,
+      },
+    };
   } catch (error: any) {
     console.log(error);
     if (error?.response?.status === 401) {
@@ -60,30 +76,32 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { table: [] },
+      props: { table: [], logs: null },
     };
   }
-};
-export default function Detail({ detail, query }: any) {
+}
+export default function Detail({ detail, logs, query }: any) {
   const itemDetail: IReservation = detail?.data;
+  const reservationLogs: IReservationLogResponse = logs;
   const [itemOrder, setItemOrder] = useState<any>(itemDetail?.details || []);
-  const [searchTerm, setSearchTerm] = useState('');
-  
+  const [searchTerm, setSearchTerm] = useState("");
+
   // Update itemOrder when details change
   React.useEffect(() => {
     setItemOrder(itemDetail?.details || []);
   }, [itemDetail?.details]);
-  
+
   // Handle search with debounce
   React.useEffect(() => {
     if (!searchTerm) {
       setItemOrder(itemDetail?.details || []);
       return;
     }
-    
-    const filtered = (itemDetail?.details || []).filter((item: any) =>
-      item.item_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.item_id?.toString().includes(searchTerm)
+
+    const filtered = (itemDetail?.details || []).filter(
+      (item: any) =>
+        item.item_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.item_id?.toString().includes(searchTerm)
     );
     setItemOrder(filtered);
   }, [searchTerm, itemDetail?.details]);
@@ -202,9 +220,97 @@ export default function Detail({ detail, query }: any) {
         </div>
 
         {/* Col 2 */}
-        <div className="border border-gray-300 p-4 rounded w-full">
-          <h3 className="text-md font-bold">Extra Information</h3>
-          <div className="mt-4 grid lg:grid-cols-5 grid-cols-1 gap-10 w-full"></div>
+        <div className="border border-gray-300 p-6 rounded-lg w-full flex flex-col gap-6 bg-white shadow-sm">
+          <div className="border-b border-gray-200 pb-3">
+            <h3 className="text-lg font-bold text-gray-800">Extra Information</h3>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            {/* Pickup Location */}
+            <div className="relative">
+              <div className="flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-full shadow-sm">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 border border-gray-100">
+                  <MapPin className="w-5 h-5 text-gray-700" />
+                </div>
+                <span className="text-sm font-medium text-gray-800">
+                  {itemDetail?.pickup_location || "Not specified"}
+                </span>
+              </div>
+            </div>
+
+            {/* Logs Timeline */}
+            <div className="flex flex-col relative pl-2">
+              {/* Vertical line connector */}
+              <div className="absolute left-[9px] top-2 bottom-2 w-[2px] bg-gray-200" />
+
+              <div className="flex flex-col gap-8">
+                {reservationLogs?.data && reservationLogs.data.length > 0 ? (
+                  reservationLogs.data.map((log: any, index: number) => {
+                    // Logic to determine icon and styling based on log content
+                    const isEmail = log.note.toLowerCase().includes("email");
+                    // const isPersonnel = !isEmail; // Default for now
+
+                    return (
+                      <div key={log.id} className="relative flex flex-col gap-2">
+                        {/* Dot on line */}
+                        <div className="absolute left-[0px] top-[10px] w-5 h-5 flex items-center justify-center z-10">
+                          <div className="w-4 h-4 rounded-full border-2 border-gray-200 bg-white" />
+                        </div>
+
+                        <div className="pl-10 mt-3">
+                          {/* Timestamp - Using current time or placeholder as API doesn't provide it yet */}
+                          <p className="text-xs text-gray-400 mb-2 font-medium">
+                            {moment(log.created_at).format("DD MMMM YYYY, HH:mm [WIB]")}
+                          </p>
+
+                          {index === 0 ? (
+                            // First log entry often looks boxed in mockups
+                            <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm flex gap-3 items-center">
+                              <Image
+                                alt="Avatar"
+                                src="/images/default-photo.svg"
+                                width={32}
+                                height={32}
+                                className="rounded-full bg-gray-100"
+                              />
+                              <p className="text-sm text-gray-700 font-medium">
+                                {log.note}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="flex gap-3 items-start">
+                              {isEmail ? (
+                                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center border border-green-200">
+                                  <Mail className="w-4 h-4 text-green-600" />
+                                </div>
+                              ) : (
+                                <Image
+                                  alt="Avatar"
+                                  src="/images/default-photo.svg"
+                                  width={32}
+                                  height={32}
+                                  className="rounded-full bg-gray-100 border border-gray-200"
+                                />
+                              )}
+                              <p className="text-sm text-gray-700 font-medium pt-1.5">
+                                {log.note}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-10 px-4 bg-gray-50 border border-dashed border-gray-300 rounded-lg ml-8">
+                    <p className="text-sm text-gray-500 italic">
+                      No extra information available for this reservation
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

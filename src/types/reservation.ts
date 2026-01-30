@@ -87,3 +87,30 @@ export interface ICalendarResponse {
     status: boolean;
   };
 }
+
+export interface IReservationLog {
+  id: string;
+  note: string;
+}
+
+export interface IReservationLogResponse {
+  meta: {
+    total_data: number;
+    total_data_per_page: number;
+    current_page: number;
+    previous_page: number;
+    total_page: number;
+    next_page_url: string;
+    previous_page_url: string;
+    first_page_url: string;
+    last_page_url: string;
+  };
+  message: string;
+  status: number;
+  data: IReservationLog[];
+  error: {
+    code: number;
+    message: string;
+    status: boolean;
+  };
+}
