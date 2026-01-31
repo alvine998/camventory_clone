@@ -7,17 +7,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const toMoney = (number: number) => {
+export const toMoney = (value: any) => {
+  const numeric = Number(value);
   // Check if the input is a valid number
-  if (isNaN(number)) {
-    throw new Error("Input must be a valid number");
+  if (isNaN(numeric)) {
+    return "0";
   }
 
-  // Convert the number to a string with two decimal places
-  let price = number?.toFixed(0);
+  // Convert the number to a string with zero decimal places
+  let price = numeric.toFixed(0);
 
   // Add comma as thousands separator
-  price = price?.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  price = price.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
   // Add the currency symbol
   return `${price}`;

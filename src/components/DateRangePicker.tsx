@@ -1,14 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { format } from "date-fns";
+import { useEffect, useState, useCallback } from "react";
+import { format, parse as parseDate } from "date-fns";
 import { DateRange, DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
-
-interface DateRangeType {
-  from: Date;
-  to: Date;
-}
 
 interface Props {
   date: {
@@ -20,51 +15,66 @@ interface Props {
   className?: string;
 }
 
+const parseInputDate = (d: Date | string): Date | undefined => {
+  if (!d) return undefined;
+  if (d instanceof Date) return d;
+  try {
+    // Attempt to parse dd/MM/yyyy
+    const parsed = parseDate(d, 'dd/MM/yyyy', new Date());
+    if (!isNaN(parsed.getTime())) return parsed;
+    // Fallback to native Date constructor
+    const native = new Date(d);
+    if (!isNaN(native.getTime())) return native;
+  } catch (e) {
+    console.error("Error parsing date:", d, e);
+  }
+  return undefined;
+};
+
 export default function DateRangePicker({
   date,
   setDate,
   showHeader = true,
   className
 }: Props) {
-  const [range, setRange] = useState<DateRangeType>({
-    from: date?.start ? (date.start instanceof Date ? date.start : new Date(date.start)) : (null as any),
-    to: date?.end ? (date.end instanceof Date ? date.end : new Date(date.end)) : (null as any),
-  });
+  const [range, setRange] = useState<DateRange | undefined>(() => ({
+    from: parseInputDate(date?.start),
+    to: parseInputDate(date?.end),
+  }));
 
-  // Sync internal range with props (especially for reset)
+  // Sync internal range with props when they change externally
   useEffect(() => {
-    if (!date?.start && !date?.end) {
-      setRange({ from: (null as any), to: (null as any) });
-    }
-  }, [date?.start, date?.end]);
+    const from = parseInputDate(date?.start);
+    const to = parseInputDate(date?.end);
 
-  // Update parent when range changes
-  useEffect(() => {
-    const updateParent = () => {
-      if (!range || !range.from) return;
-
-      const from = range.from;
-      const to = range.to || from;
-
-      if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
-        setDate({
-          start: format(from, 'dd/MM/yyyy'),
-          end: format(to, 'dd/MM/yyyy')
-        });
+    // Only update if they are actually different to avoid extra renders
+    setRange(prev => {
+      if (prev?.from?.getTime() === from?.getTime() && prev?.to?.getTime() === to?.getTime()) {
+        return prev;
       }
-    };
-
-    updateParent();
-  }, [range, setDate]);
+      return { from, to };
+    });
+  }, [date?.start, date?.end]);
 
   // Handle date selection
   const handleSelect = (selectedRange: DateRange | undefined) => {
-    if (!selectedRange) return;
+    setRange(selectedRange);
 
-    setRange({
-      from: selectedRange.from || new Date(),
-      to: selectedRange.to || selectedRange.from || new Date()
-    });
+    if (selectedRange?.from && selectedRange.to) {
+      const fromStr = format(selectedRange.from, 'dd/MM/yyyy');
+      const calamities = format(selectedRange.to, 'dd/MM/yyyy');
+
+      // Notify parent only when both are selected and different from current props
+      const currentStart = date?.start instanceof Date ? format(date.start, 'dd/MM/yyyy') : date?.start;
+      const currentEnd = date?.end instanceof Date ? format(date.end, 'dd/MM/yyyy') : date?.end;
+
+      if (fromStr !== currentStart || calamities !== currentEnd) {
+        setDate({
+          start: fromStr,
+          end: calamities
+        });
+      }
+    }
   };
 
   return (
@@ -79,23 +89,6 @@ export default function DateRangePicker({
         pagedNavigation
         defaultMonth={range?.from}
       />
-
-      {/* <div className="text-sm text-gray-600">
-        {range?.from && range?.to ? (
-          <p>
-            Dari:{" "}
-            <span className="font-medium">
-              {format(range.from, "dd MMM yyyy")}
-            </span>{" "}
-            sampai{" "}
-            <span className="font-medium">
-              {format(range.to, "dd MMM yyyy")}
-            </span>
-          </p>
-        ) : (
-          <p>Silakan pilih rentang tanggal</p>
-        )}
-      </div> */}
     </div>
   );
 }

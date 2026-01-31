@@ -50,12 +50,18 @@ const chartOptions: ApexCharts.ApexOptions = {
     title: {
       text: "Sales Amount",
     },
+    labels: {
+      formatter: (value) => formatCurrency(value),
+    },
   },
   tooltip: {
     enabled: true,
     x: {
       format: 'dd MMM yyyy',
       formatter: undefined, // Use default formatter
+    },
+    y: {
+      formatter: (value) => formatCurrency(value),
     },
   },
   colors: ["#f97316"], // Orange color to match your theme
@@ -354,11 +360,11 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
               </h5>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p>Gross Sales</p>
-                <p>Rp{reportData?.total_sum_by_date?.toLocaleString('id-ID') || '0'}</p>
+                <p>{formatCurrency(reportData?.total_sum_by_date || 0)}</p>
               </div>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p>Discount</p>
-                <p>-Rp0</p>
+                <p>Rp 0</p>
               </div>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p>Redeem Point</p>
@@ -366,16 +372,16 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
               </div>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p className="font-bold">Total Net Sales</p>
-                <p className="font-bold">Rp{reportData?.total_sum_by_date?.toLocaleString('id-ID') || '0'}</p>
+                <p className="font-bold">{formatCurrency(reportData?.total_sum_by_date || 0)}</p>
               </div>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p>Tax</p>
-                <p>Rp{reportData?.tax?.toLocaleString('id-ID') || '0'}</p>
+                <p>{formatCurrency(reportData?.tax || 0)}</p>
               </div>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p className="font-bold">Total Sales</p>
                 <p className="font-bold">
-                  Rp{((reportData?.total_sum_by_date || 0) + (reportData?.tax || 0)).toLocaleString('id-ID')}
+                  {formatCurrency((reportData?.total_sum_by_date || 0) + (reportData?.tax || 0))}
                 </p>
               </div>
             </div>
@@ -394,15 +400,15 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
               <h5 className="text-gray-500">Total Net Sales - Base Price</h5>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p>Total Net Sales</p>
-                <p>Rp{reportData?.total_sum_by_date?.toLocaleString('id-ID') || '0'}</p>
+                <p>{formatCurrency(reportData?.total_sum_by_date || 0)}</p>
               </div>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p>Base price</p>
-                <p>-Rp0</p>
+                <p>Rp 0</p>
               </div>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p>Total Profit</p>
-                <p>Rp{reportData?.total_sum_by_date?.toLocaleString('id-ID') || '0'}</p>
+                <p>{formatCurrency(reportData?.total_sum_by_date || 0)}</p>
               </div>
             </div>
           )}

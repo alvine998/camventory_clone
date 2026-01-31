@@ -1,6 +1,7 @@
 import Header from "@/components/detail-item/Header";
 import Tabs from "@/components/Tabs";
-import React from "react";
+import React, { useState } from "react";
+import Modal, { useModal } from "@/components/Modal";
 import { itemTabs } from "./detail";
 import { GetServerSideProps } from "next";
 import { parse } from "cookie";
@@ -29,13 +30,26 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     let result = null;
     let logs = null;
-    
+    let reservations = null;
+
     if (query.type === "bulk" && params) {
       result = await axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
         headers: {
           Authorization: `${token}`,
         },
       });
+
+      try {
+        const resResponse = await axios.get(
+          `${CONFIG.API_URL}/v1/bulk-items/${params.id}/detail/reservations`,
+          {
+            headers: { Authorization: `${token}` },
+          }
+        );
+        reservations = resResponse.data?.data;
+      } catch (e) {
+        console.log("Error fetching bulk reservations:", e);
+      }
     } else if (query.type === "single" && params) {
       result = await axios.get(
         `${CONFIG.API_URL}/v1/single-items/${params.id}`,
@@ -45,7 +59,19 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           },
         }
       );
-      
+
+      try {
+        const resResponse = await axios.get(
+          `${CONFIG.API_URL}/v1/single-items/${params.id}/detail/reservations`,
+          {
+            headers: { Authorization: `${token}` },
+          }
+        );
+        reservations = resResponse.data?.data;
+      } catch (e) {
+        console.log("Error fetching single reservations:", e);
+      }
+
       // Fetch logs for single items
       try {
         const logsResponse = await axios.get(
@@ -73,10 +99,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
 
     // Optionally validate token...
-    return { props: { params, detail: result?.data, query, logs } };
-
-    // Optionally validate token...
-    return { props: { params } };
+    return { props: { params, detail: result?.data, query, logs, reservations } };
   } catch (error: any) {
     console.log(error);
     if (error?.response?.status === 401) {
@@ -92,9 +115,43 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     };
   }
 };
-export default function Dashboard({ params, detail, query, logs }: any) {
+export default function Dashboard({ params, detail, query, logs, reservations }: any) {
+  const [modal, setModal] = useState<useModal>();
   const logsData = logs?.data || [];
-  
+
+  // Map reservations to events
+  const reservationEvents = (reservations?.data || []).map((res: any) => ({
+    title: res.customer_name || "Reserved",
+    start: moment(res.start_date).format("YYYY-MM-DD"),
+    end: moment(res.end_date).add(1, 'days').format("YYYY-MM-DD"), // Add 1 day for end date inclusive in FullCalendar
+    color: "#f97316", // Tailwind orange-500
+    allDay: true,
+    extendedProps: {
+      type: 'reservation'
+    }
+  }));
+
+  // Map logs to events
+  const logEvents = logsData.map((log: any) => ({
+    title: `[LOG] ${log.action || "Action"}`,
+    start: moment.unix(log.created_at).format("YYYY-MM-DD"),
+    color: "#3b82f6", // Tailwind blue-500
+    allDay: true,
+    extendedProps: {
+      log: log,
+      type: 'log'
+    }
+  }));
+
+  const allEvents = [...reservationEvents, ...logEvents];
+
+  const handleEventClick = (info: any) => {
+    const { extendedProps } = info.event;
+    if (extendedProps.type === 'log') {
+      setModal({ open: true, key: "log_detail", data: extendedProps.log });
+    }
+  };
+
   return (
     <div className="p-2">
       <Header detail={detail?.data} query={query} />
@@ -107,10 +164,13 @@ export default function Dashboard({ params, detail, query, logs }: any) {
           <FullCalendar
             plugins={[dayGridPlugin]}
             initialView="dayGridMonth"
-            events={[
-              { title: "Event 1", date: "2025-06-01" },
-              { title: "Event 2", date: "2025-06-10" },
-            ]}
+            events={allEvents}
+            eventClick={handleEventClick}
+            headerToolbar={{
+              left: "prev,next today",
+              center: "title",
+              right: "dayGridMonth,dayGridWeek",
+            }}
           />
         </div>
         <div className="w-full">
@@ -168,6 +228,75 @@ export default function Dashboard({ params, detail, query, logs }: any) {
           <Button variant="submit">Checkout</Button>
         </div>
       </div>
+
+      {modal?.key === "log_detail" && (
+        <Modal
+          open={modal?.open}
+          setOpen={() => setModal({ open: false, key: "", data: {} })}
+        >
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-800">Log Detail</h2>
+              <button
+                onClick={() => setModal({ open: false, key: "", data: {} })}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex flex-col gap-4">
+              <div className="bg-orange-50 p-3 rounded-lg border border-orange-100">
+                <p className="text-xs text-orange-600 font-bold uppercase tracking-wider mb-1">Action</p>
+                <p className="text-base font-bold text-gray-800">{modal.data?.action || "-"}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Date</p>
+                  <p className="text-sm text-gray-800">{moment.unix(modal.data?.created_at).format("DD MMM YYYY")}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Time</p>
+                  <p className="text-sm text-gray-800">{moment.unix(modal.data?.created_at).format("HH:mm")}</p>
+                </div>
+              </div>
+
+              {modal.data?.note && (
+                <div>
+                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Note</p>
+                  <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{modal.data.note}</p>
+                  </div>
+                </div>
+              )}
+
+              {modal.data?.reason && (
+                <div>
+                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Reason</p>
+                  <p className="text-sm text-gray-700 italic bg-gray-50 p-3 rounded border border-gray-200">
+                    {modal.data.reason}
+                  </p>
+                </div>
+              )}
+
+              {modal.data?.creator_name && (
+                <div className="mt-2 pt-4 border-t border-gray-100 flex items-center justify-between">
+                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Created By</p>
+                  <p className="text-sm font-medium text-gray-800">{modal.data.creator_name}</p>
+                </div>
+              )}
+            </div>
+            <div className="mt-8 flex justify-end">
+              <Button
+                variant="submit"
+                onClick={() => setModal({ open: false, key: "", data: {} })}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
