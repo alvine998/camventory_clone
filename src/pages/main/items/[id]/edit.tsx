@@ -3,6 +3,7 @@ import ButtonChoose from "@/components/ButtonChoose";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
 import { CONFIG } from "@/config";
+import { formatEpochDate } from "@/utils";
 import axios from "axios";
 import { parse } from "cookie";
 import { ArrowLeftIcon, XIcon } from "lucide-react";
@@ -582,11 +583,7 @@ export default function EditItemPage({
                   name="purchase_date"
                   fullWidth
                   type="date"
-                  defaultValue={
-                    itemData?.purchase_date
-                      ? moment(itemData.purchase_date).format("YYYY-MM-DD")
-                      : ""
-                  }
+                  defaultValue={formatEpochDate(itemData?.purchase_date, "YYYY-MM-DD")}
                 />
               </div>
               {type !== "bulk" && (
@@ -604,11 +601,7 @@ export default function EditItemPage({
                     name="warranty_date"
                     fullWidth
                     type="date"
-                    defaultValue={
-                      itemData?.warranty_date
-                        ? moment(itemData.warranty_date).format("YYYY-MM-DD")
-                        : ""
-                    }
+                    defaultValue={formatEpochDate(itemData?.warranty_date, "YYYY-MM-DD")}
                   />
                 </div>
               )}

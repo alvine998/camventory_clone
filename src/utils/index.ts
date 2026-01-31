@@ -1,6 +1,7 @@
 import { ParsedUrlQuery } from "querystring";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import moment from "moment";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -20,6 +21,60 @@ export const toMoney = (number: number) => {
 
   // Add the currency symbol
   return `${price}`;
+};
+
+/**
+ * Formats an epoch timestamp (seconds or milliseconds) to a string.
+ * @param value The epoch timestamp (number or string)
+ * @param format The moment format string (default: "DD-MM-YYYY")
+ */
+export const formatEpochDate = (
+  value: any,
+  format: string = "DD-MM-YYYY",
+): string => {
+  if (!value) {
+    return "-";
+  }
+
+  let timestamp: number;
+
+  if (typeof value === "number") {
+    timestamp = value;
+  } else if (typeof value === "string") {
+    timestamp = Number(value);
+    if (isNaN(timestamp)) {
+      // If it's a date string, moment will handle it
+      return moment(value).format(format);
+    }
+  } else {
+    return "-";
+  }
+
+  // Check if timestamp is in seconds (10 digits) or milliseconds (13 digits)
+  // Unix timestamps in seconds are typically around 10 digits
+  const isSeconds = timestamp.toString().length === 10;
+  return moment(isSeconds ? timestamp * 1000 : timestamp).format(format);
+};
+
+export const parseEpochToMoment = (value: any): moment.Moment => {
+  if (!value) {
+    return moment();
+  }
+
+  let timestamp: number;
+  if (typeof value === "number") {
+    timestamp = value;
+  } else if (typeof value === "string") {
+    timestamp = Number(value);
+    if (isNaN(timestamp)) {
+      return moment(value);
+    }
+  } else {
+    return moment();
+  }
+
+  const isSeconds = timestamp.toString().length === 10;
+  return moment(isSeconds ? timestamp * 1000 : timestamp);
 };
 
 // Create a function to convert the object to a query string
@@ -46,7 +101,7 @@ export function normalizePhoneNumber(phoneNumber: any) {
 }
 
 export const queryToUrlSearchParams = (
-  query: ParsedUrlQuery
+  query: ParsedUrlQuery,
 ): URLSearchParams => {
   const params = new URLSearchParams();
 

@@ -9,7 +9,7 @@ import axios from "axios";
 import { CONFIG } from "@/config";
 import dynamic from "next/dynamic";
 import type { ApexOptions } from "apexcharts";
-import { toMoney } from "@/utils";
+import { parseEpochToMoment, toMoney } from "@/utils";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { req, params, query } = ctx;
@@ -78,28 +78,6 @@ type DepreciationPoint = {
   accumulatedDepreciation: number;
 };
 
-const parsePurchaseDate = (value: any): moment.Moment => {
-  if (!value) {
-    return moment();
-  }
-
-  if (typeof value === "number") {
-    const isSeconds = value.toString().length === 10;
-    return moment(isSeconds ? value * 1000 : value);
-  }
-
-  if (typeof value === "string") {
-    const numeric = Number(value);
-    if (!Number.isNaN(numeric)) {
-      const isSeconds = value.length === 10;
-      return moment(isSeconds ? numeric * 1000 : numeric);
-    }
-    return moment(value);
-  }
-
-  return moment();
-};
-
 const formatCurrency = (value?: number | null) => {
   if (value === undefined || value === null || Number.isNaN(value)) {
     return "-";
@@ -155,7 +133,7 @@ export default function Depreciation({ params, detail, query }: any) {
     if (!purchasePriceRaw || Number.isNaN(purchasePriceRaw) || purchasePriceRaw <= 0) {
       return {
         ...emptyResult,
-        purchaseDate: parsePurchaseDate(itemDetail?.purchase_date),
+        purchaseDate: parseEpochToMoment(itemDetail?.purchase_date),
       };
     }
 
@@ -170,7 +148,7 @@ export default function Depreciation({ params, detail, query }: any) {
 
     const usefulLifeYears = usefulLifeRaw > 0 ? usefulLifeRaw : 5; // Default to 5 years if not provided
 
-    const purchaseDateMoment = parsePurchaseDate(itemDetail?.purchase_date);
+    const purchaseDateMoment = parseEpochToMoment(itemDetail?.purchase_date);
     const MONTHLY_RATE = 0.003; // 0.3% per month
     const totalMonths = Math.max(1, Math.round(usefulLifeYears * 12));
 

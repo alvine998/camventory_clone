@@ -4,7 +4,7 @@ import Tabs, { Tab } from "@/components/Tabs";
 import Toggle from "@/components/Toggle";
 import { CONFIG } from "@/config";
 import { IItems } from "@/types/single_items";
-import { toMoney } from "@/utils";
+import { formatEpochDate, toMoney } from "@/utils";
 import axios from "axios";
 import { parse } from "cookie";
 import {
@@ -13,7 +13,6 @@ import {
   PlusCircleIcon,
   TrashIcon,
 } from "lucide-react";
-import moment from "moment";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -111,11 +110,11 @@ export default function Detail({ params, detail, query }: any) {
     },
     {
       label: "Purchase Price",
-      value: toMoney(itemDetail?.purchase_price),
+      value: toMoney(Number(itemDetail?.purchase_price)),
     },
     {
       label: "Warranty Date",
-      value: moment(itemDetail?.warranty_date).format("DD-MM-YYYY"),
+      value: formatEpochDate(itemDetail?.warranty_date),
     },
     {
       label: "Rate/Day",
@@ -141,7 +140,7 @@ export default function Detail({ params, detail, query }: any) {
     },
     {
       label: "Purchase Date",
-      value: moment(itemDetail?.purchase_date).format("DD-MM-YYYY"),
+      value: formatEpochDate(itemDetail?.purchase_date),
     },
     {
       label: "Location",
@@ -164,7 +163,7 @@ export default function Detail({ params, detail, query }: any) {
     },
     {
       label: "Brand",
-      value: itemDetail?.brandID,
+      value: itemDetail?.brand_name || "-",
     },
     {
       label: "Model",
@@ -172,7 +171,7 @@ export default function Detail({ params, detail, query }: any) {
     },
     {
       label: "Category Items",
-      value: itemDetail?.categoryID,
+      value: itemDetail?.category_name || "-",
     },
     {
       label: "Purchase Price",
@@ -180,11 +179,11 @@ export default function Detail({ params, detail, query }: any) {
     },
     {
       label: "Purchase Date",
-      value: moment(itemDetail?.purchase_date).format("DD-MM-YYYY"),
+      value: formatEpochDate(itemDetail?.purchase_date),
     },
     {
       label: "Warranty Date",
-      value: moment(itemDetail?.warranty_date).format("DD-MM-YYYY"),
+      value: formatEpochDate(itemDetail?.warranty_date),
     },
     {
       label: "Location",
@@ -264,14 +263,14 @@ export default function Detail({ params, detail, query }: any) {
                   ) : item.label === "Barcode" ? (
                     item.value ? (
                       <div className="flex flex-col items-start gap-1">
-                          <Barcode
-                            value={item.value}
-                            format="CODE128"
-                            width={1}
-                            height={20}
-                            displayValue={true}
-                            fontSize={12}
-                          />
+                        <Barcode
+                          value={item.value}
+                          format="CODE128"
+                          width={1}
+                          height={20}
+                          displayValue={true}
+                          fontSize={12}
+                        />
                       </div>
                     ) : (
                       <p className="text-xs font-bold text-gray-400">No barcode</p>
