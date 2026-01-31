@@ -1,4 +1,4 @@
-import { Circle, TrendingDown } from "lucide-react";
+import { Circle, TrendingDown, Upload } from "lucide-react";
 import moment from "moment";
 import dynamic from "next/dynamic";
 import React, { useEffect, useMemo, useState } from "react";
@@ -7,6 +7,8 @@ import axios from "axios";
 import { CONFIG } from "@/config";
 import { parse } from "cookie";
 import { GetServerSideProps } from "next";
+import { downloadReport } from "@/utils/exportToExcel";
+import Button from "@/components/Button";
 
 // Dynamically import ApexCharts to avoid SSR issues
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -126,6 +128,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       props: {
         initialTrendData: response.data?.data || null,
         initialFilterBy: filterBy,
+        token: token,
       },
     };
   } catch (error: any) {
@@ -151,9 +154,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 export default function SalesSummaryPage({
   initialTrendData,
   initialFilterBy = "week",
+  token,
 }: {
   initialTrendData: TrendData | null;
   initialFilterBy?: string;
+  token: string;
 }) {
   const [isMounted, setIsMounted] = useState(false);
   const [trendData, setTrendData] = useState<TrendData | null>(initialTrendData);
@@ -338,6 +343,27 @@ export default function SalesSummaryPage({
             </div>
             Profit
           </button>
+        </div>
+        <div className="ml-auto">
+          <Button
+            type="button"
+            onClick={() => {
+              downloadReport(
+                "trend",
+                {
+                  filterBy,
+                },
+                token,
+                `Sales_Trend_Report_${moment().format("YYYYMMDD")}`
+              );
+            }}
+            title="Export Excel"
+            variant="submit"
+            className="flex items-center gap-2"
+          >
+            <Upload className="w-4 h-4 text-white" />
+            Export Excel
+          </Button>
         </div>
       </div>
 

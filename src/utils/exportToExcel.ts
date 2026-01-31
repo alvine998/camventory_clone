@@ -1,5 +1,7 @@
 import * as XLSX from "xlsx";
 import { toMoney } from "./index";
+import axios from "axios";
+import { CONFIG } from "@/config";
 
 interface ExportColumn {
   header: string;
@@ -96,4 +98,43 @@ export const exportToExcel = (options: ExportOptions) => {
  */
 export const formatCurrency = (value: any): string => {
   return `Rp ${toMoney(value)}`;
+};
+
+/**
+ * Download report from API
+ * @param path API path after /v1/report/download/
+ * @param params Query parameters
+ * @param token Authorization token
+ * @param filename Desired filename
+ */
+export const downloadReport = async (
+  path: string,
+  params: any,
+  token: string,
+  filename: string,
+) => {
+  try {
+    const response = await axios.get(
+      `${CONFIG.API_URL}/v1/report/download/${path}`,
+      {
+        params,
+        headers: {
+          Authorization: `${token}`,
+        },
+        responseType: "blob",
+      },
+    );
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${filename}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Error downloading report:", error);
+    alert("Failed to download report");
+  }
 };

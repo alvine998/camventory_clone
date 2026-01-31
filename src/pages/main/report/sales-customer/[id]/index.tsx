@@ -2,7 +2,6 @@ import Button from "@/components/Button";
 import DateRangePicker from "@/components/DateRangePicker";
 import Modal, { useModal } from "@/components/Modal";
 import { CalendarDays } from "lucide-react";
-import { format } from "date-fns";
 import moment from "moment";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
@@ -11,6 +10,7 @@ import { GetServerSideProps } from "next";
 import { parse } from "cookie";
 import DataTable from "react-data-table-component";
 import { useRouter } from "next/router";
+import { downloadReport } from "@/utils/exportToExcel";
 
 const parseDateString = (dateStr: string): Date => {
   if (!dateStr) return new Date();
@@ -85,6 +85,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         reportData: response.data?.data || null,
         dateRange: { start: startDateStr, end: endDateStr },
         customerId: id,
+        token: token,
       },
     };
   } catch (error: any) {
@@ -115,12 +116,14 @@ interface Props {
   reportData: any;
   dateRange: { start: string; end: string };
   customerId: string;
+  token: string;
 }
 
 export default function SalesCustomerDetailPage({
   reportData,
   dateRange,
   customerId,
+  token,
 }: Props) {
   const router = useRouter();
   const { query } = router;
@@ -229,7 +232,20 @@ export default function SalesCustomerDetailPage({
         <div>
           <Button
             type="button"
-            onClick={() => {}}
+            onClick={() => {
+              const startTimestamp = moment(date.start, "DD/MM/YYYY").unix();
+              const endTimestamp = moment(date.end, "DD/MM/YYYY").unix();
+
+              downloadReport(
+                `customer-detail/${customerId}`,
+                {
+                  startDate: startTimestamp,
+                  endDate: endTimestamp,
+                },
+                token,
+                `Sales_Customer_Detail_${customerId}_Report_${moment(date.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(date.end, "DD/MM/YYYY").format("YYYYMMDD")}`
+              );
+            }}
             title="Export Excel"
             variant="submit"
             className="flex items-center gap-2"
@@ -285,26 +301,17 @@ export default function SalesCustomerDetailPage({
               start: parseDateString(date.start),
               end: parseDateString(date.end),
             }}
-            setDate={(dateRange) => {
+            onSave={(dateRange) => {
               try {
-                const startDate = dateRange.start
-                  ? new Date(dateRange.start)
-                  : new Date();
-                const endDate = dateRange.end
-                  ? new Date(dateRange.end)
-                  : new Date();
-
-                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-                  throw new Error("Invalid date");
-                }
-
-                const startStr = format(startDate, "dd/MM/yyyy");
-                const endStr = format(endDate, "dd/MM/yyyy");
+                const startStr = dateRange.start;
+                const endStr = dateRange.end;
 
                 setDate({
                   start: startStr,
                   end: endStr,
                 });
+
+                setModal({ open: false, key: "", data: {} });
 
                 router.push({
                   pathname: router.pathname,
@@ -317,23 +324,9 @@ export default function SalesCustomerDetailPage({
                 });
               } catch (error) {
                 console.error("Error setting date range:", error);
-                const now = new Date();
-                const nowStr = format(now, "dd/MM/yyyy");
-                setDate({
-                  start: nowStr,
-                  end: nowStr,
-                });
-                router.push({
-                  pathname: router.pathname,
-                  query: {
-                    ...query,
-                    startDate: nowStr,
-                    endDate: nowStr,
-                    page: 1,
-                  },
-                });
               }
             }}
+            onCancel={() => setModal({ open: false, key: "", data: {} })}
           />
         </Modal>
       )}

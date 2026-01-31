@@ -3,6 +3,7 @@ import {
   PencilIcon,
   ShoppingCartIcon,
   XCircleIcon,
+  PrinterIcon,
 } from "lucide-react";
 import React, { useState } from "react";
 import Button from "../Button";
@@ -89,17 +90,19 @@ export default function HeaderReservation({ detail }: Props) {
               </Badge>
             </div>
             <div className="flex gap-2 items-center">
-              <Button
-                variant="custom-color"
-                className="flex items-center gap-1 border border-orange-500"
-                type="button"
-                onClick={() => {
-                  router.push(`/main/reservation/${detail?.id}/edit`);
-                }}
-              >
-                <PencilIcon className="w-4 h-4 text-orange-500" />
-                <p className="text-xs text-orange-500">Edit</p>
-              </Button>
+              {detail?.status?.toUpperCase() === "BOOKED" && (
+                <Button
+                  variant="custom-color"
+                  className="flex items-center gap-1 border border-orange-500"
+                  type="button"
+                  onClick={() => {
+                    router.push(`/main/reservation/${detail?.id}/edit`);
+                  }}
+                >
+                  <PencilIcon className="w-4 h-4 text-orange-500" />
+                  <p className="text-xs text-orange-500">Edit</p>
+                </Button>
+              )}
               {detail?.status?.toUpperCase() === "BOOKED" && (
                 <Button
                   variant="custom-color"
@@ -111,51 +114,79 @@ export default function HeaderReservation({ detail }: Props) {
                   <p className="text-xs text-orange-500">Cancel</p>
                 </Button>
               )}
-              <Dropdown
-                label={`Check Out ${detail?.details?.length || 0} items`}
-                triggerIcon={<ShoppingCartIcon className="w-4 h-4 text-white" />}
-                options={[
-                  {
-                    label: "Checkout",
-                    onClick: () => {
-                      console.log("Checkout clicked");
-                      Swal.fire({
-                        icon: "info",
-                        title: "Checkout",
-                        text: "Checkout action triggered",
-                        timer: 1500,
-                        showConfirmButton: false,
-                      });
+
+              {detail?.status?.toUpperCase() === "BOOKED" ? (
+                <Dropdown
+                  label={`Check Out ${detail?.details?.length || 0} items`}
+                  triggerIcon={<ShoppingCartIcon className="w-4 h-4 text-white" />}
+                  options={[
+                    {
+                      label: "Checkout",
+                      onClick: () => {
+                        console.log("Checkout clicked");
+                        Swal.fire({
+                          icon: "info",
+                          title: "Checkout",
+                          text: "Checkout action triggered",
+                          timer: 1500,
+                          showConfirmButton: false,
+                        });
+                      },
                     },
-                  },
-                  {
-                    label: "Check In",
-                    onClick: () => {
-                      console.log("Check In clicked");
-                      Swal.fire({
-                        icon: "info",
-                        title: "Check In",
-                        text: "Check In action triggered",
-                        timer: 1500,
-                        showConfirmButton: false,
-                      });
+                    {
+                      label: "Pickup of goods",
+                      onClick: () => {
+                        console.log("Pickup of goods clicked");
+                        Swal.fire({
+                          icon: "info",
+                          title: "Pickup",
+                          text: "Pickup of goods action triggered",
+                          timer: 1500,
+                          showConfirmButton: false,
+                        });
+                      },
                     },
-                  },
-                  {
-                    label: "Pickup of goods",
-                    onClick: () => {
-                      console.log("Pickup of goods clicked");
-                      Swal.fire({
-                        icon: "info",
-                        title: "Pickup",
-                        text: "Pickup of goods action triggered",
-                        timer: 1500,
-                        showConfirmButton: false,
-                      });
+                  ]}
+                />
+              ) : detail?.status?.toUpperCase() === "CHECKOUT" ? (
+                <Dropdown
+                  label={`Check In ${detail?.details?.length || 0} items`}
+                  triggerIcon={<ShoppingCartIcon className="w-4 h-4 text-white" />}
+                  options={[
+                    {
+                      label: "Check In",
+                      onClick: () => {
+                        console.log("Check In clicked");
+                        Swal.fire({
+                          icon: "info",
+                          title: "Check In",
+                          text: "Check In action triggered",
+                          timer: 1500,
+                          showConfirmButton: false,
+                        });
+                      },
                     },
-                  },
-                ]}
-              />
+                  ]}
+                />
+              ) : (
+                <Button
+                  variant="submit"
+                  className="flex items-center gap-2"
+                  onClick={() => {
+                    console.log("Print PDF clicked");
+                    Swal.fire({
+                      icon: "info",
+                      title: "Print PDF",
+                      text: "Print PDF action triggered",
+                      timer: 1500,
+                      showConfirmButton: false,
+                    });
+                  }}
+                >
+                  <PrinterIcon className="w-4 h-4 text-white" />
+                  Print PDF
+                </Button>
+              )}
             </div>
           </div>
           <div className="flex gap-4 mt-2">

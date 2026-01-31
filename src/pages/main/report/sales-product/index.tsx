@@ -15,7 +15,7 @@ import DataTable from "react-data-table-component";
 import Input from "@/components/Input";
 import { ColumnSalesProduct } from "@/constants/column_sales_product";
 import { useRouter } from "next/router";
-import { exportToExcel, formatCurrency } from "@/utils/exportToExcel";
+import { downloadReport } from "@/utils/exportToExcel";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -84,6 +84,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         dateRange: { start: startDateStr, end: endDateStr },
         initialProductName: productName || "",
         initialSortBy: sortBy || "",
+        token: token,
       },
     };
   } catch (error: any) {
@@ -128,6 +129,7 @@ interface Props {
   dateRange: { start: string; end: string };
   initialProductName: string;
   initialSortBy: string;
+  token: string;
 }
 
 export default function SalesProductPage({
@@ -135,6 +137,7 @@ export default function SalesProductPage({
   dateRange,
   initialProductName,
   initialSortBy,
+  token,
 }: Props) {
   const router = useRouter();
   const { query } = router;
@@ -321,37 +324,22 @@ export default function SalesProductPage({
           <Button
             type="button"
             onClick={() => {
-              exportToExcel({
-                filename: `Sales_Product_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
-                sheetName: 'Sales Product',
-                columns: [
-                  { header: 'No', key: 'product_id', width: 10 },
-                  { header: 'Product Name', key: 'product_name', width: 30 },
-                  { header: 'Category', key: 'category', width: 20 },
-                  { header: 'Total Rentals', key: 'total_rentals', width: 15 },
-                  { header: 'Unit', key: 'unit', width: 10 },
-                  { header: 'Gross Sales', key: 'gross_sales_formatted', width: 20 },
-                  { header: 'Taxes', key: 'taxes_formatted', width: 20 },
-                  { header: 'Sales', key: 'sales_formatted', width: 20 },
-                ],
-                data: reportData?.data_list?.map((item: any, index: number) => ({
-                  product_id: index + 1,
-                  product_name: item.product_name,
-                  category: item.category,
-                  total_rentals: item.total,
-                  unit: item.unit,
-                  gross_sales_formatted: formatCurrency(item.gross_sales),
-                  taxes_formatted: formatCurrency(item.taxes),
-                  sales_formatted: formatCurrency(item.sales),
-                })) || [],
-                summaryData: [
-                  { label: 'Report Period', value: `${moment(tempDate.start, "DD/MM/YYYY").format("DD MMM YYYY")} - ${moment(tempDate.end, "DD/MM/YYYY").format("DD MMM YYYY")}` },
-                  { label: 'Product Sold', value: reportData?.summary_data?.total || 0 },
-                  { label: 'Total Gross Sales', value: formatCurrency(reportData?.summary_data?.gross_sales || 0) },
-                  { label: 'Total Tax', value: formatCurrency(reportData?.summary_data?.taxes || 0) },
-                  { label: 'Total Sales', value: formatCurrency(reportData?.summary_data?.sales || 0) },
-                ],
-              });
+              const startTimestamp = moment(tempDate.start, "DD/MM/YYYY").unix();
+              const endTimestamp = moment(tempDate.end, "DD/MM/YYYY").unix();
+              const productName = router.query.productName || "";
+              const sortBy = router.query.sortBy || "";
+
+              downloadReport(
+                "product",
+                {
+                  startDate: startTimestamp,
+                  endDate: endTimestamp,
+                  productName,
+                  sortBy,
+                },
+                token,
+                `Sales_Product_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`
+              );
             }}
             title="Export Excel"
             variant="submit"
@@ -429,64 +417,26 @@ export default function SalesProductPage({
                 start: parseDateString(tempDate.start),
                 end: parseDateString(tempDate.end),
               }}
-              setDate={(dateRange) => {
-                try {
-                  // DateRangePicker sends dates in 'dd/MM/yyyy' format as strings
-                  if (!dateRange.start || !dateRange.end) {
-                    return; // Don't update if dates are not complete
-                  }
-
-                  // Validate using moment to ensure dates are valid
-                  const startMoment = moment(dateRange.start, "DD/MM/YYYY");
-                  const endMoment = moment(dateRange.end, "DD/MM/YYYY");
-
-                  // Ensure dates are valid
-                  if (!startMoment.isValid() || !endMoment.isValid()) {
-                    throw new Error("Invalid date");
-                  }
-
-                  // Update temporary date (not the actual date yet)
-                  // DateRangePicker already sends in 'dd/MM/yyyy' format, so use directly
-                  setTempDate({
-                    start: dateRange.start,
-                    end: dateRange.end,
-                  });
-                } catch (error) {
-                  console.error("Error setting date range:", error);
-                }
+              onSave={(dateRange) => {
+                setModal({ open: false, key: "", data: {} });
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...query,
+                    startDate: dateRange.start,
+                    endDate: dateRange.end,
+                    page: 1,
+                  },
+                });
+              }}
+              onCancel={() => {
+                setModal({ open: false, key: "", data: {} });
+                setTempDate({
+                  start: date.start,
+                  end: date.end,
+                });
               }}
             />
-            <div className="flex justify-end gap-2 mt-4">
-              <Button
-                variant="white"
-                onClick={() => {
-                  setModal({ open: false, key: "", data: {} });
-                  setTempDate({
-                    start: date.start,
-                    end: date.end,
-                  });
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="submit"
-                onClick={() => {
-                  setModal({ open: false, key: "", data: {} });
-                  router.push({
-                    pathname: router.pathname,
-                    query: {
-                      ...query,
-                      startDate: tempDate.start,
-                      endDate: tempDate.end,
-                      page: 1,
-                    },
-                  });
-                }}
-              >
-                Simpan
-              </Button>
-            </div>
           </div>
         </Modal>
       )}

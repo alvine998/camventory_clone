@@ -14,7 +14,7 @@ import { toMoney } from "@/utils";
 import DataTable from "react-data-table-component";
 import { ColumnSalesCategory } from "@/constants/column_sales_category";
 import { useRouter } from "next/router";
-import { exportToExcel, formatCurrency } from "@/utils/exportToExcel";
+import { downloadReport } from "@/utils/exportToExcel";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -95,6 +95,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         reportData: reportResponse.data?.data || null,
         categories: categories?.data?.data || [],
         dateRange: { start: startDateStr, end: endDateStr },
+        token: token,
       },
     };
   } catch (error: any) {
@@ -137,12 +138,14 @@ interface Props {
   reportData: any;
   categories: any[];
   dateRange: { start: string; end: string };
+  token: string;
 }
 
 export default function SalesCategoryPage({
   reportData,
   categories,
   dateRange,
+  token,
 }: Props) {
   const router = useRouter();
   const { query } = router;
@@ -275,31 +278,20 @@ export default function SalesCategoryPage({
           <Button
             type="button"
             onClick={() => {
-              exportToExcel({
-                filename: `Sales_Category_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
-                sheetName: 'Sales Category',
-                columns: [
-                  { header: 'Category', key: 'category', width: 30 },
-                  { header: 'Total Rentals', key: 'total_rentals', width: 15 },
-                  { header: 'Gross Sales', key: 'gross_sales_formatted', width: 20 },
-                  { header: 'Taxes', key: 'taxes_formatted', width: 20 },
-                  { header: 'Sales', key: 'sales_formatted', width: 20 },
-                ],
-                data: reportData?.data_list?.map((item: any) => ({
-                  category: item.name,
-                  total_rentals: item.total,
-                  gross_sales_formatted: formatCurrency(item.gross_sales),
-                  taxes_formatted: formatCurrency(item.taxes),
-                  sales_formatted: formatCurrency(item.sales),
-                })) || [],
-                summaryData: [
-                  { label: 'Report Period', value: `${moment(tempDate.start, "DD/MM/YYYY").format("DD MMM YYYY")} - ${moment(tempDate.end, "DD/MM/YYYY").format("DD MMM YYYY")}` },
-                  { label: 'Product Sold', value: reportData?.summary_data?.total || 0 },
-                  { label: 'Total Gross Sales', value: formatCurrency(reportData?.summary_data?.gross_sales || 0) },
-                  { label: 'Total Tax', value: formatCurrency(reportData?.summary_data?.taxes || 0) },
-                  { label: 'Total Sales', value: formatCurrency(reportData?.summary_data?.sales || 0) },
-                ],
-              });
+              const startTimestamp = moment(tempDate.start, "DD/MM/YYYY").unix();
+              const endTimestamp = moment(tempDate.end, "DD/MM/YYYY").unix();
+              const categoryID = router.query.categoryID || "";
+
+              downloadReport(
+                "category",
+                {
+                  startDate: startTimestamp,
+                  endDate: endTimestamp,
+                  categoryID,
+                },
+                token,
+                `Sales_Category_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`
+              );
             }}
             title="Export Excel"
             variant="submit"
@@ -394,71 +386,26 @@ export default function SalesCategoryPage({
                 start: parseDateString(tempDate.start),
                 end: parseDateString(tempDate.end),
               }}
-              setDate={(dateRange) => {
-                try {
-                  // DateRangePicker sends dates in 'dd/MM/yyyy' format as strings
-                  if (!dateRange.start || !dateRange.end) {
-                    return; // Don't update if dates are not complete
-                  }
-
-                  // Validate using moment to ensure dates are valid
-                  const startMoment = moment(dateRange.start, "DD/MM/YYYY");
-                  const endMoment = moment(dateRange.end, "DD/MM/YYYY");
-
-                  // Ensure dates are valid
-                  if (!startMoment.isValid() || !endMoment.isValid()) {
-                    throw new Error("Invalid date");
-                  }
-
-                  // Only update if both dates are different (user has selected a range)
-                  // DateRangePicker may call this with end === start when user first selects a date
-                  if (dateRange.start === dateRange.end) {
-                    // Still update tempDate with the selected date, but don't prevent update
-                    // This allows user to select same start and end date if needed
-                  }
-
-                  // Update temporary date (not the actual date yet)
-                  // DateRangePicker already sends in 'dd/MM/yyyy' format, so use directly
-                  setTempDate({
-                    start: dateRange.start,
-                    end: dateRange.end,
-                  });
-                } catch (error) {
-                  console.error("Error setting date range:", error);
-                }
+              onSave={(dateRange) => {
+                setModal({ open: false, key: "", data: {} });
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...query,
+                    startDate: dateRange.start,
+                    endDate: dateRange.end,
+                    page: 1,
+                  },
+                });
+              }}
+              onCancel={() => {
+                setModal({ open: false, key: "", data: {} });
+                setTempDate({
+                  start: date.start,
+                  end: date.end,
+                });
               }}
             />
-            <div className="flex justify-end gap-2 mt-4">
-              <Button
-                variant="white"
-                onClick={() => {
-                  setModal({ open: false, key: "", data: {} });
-                  setTempDate({
-                    start: date.start,
-                    end: date.end,
-                  });
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="submit"
-                onClick={() => {
-                  setModal({ open: false, key: "", data: {} });
-                  router.push({
-                    pathname: router.pathname,
-                    query: {
-                      ...query,
-                      startDate: tempDate.start,
-                      endDate: tempDate.end,
-                      page: 1,
-                    },
-                  });
-                }}
-              >
-                Simpan
-              </Button>
-            </div>
           </div>
         </Modal>
       )}

@@ -12,7 +12,7 @@ import DataTable from "react-data-table-component";
 import { ColumnSalesCustomer } from "@/constants/column_sales-customer";
 import { useRouter } from "next/router";
 import Select from "@/components/Select";
-import { exportToExcel } from "@/utils/exportToExcel";
+import { downloadReport } from "@/utils/exportToExcel";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -79,6 +79,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         meta: reportResponse.data?.meta || null,
         dateRange: { start: startDateStr, end: endDateStr },
         initialSortBy: sortBy || "",
+        token: token,
       },
     };
   } catch (error: any) {
@@ -123,6 +124,7 @@ interface Props {
   meta: any;
   dateRange: { start: string; end: string };
   initialSortBy: string;
+  token: string;
 }
 
 export default function SalesCustomerPage({
@@ -130,6 +132,7 @@ export default function SalesCustomerPage({
   meta,
   dateRange,
   initialSortBy,
+  token,
 }: Props) {
   const router = useRouter();
   const { query } = router;
@@ -242,27 +245,20 @@ export default function SalesCustomerPage({
           <Button
             type="button"
             onClick={() => {
-              exportToExcel({
-                filename: `Sales_Customer_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
-                sheetName: 'Sales Customer',
-                columns: [
-                  { header: 'Customer Name', key: 'customer_name', width: 30 },
-                  { header: 'Phone Number', key: 'phone_number', width: 20 },
-                  { header: 'Total Visit', key: 'total_visit', width: 15 },
-                  { header: 'Total Transaction', key: 'total_transaction', width: 20 },
-                ],
-                data: Array.isArray(reportData?.data_list)
-                  ? reportData.data_list.map((item: any) => ({
-                    customer_name: item.name,
-                    phone_number: item.phone_number,
-                    total_visit: item.total_visit,
-                    total_transaction: item.total,
-                  }))
-                  : [],
-                summaryData: [
-                  { label: 'Report Period', value: `${moment(tempDate.start, "DD/MM/YYYY").format("DD MMM YYYY")} - ${moment(tempDate.end, "DD/MM/YYYY").format("DD MMM YYYY")}` },
-                ],
-              });
+              const startTimestamp = moment(tempDate.start, "DD/MM/YYYY").unix();
+              const endTimestamp = moment(tempDate.end, "DD/MM/YYYY").unix();
+              const sortBy = router.query.sortBy || "";
+
+              downloadReport(
+                "customer",
+                {
+                  startDate: startTimestamp,
+                  endDate: endTimestamp,
+                  sortBy,
+                },
+                token,
+                `Sales_Customer_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`
+              );
             }}
             title="Export Excel"
             variant="submit"
@@ -356,66 +352,28 @@ export default function SalesCustomerPage({
                 start: parseDateString(tempDate.start),
                 end: parseDateString(tempDate.end),
               }}
-              setDate={(dateRange) => {
-                try {
-                  // DateRangePicker sends dates in 'dd/MM/yyyy' format as strings
-                  if (!dateRange.start || !dateRange.end) {
-                    return; // Don't update if dates are not complete
-                  }
-
-                  // Validate using moment to ensure dates are valid
-                  const startMoment = moment(dateRange.start, "DD/MM/YYYY");
-                  const endMoment = moment(dateRange.end, "DD/MM/YYYY");
-
-                  // Ensure dates are valid
-                  if (!startMoment.isValid() || !endMoment.isValid()) {
-                    throw new Error("Invalid date");
-                  }
-
-                  // Update temporary date (not the actual date yet)
-                  // DateRangePicker already sends in 'dd/MM/yyyy' format, so use directly
-                  setTempDate({
-                    start: dateRange.start,
-                    end: dateRange.end,
-                  });
-                } catch (error) {
-                  console.error("Error setting date range:", error);
-                }
+              onSave={(dateRange) => {
+                setModal({ open: false, key: "", data: {} });
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...(typeof query === "object" && query !== null
+                      ? query
+                      : {}),
+                    startDate: dateRange.start,
+                    endDate: dateRange.end,
+                    page: 1,
+                  },
+                });
+              }}
+              onCancel={() => {
+                setModal({ open: false, key: "", data: {} });
+                setTempDate({
+                  start: date.start,
+                  end: date.end,
+                });
               }}
             />
-            <div className="flex justify-end gap-2 mt-4">
-              <Button
-                variant="white"
-                onClick={() => {
-                  setModal({ open: false, key: "", data: {} });
-                  setTempDate({
-                    start: date.start,
-                    end: date.end,
-                  });
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="submit"
-                onClick={() => {
-                  setModal({ open: false, key: "", data: {} });
-                  router.push({
-                    pathname: router.pathname,
-                    query: {
-                      ...(typeof query === "object" && query !== null
-                        ? query
-                        : {}),
-                      startDate: tempDate.start,
-                      endDate: tempDate.end,
-                      page: 1,
-                    },
-                  });
-                }}
-              >
-                Simpan
-              </Button>
-            </div>
           </div>
         </Modal>
       )}
