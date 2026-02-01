@@ -255,14 +255,21 @@ export default function SalesBrandPage({
               const categoryID = router.query.categoryID || "";
 
               downloadReport(
-                "category",
+                "brand",
                 {
                   startDate: startTimestamp,
                   endDate: endTimestamp,
                   categoryID,
                 },
                 token,
-                `Sales_Category_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`
+                `Sales_Brand_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
+                [
+                  { header: "Brand Name", key: "name" },
+                  { header: "Total Rentals", key: "total" },
+                  { header: "Gross Sales", key: "gross_sales" },
+                  { header: "Taxes", key: "taxes" },
+                  { header: "Sales", key: "sales" },
+                ]
               );
             }}
             title="Export Excel"

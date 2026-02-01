@@ -257,7 +257,13 @@ export default function SalesCustomerPage({
                   sortBy,
                 },
                 token,
-                `Sales_Customer_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`
+                `Sales_Customer_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
+                [
+                  { header: "Customer Name", key: "name" },
+                  { header: "Phone Number", key: "phone_number" },
+                  { header: "Total Visit", key: "total_visit" },
+                  { header: "Total Transaction", key: "total" },
+                ]
               );
             }}
             title="Export Excel"

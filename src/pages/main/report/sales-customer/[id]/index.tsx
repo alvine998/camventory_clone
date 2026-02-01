@@ -243,7 +243,15 @@ export default function SalesCustomerDetailPage({
                   endDate: endTimestamp,
                 },
                 token,
-                `Sales_Customer_Detail_${customerId}_Report_${moment(date.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(date.end, "DD/MM/YYYY").format("YYYYMMDD")}`
+                `Sales_Customer_Detail_${customerId}_Report_${moment(date.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(date.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
+                [
+                  { header: "Booking ID", key: "book_id" },
+                  { header: "Status", key: "status" },
+                  { header: "Created At", key: "created_at" },
+                  { header: "Total Price", key: "total_price" },
+                  { header: "Customer Name", key: "customer_name" },
+                  { header: "User Name", key: "user_name" },
+                ]
               );
             }}
             title="Export Excel"

@@ -1,7 +1,6 @@
 import * as XLSX from "xlsx";
 import { toMoney } from "./index";
 import axios from "axios";
-import { CONFIG } from "@/config";
 
 interface ExportColumn {
   header: string;
@@ -112,20 +111,83 @@ export const downloadReport = async (
   params: any,
   token: string,
   filename: string,
+  columns?: ExportColumn[],
 ) => {
   try {
-    const response = await axios.get(
-      `${CONFIG.API_URL}/v1/report/download/${path}`,
-      {
-        params,
-        headers: {
-          Authorization: `${token}`,
-        },
-        responseType: "blob",
+    const response = await axios.get(`/api-proxy/v1/report/download/${path}`, {
+      params,
+      headers: {
+        Authorization: `${token}`,
       },
-    );
+      responseType: "arraybuffer",
+    });
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const firstBytes = new Uint8Array(response.data.slice(0, 4));
+    const headerHex = Array.from(firstBytes)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    console.log("Download response:", {
+      status: response.status,
+      contentType: response.headers["content-type"],
+      headerHex,
+      size: response.data.byteLength,
+    });
+
+    // Check if it's JSON (starts with { and contains "message" or "status")
+    if (
+      headerHex === "7b226d65" ||
+      headerHex === "7b227374" ||
+      response.headers["content-type"]?.includes("application/json")
+    ) {
+      const text = new TextDecoder().decode(response.data);
+      try {
+        const jsonResponse = JSON.parse(text);
+        if (jsonResponse.status === 1 || jsonResponse.message === "Success") {
+          const data = jsonResponse.data || [];
+
+          if (columns) {
+            exportToExcel({
+              filename,
+              columns,
+              data: Array.isArray(data) ? data : [],
+              sheetName: "Report",
+            });
+            return;
+          } else {
+            console.warn(
+              "API returned JSON but no columns provided for client-side export.",
+            );
+          }
+        } else {
+          console.error("Download returned API error:", jsonResponse);
+          alert(
+            `Failed to download report: ${jsonResponse.message || "Unknown error"}`,
+          );
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to parse JSON response", e);
+      }
+    }
+
+    if (headerHex.startsWith("3c21646f") || headerHex.startsWith("3c68746d")) {
+      // <!do or <htm
+      console.error(
+        "Download returned HTML instead of binary file. Proxy might be failing.",
+      );
+      alert(
+        "Failed to download: Server returned an HTML page (likely an error). Check console.",
+      );
+      return;
+    }
+
+    const blob = new Blob([response.data], {
+      type:
+        response.headers["content-type"] ||
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute("download", `${filename}.xlsx`);

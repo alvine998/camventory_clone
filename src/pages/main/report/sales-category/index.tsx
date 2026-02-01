@@ -290,7 +290,14 @@ export default function SalesCategoryPage({
                   categoryID,
                 },
                 token,
-                `Sales_Category_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`
+                `Sales_Category_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
+                [
+                  { header: "Category Name", key: "name" },
+                  { header: "Total Rentals", key: "total" },
+                  { header: "Gross Sales", key: "gross_sales" },
+                  { header: "Taxes", key: "taxes" },
+                  { header: "Sales", key: "sales" },
+                ]
               );
             }}
             title="Export Excel"

@@ -354,7 +354,12 @@ export default function SalesSummaryPage({
                   filterBy,
                 },
                 token,
-                `Sales_Trend_Report_${moment().format("YYYYMMDD")}`
+                `Sales_Trend_Report_${moment().format("YYYYMMDD")}`,
+                [
+                  { header: "Date", key: "date" },
+                  { header: "Current Period", key: "sum_by_date" },
+                  { header: "Prior Period", key: "sum_by_date_prior" },
+                ]
               );
             }}
             title="Export Excel"

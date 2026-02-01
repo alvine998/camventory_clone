@@ -295,7 +295,14 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
                   endDate: endTimestamp,
                 },
                 token,
-                `Sales_Summary_Report_${moment(date.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(date.end, "DD/MM/YYYY").format("YYYYMMDD")}`
+                `Sales_Summary_Report_${moment(date.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(date.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
+                [
+                  { header: "Name", key: "name" },
+                  { header: "Total", key: "total" },
+                  { header: "Gross Sales", key: "gross_sales" },
+                  { header: "Taxes", key: "taxes" },
+                  { header: "Sales", key: "sales" },
+                ]
               );
             }}
             title="Export Excel"

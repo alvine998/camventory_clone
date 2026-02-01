@@ -4,26 +4,34 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'api-inventory-develop.softmate.xyz',
+        protocol: "https",
+        hostname: "api-inventory-develop.softmate.xyz",
       },
       {
-        protocol: 'https',
-        hostname: 'pub-01ab921568614e369e392f548902259d.r2.dev',
+        protocol: "https",
+        hostname: "pub-01ab921568614e369e392f548902259d.r2.dev",
       },
       {
-        protocol: 'https',
-        hostname: 'api-cdn.softmate.my.id',
+        protocol: "https",
+        hostname: "api-cdn.softmate.my.id",
       },
-    ]
+    ],
   },
   webpack: (config) => {
     config.module.rules.push({
       test: /\.svg$/i,
       issuer: /\.[jt]sx?$/,
-      use: ['@svgr/webpack'],
+      use: ["@svgr/webpack"],
     });
     return config;
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api-proxy/:path*",
+        destination: "https://api-dev-inventory.softmate.my.id/:path*",
+      },
+    ];
   },
 };
 

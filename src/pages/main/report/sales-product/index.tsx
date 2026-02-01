@@ -338,7 +338,16 @@ export default function SalesProductPage({
                   sortBy,
                 },
                 token,
-                `Sales_Product_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`
+                `Sales_Product_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
+                [
+                  { header: "Product Name", key: "product_name" },
+                  { header: "Category", key: "category" },
+                  { header: "Total Rentals", key: "total" },
+                  { header: "Unit", key: "unit" },
+                  { header: "Gross Sales", key: "gross_sales" },
+                  { header: "Taxes", key: "taxes" },
+                  { header: "Sales", key: "sales" },
+                ]
               );
             }}
             title="Export Excel"
