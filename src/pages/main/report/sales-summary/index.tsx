@@ -171,6 +171,17 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
     start: dateRange?.start || moment().format("DD/MM/YYYY"),
     end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
   });
+  // Update date and tempDate when dateRange changes (from SSR)
+  useEffect(() => {
+    if (dateRange) {
+      const newDate = {
+        start: dateRange.start,
+        end: dateRange.end,
+      };
+      setDate(newDate);
+      setTempDate(newDate);
+    }
+  }, [dateRange]);
   const [modal, setModal] = useState<useModal>();
   const [isMounted, setIsMounted] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(initialReportData);

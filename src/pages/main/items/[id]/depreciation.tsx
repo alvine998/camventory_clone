@@ -133,7 +133,9 @@ export default function Depreciation({ params, detail, query }: any) {
     if (!purchasePriceRaw || Number.isNaN(purchasePriceRaw) || purchasePriceRaw <= 0) {
       return {
         ...emptyResult,
-        purchaseDate: parseEpochToMoment(itemDetail?.purchase_date),
+        purchaseDate: itemDetail?.purchase_date
+          ? parseEpochToMoment(itemDetail?.purchase_date)
+          : moment("2025-01-01"),
       };
     }
 
@@ -148,7 +150,9 @@ export default function Depreciation({ params, detail, query }: any) {
 
     const usefulLifeYears = usefulLifeRaw > 0 ? usefulLifeRaw : 5; // Default to 5 years if not provided
 
-    const purchaseDateMoment = parseEpochToMoment(itemDetail?.purchase_date);
+    const purchaseDateMoment = itemDetail?.purchase_date
+      ? parseEpochToMoment(itemDetail?.purchase_date)
+      : moment("2025-01-01");
     const MONTHLY_RATE = 0.003; // 0.3% per month
     const totalMonths = Math.max(1, Math.round(usefulLifeYears * 12));
 
@@ -199,62 +203,24 @@ export default function Depreciation({ params, detail, query }: any) {
 
   const depreciationAvailable = schedule.length > 0 && purchasePrice > 0;
 
-  const milestonePoints = useMemo(() => {
-    if (!depreciationAvailable) {
-      return [] as DepreciationPoint[];
-    }
-
-    const points: DepreciationPoint[] = [];
-
-    schedule.forEach((point, index) => {
-      if (index === 0) {
-        points.push(point);
-        return;
-      }
-      const monthsSinceStart = moment(point.dateISO).diff(purchaseDate, "months");
-      const isYearBoundary = monthsSinceStart % 12 === 0;
-      const isFinalPoint = index === schedule.length - 1;
-
-      if (isYearBoundary || isFinalPoint) {
-        points.push(point);
-      }
-    });
-
-    return points;
-  }, [depreciationAvailable, schedule, purchaseDate]);
-
-  const milestoneCategories = useMemo(() => {
-    if (!depreciationAvailable || milestonePoints.length === 0) {
-      return [] as string[];
-    }
-
-    return milestonePoints.map((point, idx) => {
-      if (idx === 0) {
-        return "Purchase";
-      }
-
-      const years = Math.max(
-        1,
-        Math.round(moment(point.dateISO).diff(purchaseDate, "years", true))
-      );
-
-      return `EOY${years}`;
-    });
-  }, [depreciationAvailable, milestonePoints, purchaseDate]);
+  // No longer using categories, switching to datetime axis
 
   const chartOptions: ApexOptions = useMemo(() => {
     return {
       chart: {
         type: "line",
         toolbar: {
-          show: false,
+          show: true,
+        },
+        zoom: {
+          enabled: true,
         },
         animations: {
           enabled: true,
         },
       },
       title: {
-        text: "Depreciation Projection (0.3% Monthly)",
+        text: "Book Value Projection (0.3% Monthly)",
         align: "center",
         style: {
           fontSize: "18px",
@@ -263,16 +229,7 @@ export default function Depreciation({ params, detail, query }: any) {
         },
       },
       dataLabels: {
-        enabled: true,
-        formatter: (value: number) => formatChartCurrency(value),
-        offsetY: -10,
-        style: {
-          colors: ["#6B7280"],
-          fontWeight: 500,
-        },
-        background: {
-          enabled: false,
-        },
+        enabled: false,
       },
       stroke: {
         curve: "straight",
@@ -286,7 +243,7 @@ export default function Depreciation({ params, detail, query }: any) {
         strokeWidth: 2,
       },
       xaxis: {
-        categories: milestoneCategories,
+        type: "datetime",
         title: {
           text: "Time Period",
           style: {
@@ -294,7 +251,6 @@ export default function Depreciation({ params, detail, query }: any) {
           },
         },
         labels: {
-          rotate: 0,
           style: {
             colors: "#6B7280",
           },
@@ -302,7 +258,7 @@ export default function Depreciation({ params, detail, query }: any) {
       },
       yaxis: {
         title: {
-          text: "Next Value",
+          text: "Book Value",
           style: {
             fontWeight: 600,
           },
@@ -312,6 +268,9 @@ export default function Depreciation({ params, detail, query }: any) {
         },
       },
       tooltip: {
+        x: {
+          format: "MMM yyyy",
+        },
         y: {
           formatter: (value: number) => formatChartCurrency(value),
         },
@@ -321,18 +280,21 @@ export default function Depreciation({ params, detail, query }: any) {
       grid: {
         strokeDashArray: 3,
       },
-      colors: ["#4B5563"],
+      colors: ["#f97316"],
     };
-  }, [milestoneCategories]);
+  }, []); // Remove dependency on milestoneCategories
 
   const chartSeries = useMemo(
     () => [
       {
         name: "Book Value",
-        data: milestonePoints.map((point) => point.bookValue),
+        data: schedule.map((point) => ({
+          x: new Date(point.dateISO).getTime(),
+          y: point.bookValue,
+        })),
       },
     ],
-    [milestonePoints]
+    [schedule]
   );
 
   return (
@@ -356,11 +318,53 @@ export default function Depreciation({ params, detail, query }: any) {
               Starting {purchaseDate.format("DD MMM YYYY")}
             </span>
           </div>
-          {show && milestonePoints.length > 0 ? (
-            <Chart options={chartOptions} series={chartSeries} type="line" height={360} />
+          {show && schedule.length > 0 ? (
+            <div className="flex flex-col gap-6">
+              <Chart
+                options={chartOptions}
+                series={chartSeries}
+                type="line"
+                height={360}
+              />
+
+              <div className="mt-4">
+                <h3 className="mb-4 text-base font-semibold text-gray-800">
+                  Detailed Projection Table
+                </h3>
+                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-gray-50 text-gray-600">
+                      <tr>
+                        <th className="px-4 py-2 border-b">Period</th>
+                        <th className="px-4 py-2 border-b">Book Value</th>
+                        <th className="px-4 py-2 border-b text-right">Depreciation</th>
+                        <th className="px-4 py-2 border-b text-right">Accumulated</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 italic">
+                      {schedule.map((point, idx) => (
+                        <tr
+                          key={idx}
+                          className={idx % 12 === 0 ? "bg-orange-50/50 font-medium" : ""}
+                        >
+                          <td className="px-4 py-2">{point.label}</td>
+                          <td className="px-4 py-2">{formatCurrency(point.bookValue)}</td>
+                          <td className="px-4 py-2 text-right text-red-500">
+                            {idx === 0 ? "-" : `-${formatCurrency(point.depreciationExpense)}`}
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            {formatCurrency(point.accumulatedDepreciation)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="flex h-[360px] items-center justify-center text-sm text-gray-400">
-              Loading chart...
+              Loading projection...
             </div>
           )}
         </div>

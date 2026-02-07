@@ -150,7 +150,7 @@ export default function SalesCategoryPage({
   const router = useRouter();
   const { query } = router;
 
-  const [date] = useState({
+  const [date, setDate] = useState({
     start: dateRange?.start || moment().format("DD/MM/YYYY"),
     end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
   });
@@ -161,13 +161,17 @@ export default function SalesCategoryPage({
   const [modal, setModal] = useState<useModal>();
   const [isMounted, setIsMounted] = useState(false);
 
-  // Update tempDate when date changes (from SSR)
+  // Update date and tempDate when dateRange changes (from SSR)
   useEffect(() => {
-    setTempDate({
-      start: date.start,
-      end: date.end,
-    });
-  }, [date.start, date.end]);
+    if (dateRange) {
+      const newDate = {
+        start: dateRange.start,
+        end: dateRange.end,
+      };
+      setDate(newDate);
+      setTempDate(newDate);
+    }
+  }, [dateRange]);
 
   // This ensures the component is mounted before rendering the chart
   useEffect(() => {
@@ -395,6 +399,10 @@ export default function SalesCategoryPage({
               }}
               onSave={(dateRange) => {
                 setModal({ open: false, key: "", data: {} });
+                setTempDate({
+                  start: dateRange.start,
+                  end: dateRange.end,
+                });
                 router.push({
                   pathname: router.pathname,
                   query: {
