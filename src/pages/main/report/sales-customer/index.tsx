@@ -224,10 +224,12 @@ export default function SalesCustomerPage({
           <Select
             defaultValue={sortBy}
             options={[
-              { label: "Total Transaction (High - Low)", value: "total_desc" },
-              { label: "Total Transaction (Low - High)", value: "total_asc" },
               { label: "Total Visit (High - Low)", value: "visit_desc" },
               { label: "Total Visit (Low - High)", value: "visit_asc" },
+              { label: "Total Transaction (High - Low)", value: "trx_desc" },
+              { label: "Total Transaction (Low - High)", value: "trx_asc" },
+              { label: "Name (A - Z)", value: "name_asc" },
+              { label: "Name (Z - A)", value: "name_desc" },
             ]}
             onChange={(value) => {
               const selected = value as { value?: string } | null;

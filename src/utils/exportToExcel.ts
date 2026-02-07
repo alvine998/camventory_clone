@@ -6,6 +6,7 @@ interface ExportColumn {
   header: string;
   key: string;
   width?: number;
+  formatter?: (value: any, row: any) => any;
 }
 
 interface ExportOptions {
@@ -53,7 +54,13 @@ export const exportToExcel = (options: ExportOptions) => {
   // Add data rows
   data.forEach((row) => {
     const rowData = columns.map((col) => {
-      const value = row[col.key];
+      let value = row[col.key];
+
+      // Handle formatter
+      if (col.formatter) {
+        value = col.formatter(value, row);
+      }
+
       // Handle null/undefined values
       if (value === null || value === undefined) return "";
       return value;

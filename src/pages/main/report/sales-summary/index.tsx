@@ -308,11 +308,14 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
                 token,
                 `Sales_Summary_Report_${moment(date.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(date.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
                 [
-                  { header: "Name", key: "name" },
-                  { header: "Total", key: "total" },
+                  {
+                    header: "Date",
+                    key: "date",
+                    formatter: (value) => value ? moment.unix(value).format("DD MMM YYYY") : "-"
+                  },
+                  { header: "Net Sales", key: "net_sales" },
+                  { header: "Tax", key: "tax" },
                   { header: "Gross Sales", key: "gross_sales" },
-                  { header: "Taxes", key: "taxes" },
-                  { header: "Sales", key: "sales" },
                 ]
               );
             }}

@@ -356,9 +356,20 @@ export default function SalesSummaryPage({
                 token,
                 `Sales_Trend_Report_${moment().format("YYYYMMDD")}`,
                 [
-                  { header: "Date", key: "date" },
-                  { header: "Current Period", key: "sum_by_date" },
-                  { header: "Prior Period", key: "sum_by_date_prior" },
+                  {
+                    header: "Date",
+                    key: "date",
+                    formatter: (value) => value ? moment(value).format("DD MMM YYYY") : "-"
+                  },
+                  {
+                    header: "Prior Date",
+                    key: "prior_date",
+                    formatter: (value) => value ? moment(value).format("DD MMM YYYY") : "-"
+                  },
+                  { header: "Current Sales", key: "sum" },
+                  { header: "Prior Sales", key: "prior_sum" },
+                  { header: "Difference", key: "diff" },
+                  { header: "Ratio (%)", key: "ratio" },
                 ]
               );
             }}
