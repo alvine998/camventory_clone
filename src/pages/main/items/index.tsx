@@ -30,7 +30,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const { page = 1, limit = 10, search = "", location, status_items } = query;
+    const { page = 1, limit = 10, search = "", location, statusItem } = query;
 
     const params = new URLSearchParams({
       page: String(page),
@@ -49,8 +49,10 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       params.set("location", location);
     }
 
-    if (typeof status_items === "string" && status_items.trim() !== "") {
-      params.set("status_items", status_items);
+    if (typeof statusItem === "string" && statusItem.trim() !== "") {
+      params.set("statusItem", statusItem);
+    } else if (typeof query.statusItem === "string" && query.statusItem.trim() !== "") {
+      params.set("statusItem", query.statusItem);
     }
 
     const table = await axios.get(
@@ -97,22 +99,44 @@ export default function AdministratorPage({ table }: any) {
   const [modal, setModal] = useState<useModal>();
   const router = useRouter();
   // Define filter state with proper types
+  // Define filter state with proper types
   const [filter, setFilter] = useState<{
     search?: string;
     location?: string;
     bulk?: string;
     page?: number;
     limit?: number;
-    status_items?: string;
-  }>(() => ({
-    search: typeof router.query.search === "string" ? router.query.search : "",
-    location:
-      typeof router.query.location === "string" ? router.query.location : "all",
-    bulk: typeof router.query.bulk === "string" ? router.query.bulk : "",
-    page: router.query.page ? Number(router.query.page) : 1,
-    limit: router.query.limit ? Number(router.query.limit) : 10,
-    status_items: typeof router.query.status_items === "string" ? router.query.status_items : "",
-  }));
+    statusItem?: string;
+  }>(() => {
+    // Try to get from router.query first, then fallback to window.location.search
+    // This handles cases where router.isReady might be true but query is somehow not fully populated or sync issues
+    let search = typeof router.query.search === "string" ? router.query.search : "";
+    let location = typeof router.query.location === "string" ? router.query.location : "all";
+    let bulk = typeof router.query.bulk === "string" ? router.query.bulk : "";
+    let page = router.query.page ? Number(router.query.page) : 1;
+    let limit = router.query.limit ? Number(router.query.limit) : 10;
+    let statusItem = typeof router.query.statusItem === "string" ? router.query.statusItem : "";
+
+    // Fallback to window.location if router.query is empty (client-side only)
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (!search) search = params.get("search") || "";
+      if (location === "all") location = params.get("location") || "all";
+      if (!bulk) bulk = params.get("bulk") || "";
+      if (page === 1 && params.has("page")) page = Number(params.get("page"));
+      if (limit === 10 && params.has("limit")) limit = Number(params.get("limit"));
+      if (!statusItem) statusItem = params.get("statusItem") || params.get("status_items") || "";
+    }
+
+    return {
+      search,
+      location,
+      bulk,
+      page,
+      limit,
+      statusItem
+    };
+  });
 
   // Reset all filters and pagination
   const handleResetFilter = useCallback(() => {
@@ -120,7 +144,7 @@ export default function AdministratorPage({ table }: any) {
     const newFilter = {
       search: "",
       location: "all",
-      status_items: "",
+      statusItem: "",
       page: 1,
       limit: filter.limit || 10, // Keep the current limit
     };
@@ -137,6 +161,8 @@ export default function AdministratorPage({ table }: any) {
       // Ignore navigation cancellation errors
     });
   }, [filter.limit, router]);
+
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       setShow(true);
@@ -243,6 +269,8 @@ export default function AdministratorPage({ table }: any) {
 
   // Handle filter changes and update URL
   useEffect(() => {
+    if (!router.isReady) return;
+
     const delayDebounce = setTimeout(() => {
       const queryParams = new URLSearchParams();
 
@@ -260,20 +288,31 @@ export default function AdministratorPage({ table }: any) {
         queryParams.set("location", filter.location);
       }
 
-      // Include status_items if it exists
-      if (filter.status_items && filter.status_items.trim() !== "") {
-        queryParams.set("status_items", filter.status_items);
+      // Include statusItem if it exists
+      if (filter.statusItem && filter.statusItem.trim() !== "") {
+        queryParams.set("statusItem", filter.statusItem);
       }
 
       // Get current query from window location
-      const currentQuery = new URLSearchParams(
-        window.location.search
-      ).toString();
-      const newQuery = queryParams.toString();
+      const currentQuery = new URLSearchParams(window.location.search);
+      const newQueryString = queryParams.toString();
+      const currentQueryString = currentQuery.toString();
 
-      // Only push if the filter has actually changed
-      if (newQuery !== currentQuery) {
-        router.push(`?${newQuery}`).catch(() => {
+      // Compare if the new query is actually different from current URL
+      // This prevents infinite loops or resetting to defaults if state matches URL
+      if (newQueryString !== currentQueryString) {
+        // Double check against router.query to verify if we are just syncing up
+        // or actually changing something.
+        // If filter is default but URL has something, and we come here, we might overwrite.
+        // But we rely on the initial state sync to populate filter.
+
+        // Critical: Only push if we are sure the filter state is "fresher" or intended.
+        // If the filter state is default, but the URL has params, we shouldn't overwrite 
+        // unless the user explicitly cleared them.
+        // However, determining "user cleared" vs "not yet loaded" is hard.
+        // The `router.isReady` check + initial state sync should handle "not yet loaded".
+
+        router.push(`?${newQueryString}`, undefined, { shallow: true }).catch(() => {
           // Ignore navigation cancellation errors
         });
       }
@@ -281,7 +320,9 @@ export default function AdministratorPage({ table }: any) {
 
     return () => clearTimeout(delayDebounce);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
+  }, [filter, router.isReady]);
+
+  console.log(data, "=> itemTabs")
 
   return (
     <div>
@@ -370,7 +411,7 @@ export default function AdministratorPage({ table }: any) {
               onChangePage={(page) =>
                 setFilter((prev: any) => ({ ...prev, page }))
               }
-              onChangeRowsPerPage={(limit, page) => setFilter({ limit, page })}
+              onChangeRowsPerPage={(limit, page) => setFilter((prev: any) => ({ ...prev, limit, page }))}
               noDataComponent="No items found"
               customStyles={{
                 table: {
