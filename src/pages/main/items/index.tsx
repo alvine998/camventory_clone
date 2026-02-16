@@ -30,7 +30,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const { page = 1, limit = 10, search = "", location } = query;
+    const { page = 1, limit = 10, search = "", location, status_items } = query;
 
     const params = new URLSearchParams({
       page: String(page),
@@ -48,6 +48,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     ) {
       params.set("location", location);
     }
+
+    if (typeof status_items === "string" && status_items.trim() !== "") {
+      params.set("status_items", status_items);
+    }
+
     const table = await axios.get(
       `${CONFIG.API_URL}/v1/single-items?${params.toString()}`,
       {
@@ -65,7 +70,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    console.log(token,'token')
+    console.log(token, 'token')
 
     // Optionally validate token...
     return {
@@ -98,6 +103,7 @@ export default function AdministratorPage({ table }: any) {
     bulk?: string;
     page?: number;
     limit?: number;
+    status_items?: string;
   }>(() => ({
     search: typeof router.query.search === "string" ? router.query.search : "",
     location:
@@ -105,6 +111,7 @@ export default function AdministratorPage({ table }: any) {
     bulk: typeof router.query.bulk === "string" ? router.query.bulk : "",
     page: router.query.page ? Number(router.query.page) : 1,
     limit: router.query.limit ? Number(router.query.limit) : 10,
+    status_items: typeof router.query.status_items === "string" ? router.query.status_items : "",
   }));
 
   // Reset all filters and pagination
@@ -113,6 +120,7 @@ export default function AdministratorPage({ table }: any) {
     const newFilter = {
       search: "",
       location: "all",
+      status_items: "",
       page: 1,
       limit: filter.limit || 10, // Keep the current limit
     };
@@ -148,10 +156,10 @@ export default function AdministratorPage({ table }: any) {
               height={50}
               className="p-2"
             />
-          ) : 
-          <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded m-1">
-            <Camera className="w-6 h-6 text-gray-500" />
-          </div>
+          ) :
+            <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded m-1">
+              <Camera className="w-6 h-6 text-gray-500" />
+            </div>
         }
         <div>
           <h5 className="text-black">{item.name}</h5>
@@ -252,6 +260,11 @@ export default function AdministratorPage({ table }: any) {
         queryParams.set("location", filter.location);
       }
 
+      // Include status_items if it exists
+      if (filter.status_items && filter.status_items.trim() !== "") {
+        queryParams.set("status_items", filter.status_items);
+      }
+
       // Get current query from window location
       const currentQuery = new URLSearchParams(
         window.location.search
@@ -307,14 +320,14 @@ export default function AdministratorPage({ table }: any) {
           </select>
           {(filter.search ||
             (filter.location && filter.location !== "all")) && (
-            <button
-              type="button"
-              className="px-4 py-2 text-red-500 hover:text-red-600 font-medium transition-colors duration-200"
-              onClick={handleResetFilter}
-            >
-              Reset Filters
-            </button>
-          )}
+              <button
+                type="button"
+                className="px-4 py-2 text-red-500 hover:text-red-600 font-medium transition-colors duration-200"
+                onClick={handleResetFilter}
+              >
+                Reset Filters
+              </button>
+            )}
         </div>
         <Button
           variant="custom-color"
@@ -332,11 +345,10 @@ export default function AdministratorPage({ table }: any) {
           {itemTabs.map((tab) => (
             <button
               key={tab.href}
-              className={`px-4 py-2 font-medium text-sm ${
-                tab.isActive
-                  ? "border-b-2 border-orange-500 text-orange-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
+              className={`px-4 py-2 font-medium text-sm ${tab.isActive
+                ? "border-b-2 border-orange-500 text-orange-600"
+                : "text-gray-500 hover:text-gray-700"
+                }`}
               onClick={() => router.push(tab.href)}
             >
               {tab.label}
