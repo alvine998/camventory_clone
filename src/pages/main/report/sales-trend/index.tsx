@@ -174,12 +174,8 @@ export default function SalesSummaryPage({
 
   const periods = [
     {
-      value: "today",
+      value: "day",
       label: "Today",
-    },
-    {
-      value: "yesterday",
-      label: "Yesterday",
     },
     {
       value: "week",
@@ -219,6 +215,8 @@ export default function SalesSummaryPage({
           Authorization: `${token}`,
         },
       });
+
+      console.log(response.data, "response");
 
       if (response.data.status === 1) {
         setTrendData(response.data.data);
@@ -305,17 +303,19 @@ export default function SalesSummaryPage({
           options={periods}
           onChange={(value) => {
             const selected = value as { value?: string } | null;
+            console.log(selected);
             if (selected?.value) {
               fetchTrendData(selected.value);
             }
           }}
         />
         <h5>VS</h5>
-        <Select
-          defaultValue={"week"}
-          options={periods}
-          onChange={(value) => console.log(value)}
-        />
+        <div className="px-4 py-2 bg-gray-100 rounded-md text-gray-600 font-medium min-w-[140px] text-center">
+          {filterBy === "day" ? "Yesterday" :
+            filterBy === "week" ? "1 Week Prior" :
+              filterBy === "month" ? "Previous Month" :
+                filterBy === "year" ? "Previous Year" : "-"}
+        </div>
         <div className="ml-4 flex items-center gap-4">
           <button
             type="button"
