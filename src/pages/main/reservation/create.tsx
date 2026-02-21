@@ -1,6 +1,6 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
-import AddEquipmentsModal from "@/components/modals/reservation/AddEquipments";
+import AddEquipmentView from "@/components/reservation/AddEquipmentView";
 import Select from "@/components/Select";
 import { CONFIG } from "@/config";
 import axios from "axios";
@@ -62,16 +62,14 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           headers: { Authorization: token },
         }),
         axios.get(
-          `${CONFIG.API_URL}/v1/bulk-items?isAvailable=true&page=${page}&limit=${limit}${
-            search ? `&search=${search}` : ""
+          `${CONFIG.API_URL}/v1/bulk-items?isAvailable=true&page=${page}&limit=${limit}${search ? `&search=${search}` : ""
           }`,
           {
             headers: { Authorization: token },
           }
         ),
         axios.get(
-          `${CONFIG.API_URL}/v1/single-items?statusItem=GOOD&statusBooking=AVAILABLE&page=${page}&limit=${limit}${
-            search ? `&search=${search}` : ""
+          `${CONFIG.API_URL}/v1/single-items?statusItem=GOOD&statusBooking=AVAILABLE&page=${page}&limit=${limit}${search ? `&search=${search}` : ""
           }`,
           {
             headers: { Authorization: token },
@@ -110,6 +108,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 };
 
 export default function CreateReservationPage({
+  categories,
   bulkItems,
   singleItems,
   users,
@@ -118,12 +117,11 @@ export default function CreateReservationPage({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [filter, setFilter] = useState<Record<string, string>>({});
+  const [view, setView] = useState<"form" | "select">("form");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const processedItemIdRef = useRef<string | null>(null);
-  
+
   // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split("T")[0];
 
@@ -182,8 +180,8 @@ export default function CreateReservationPage({
       ...Object.fromEntries(formData),
       start_date: formData.get("from")
         ? Math.floor(
-            new Date(formData.get("from")!.toString()).getTime() / 1000
-          )
+          new Date(formData.get("from")!.toString()).getTime() / 1000
+        )
         : null,
       end_date: formData.get("to")
         ? Math.floor(new Date(formData.get("to")!.toString()).getTime() / 1000)
@@ -208,26 +206,26 @@ export default function CreateReservationPage({
       router.push(`/main/reservation`);
     } catch (error: any) {
       console.error("Reservation creation error:", error);
-      
+
       // Extract error message from different possible response structures
       let errorMessage = "An error occurred while creating the reservation";
       let errorTitle = "Reservation Creation Failed";
-      
+
       if (error.response) {
         // API error response
         const responseData = error.response.data;
-        
+
         // Check for message in different possible locations
         if (responseData?.message) {
-          errorMessage = typeof responseData.message === 'string' 
-            ? responseData.message 
+          errorMessage = typeof responseData.message === 'string'
+            ? responseData.message
             : responseData.message?.message || errorMessage;
         } else if (responseData?.error?.message) {
           errorMessage = responseData.error.message;
         } else if (typeof responseData === 'string') {
           errorMessage = responseData;
         }
-        
+
         // Handle specific error status codes
         if (error.response.status === 400) {
           errorTitle = "Invalid Request";
@@ -253,16 +251,16 @@ export default function CreateReservationPage({
         // Error in request setup
         errorMessage = error.message || errorMessage;
       }
-      
+
       // Format error message for display
       const isMultiLine = errorMessage.includes('\n') || errorMessage.includes('Date conflict');
-      
+
       Swal.fire({
         icon: "error",
         title: errorTitle,
         text: !isMultiLine ? errorMessage : undefined,
-        html: isMultiLine 
-          ? `<div style="text-align: left; white-space: pre-line; font-size: 14px;">${errorMessage}</div>` 
+        html: isMultiLine
+          ? `<div style="text-align: left; white-space: pre-line; font-size: 14px;">${errorMessage}</div>`
           : undefined,
         confirmButtonText: "OK",
         confirmButtonColor: "#f97316",
@@ -272,37 +270,31 @@ export default function CreateReservationPage({
     }
   };
 
-  useEffect(() => {
-    if (Object.keys(filter).length > 0) {
-      const queryFilter = new URLSearchParams(filter).toString();
-      router.push(`?${queryFilter}`);
-    }
-  }, [filter, router]);
 
   // Handle item from detail page (when navigating from Reserve button)
   useEffect(() => {
     const { itemId, itemType } = router.query;
-    
+
     if (!itemId || !itemType || typeof itemId !== "string" || typeof itemType !== "string") {
       processedItemIdRef.current = null;
       return;
     }
-    
+
     // Skip if we already processed this itemId
     if (processedItemIdRef.current === itemId) {
       return;
     }
-    
+
     // Mark as processing immediately
     processedItemIdRef.current = itemId;
-    
+
     const addItemToList = (itemData: any) => {
       setItems((currentItems) => {
         // Check if item is already in the list
         if (currentItems.some((i) => i.id === itemId)) {
           return currentItems;
         }
-        
+
         // Add item to list
         if (itemType === "single") {
           return [...currentItems, { ...itemData, added: 1 }];
@@ -310,7 +302,7 @@ export default function CreateReservationPage({
           return [...currentItems, { ...itemData, qty: 1, isBulk: true, added: 1 }];
         }
       });
-      
+
       // Clean up query params
       const restQuery = { ...router.query };
       delete restQuery.itemId;
@@ -325,11 +317,11 @@ export default function CreateReservationPage({
         { shallow: true }
       );
     };
-    
+
     // First, try to find in the loaded lists
     const itemList = itemType === "single" ? singleItems : bulkItems;
     const foundItem = itemList.find((item) => item.id === itemId);
-    
+
     if (foundItem) {
       // Item found in list, add it
       addItemToList(foundItem);
@@ -339,21 +331,21 @@ export default function CreateReservationPage({
         try {
           const cookies = parse(document.cookie || "");
           const token = cookies.token;
-          
+
           if (!token) {
             console.error("No token found");
             processedItemIdRef.current = null;
             return;
           }
-          
-          const endpoint = itemType === "single" 
+
+          const endpoint = itemType === "single"
             ? `${CONFIG.API_URL}/v1/single-items/${itemId}`
             : `${CONFIG.API_URL}/v1/bulk-items/${itemId}`;
-          
+
           const response = await axios.get(endpoint, {
             headers: { Authorization: token },
           });
-          
+
           const itemData = response.data?.data;
           if (itemData) {
             addItemToList(itemData);
@@ -370,7 +362,7 @@ export default function CreateReservationPage({
             timer: 2000,
             showConfirmButton: false,
           });
-          
+
           // Clean up query params even on error
           const restQuery = { ...router.query };
           delete restQuery.itemId;
@@ -386,11 +378,25 @@ export default function CreateReservationPage({
           );
         }
       };
-      
+
       fetchItem();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.query.itemId, router.query.itemType, singleItems, bulkItems]);
+
+  if (view === "select") {
+    return (
+      <AddEquipmentView
+        items={items}
+        setItems={setItems}
+        singleItems={singleItems}
+        bulkItems={bulkItems}
+        categories={categories}
+        onBack={() => setView("form")}
+        onSave={() => setView("form")}
+      />
+    );
+  }
 
   return (
     <div>
@@ -486,7 +492,7 @@ export default function CreateReservationPage({
               <button
                 className="border border-orange-500 p-2 rounded flex items-center gap-2"
                 type="button"
-                onClick={() => setModalOpen(true)}
+                onClick={() => setView("select")}
               >
                 <PlusSquareIcon className="w-4 h-4 text-orange-500" />
                 <p className="text-xs text-orange-500">Add product or Item</p>
@@ -511,7 +517,7 @@ export default function CreateReservationPage({
                       <div>
                         <p className="text-sm font-bold">{item.name}</p>
                         <p className="text-xs text-gray-500">
-                          {item?.qty ? "Item" : "Product"}
+                          {item?.isBulk ? "Item" : "Product"}
                         </p>
                         <p className="text-xs text-gray-500 font-bold">
                           {item?.added || "1"}
@@ -539,26 +545,12 @@ export default function CreateReservationPage({
           </div>
         </div>
 
-        {/* Modal */}
-        {modalOpen && (
-          <AddEquipmentsModal
-            open={modalOpen}
-            setOpen={() => setModalOpen(false)}
-            items={items}
-            setItems={setItems}
-            singleItems={singleItems}
-            bulkItems={bulkItems}
-            setFilter={setFilter}
-            filter={filter}
-          />
-        )}
-
         {/* Buttons */}
         <div className="flex gap-4 justify-end mt-4">
           <Button
             variant="white"
             type="button"
-            onClick={() => router.push("/main/items")}
+            onClick={() => router.push("/main/reservation")}
           >
             Cancel
           </Button>

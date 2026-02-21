@@ -1,9 +1,9 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
-import AddEquipmentsModal from "@/components/modals/reservation/AddEquipments";
+import AddEquipmentView from "@/components/reservation/AddEquipmentView";
 // import Select from "@/components/Select";
 import { CONFIG } from "@/config";
-import { IDetail, IReservation } from "@/types/reservation";
+import { IReservation } from "@/types/reservation";
 import axios from "axios";
 import { parse } from "cookie";
 import { ArrowLeftIcon, PlusSquareIcon, Trash2Icon } from "lucide-react";
@@ -11,7 +11,7 @@ import moment from "moment";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Swal from "sweetalert2";
 
 // ✅ Types
@@ -124,6 +124,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 };
 
 export default function EditReservationPage({
+  categories,
   bulkItems,
   singleItems,
   users,
@@ -133,8 +134,7 @@ export default function EditReservationPage({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<any[]>(detail?.details || []);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [filter, setFilter] = useState<Record<string, string>>({});
+  const [view, setView] = useState<"form" | "select">("form");
 
   const [formData, setFormData] = useState({
     customer_id: detail?.ref_customer?.id || "",
@@ -222,12 +222,6 @@ export default function EditReservationPage({
     }
   };
 
-  useEffect(() => {
-    if (Object.keys(filter).length > 0) {
-      const queryFilter = new URLSearchParams(filter).toString();
-      router.push(`?${queryFilter}`);
-    }
-  }, [filter, router]);
 
   const CUSTOMERS = customers.map((item) => ({
     label: item.name,
@@ -238,6 +232,22 @@ export default function EditReservationPage({
     label: item.name,
     value: item.id,
   }));
+
+  if (view === "select") {
+    // Transform detail.details format to Item format if needed, 
+    // but AddEquipmentView should handle what setItems provides.
+    return (
+      <AddEquipmentView
+        items={items}
+        setItems={setItems}
+        singleItems={singleItems}
+        bulkItems={bulkItems}
+        categories={categories}
+        onBack={() => setView("form")}
+        onSave={() => setView("form")}
+      />
+    );
+  }
 
   return (
     <div>
@@ -261,7 +271,7 @@ export default function EditReservationPage({
               Customer <span className="text-red-500">*</span>
             </label>
             <select
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-xs"
               name="customer_id"
               value={formData.customer_id}
               onChange={handleInputChange}
@@ -280,7 +290,7 @@ export default function EditReservationPage({
               User/Employee <span className="text-red-500">*</span>
             </label>
             <select
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-xs"
               name="user_id"
               value={formData.user_id}
               onChange={handleInputChange}
@@ -326,7 +336,7 @@ export default function EditReservationPage({
               Pickup Location <span className="text-red-500">*</span>
             </label>
             <select
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-xs"
               name="pickup_location"
               value={formData.pickup_location}
               onChange={handleInputChange}
@@ -346,7 +356,7 @@ export default function EditReservationPage({
               <button
                 className="border border-orange-500 p-2 rounded flex items-center gap-2"
                 type="button"
-                onClick={() => setModalOpen(true)}
+                onClick={() => setView("select")}
               >
                 <PlusSquareIcon className="w-4 h-4 text-orange-500" />
                 <p className="text-xs text-orange-500">Add product or Item</p>
@@ -355,70 +365,65 @@ export default function EditReservationPage({
 
             {items.length > 0 && (
               <div className="flex flex-col gap-2 mt-4">
-                {items.map((item: IDetail) => (
-                  <div
-                    key={item.id}
-                    className="flex justify-between items-center border-b py-2"
-                  >
-                    <div className="flex gap-2 items-center">
-                      <Image
-                        src={CONFIG.IMAGE_URL + "/" + item.item_image_path}
-                        alt={item.item_id}
-                        width={50}
-                        height={50}
-                        className="w-24 h-20 object-cover rounded"
-                      />
-                      <div>
-                        <p className="text-sm font-bold">{item.item_name}</p>
-                        <p className="text-xs text-gray-500">
-                          {item?.item_type === "bulk" ? "Item" : "Product"}
-                        </p>
-                        <p className="text-xs text-gray-500 font-bold">
-                          {item?.qty || "1"}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setItems(items.filter((i) => i.id !== item.id));
-                        Swal.fire({
-                          icon: "success",
-                          title: "Item removed successfully",
-                          timer: 1500,
-                          showConfirmButton: false,
-                        });
-                      }}
+                {items.map((item: any) => {
+                  const imagePath = item.full_path_image || (item.item_image_path ? `${CONFIG.IMAGE_URL}/${item.item_image_path}` : "");
+                  const name = item.name || item.item_name;
+                  const type = item.item_type || (item.category ? "single" : "bulk");
+                  const qty = item.added || item.qty || 1;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex justify-between items-center border-b py-2"
                     >
-                      <Trash2Icon className="w-5 h-5 text-red-500" />
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex gap-2 items-center">
+                        {imagePath && (
+                          <Image
+                            src={imagePath}
+                            alt={name}
+                            width={50}
+                            height={50}
+                            className="w-24 h-20 object-cover rounded"
+                          />
+                        )}
+                        <div>
+                          <p className="text-sm font-bold">{name}</p>
+                          <p className="text-xs text-gray-500">
+                            {type === "bulk" ? "Item" : "Product"}
+                          </p>
+                          <p className="text-xs text-gray-500 font-bold">
+                            {qty}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setItems(items.filter((i) => i.id !== item.id));
+                          Swal.fire({
+                            icon: "success",
+                            title: "Item removed successfully",
+                            timer: 1500,
+                            showConfirmButton: false,
+                          });
+                        }}
+                      >
+                        <Trash2Icon className="w-5 h-5 text-red-500" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
-
-        {/* Modal */}
-        {modalOpen && (
-          <AddEquipmentsModal
-            open={modalOpen}
-            setOpen={() => setModalOpen(false)}
-            items={items}
-            setItems={setItems}
-            singleItems={singleItems}
-            bulkItems={bulkItems}
-            setFilter={setFilter}
-            filter={filter}
-          />
-        )}
 
         {/* Buttons */}
         <div className="flex gap-4 justify-end mt-4">
           <Button
             variant="white"
             type="button"
-            onClick={() => router.push("/main/items")}
+            onClick={() => router.push("/main/reservation")}
           >
             Cancel
           </Button>

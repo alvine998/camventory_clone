@@ -245,62 +245,64 @@ export default function Detail({ detail, logs, query }: any) {
 
               <div className="flex flex-col gap-8">
                 {reservationLogs?.data && reservationLogs.data.length > 0 ? (
-                  reservationLogs.data.map((log: any, index: number) => {
-                    // Logic to determine icon and styling based on log content
-                    const isEmail = log.note.toLowerCase().includes("email");
-                    // const isPersonnel = !isEmail; // Default for now
+                  [...reservationLogs.data]
+                    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                    .map((log: any, index: number) => {
+                      // Logic to determine icon and styling based on log content
+                      const isEmail = log.note.toLowerCase().includes("email");
+                      // const isPersonnel = !isEmail; // Default for now
 
-                    return (
-                      <div key={log.id} className="relative flex flex-col gap-2">
-                        {/* Dot on line */}
-                        <div className="absolute left-[0px] top-[10px] w-5 h-5 flex items-center justify-center z-10">
-                          <div className="w-4 h-4 rounded-full border-2 border-gray-200 bg-white" />
-                        </div>
+                      return (
+                        <div key={log.id} className="relative flex flex-col gap-2">
+                          {/* Dot on line */}
+                          <div className="absolute left-[0px] top-[10px] w-5 h-5 flex items-center justify-center z-10">
+                            <div className="w-4 h-4 rounded-full border-2 border-gray-200 bg-white" />
+                          </div>
 
-                        <div className="pl-10 mt-3">
-                          {/* Timestamp - Using current time or placeholder as API doesn't provide it yet */}
-                          <p className="text-xs text-gray-400 mb-2 font-medium">
-                            {moment(log.created_at).format("DD MMMM YYYY, HH:mm [WIB]")}
-                          </p>
+                          <div className="pl-10 mt-3">
+                            {/* Timestamp - Using current time or placeholder as API doesn't provide it yet */}
+                            <p className="text-xs text-gray-400 mb-2 font-medium">
+                              {moment(log.created_at).format("DD MMMM YYYY, HH:mm [WIB]")}
+                            </p>
 
-                          {index === 0 ? (
-                            // First log entry often looks boxed in mockups
-                            <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm flex gap-3 items-center">
-                              <Image
-                                alt="Avatar"
-                                src="/images/default-photo.svg"
-                                width={32}
-                                height={32}
-                                className="rounded-full bg-gray-100"
-                              />
-                              <p className="text-sm text-gray-700 font-medium">
-                                {log.note}
-                              </p>
-                            </div>
-                          ) : (
-                            <div className="flex gap-3 items-start">
-                              {isEmail ? (
-                                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center border border-green-200">
-                                  <Mail className="w-4 h-4 text-green-600" />
-                                </div>
-                              ) : (
+                            {index === 0 ? (
+                              // First log entry often looks boxed in mockups
+                              <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm flex gap-3 items-center">
                                 <Image
                                   alt="Avatar"
                                   src="/images/default-photo.svg"
                                   width={32}
                                   height={32}
-                                  className="rounded-full bg-gray-100 border border-gray-200"
+                                  className="rounded-full bg-gray-100"
                                 />
-                              )}
-                              <p className="text-sm text-gray-700 font-medium pt-1.5">
-                                {log.note}
-                              </p>
-                            </div>
-                          )}
+                                <p className="text-sm text-gray-700 font-medium">
+                                  {log.note}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="flex gap-3 items-start">
+                                {isEmail ? (
+                                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center border border-green-200">
+                                    <Mail className="w-4 h-4 text-green-600" />
+                                  </div>
+                                ) : (
+                                  <Image
+                                    alt="Avatar"
+                                    src="/images/default-photo.svg"
+                                    width={32}
+                                    height={32}
+                                    className="rounded-full bg-gray-100 border border-gray-200"
+                                  />
+                                )}
+                                <p className="text-sm text-gray-700 font-medium pt-1.5">
+                                  {log.note}
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })
+                      );
+                    })
                 ) : (
                   <div className="flex flex-col items-center justify-center py-10 px-4 bg-gray-50 border border-dashed border-gray-300 rounded-lg ml-8">
                     <p className="text-sm text-gray-500 italic">

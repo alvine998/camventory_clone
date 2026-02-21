@@ -91,6 +91,7 @@ export interface ICalendarResponse {
 export interface IReservationLog {
   id: string;
   note: string;
+  created_at: string;
 }
 
 export interface IReservationLogResponse {

@@ -45,7 +45,7 @@ export default function DashboardPage({ token }: DashboardPageProps) {
     });
   };
 
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     setLoading(true);
     try {
       const startDateUnix = moment(dateRange.start).startOf('day').unix();
@@ -161,7 +161,7 @@ export default function DashboardPage({ token }: DashboardPageProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange.end, dateRange.start, token]);
 
   const checkFlagColors = (statuses: string[]) => {
     const colorMap: Record<string, string> = {
@@ -178,7 +178,7 @@ export default function DashboardPage({ token }: DashboardPageProps) {
     if (token) {
       fetchData();
     }
-  }, [dateRange, token]);
+  }, [fetchData, token]);
 
 
   return (
