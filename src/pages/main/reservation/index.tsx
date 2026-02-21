@@ -12,7 +12,6 @@ import React, { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
 import { ColumnReservation } from "@/constants/column_reservation";
 import moment from "moment";
-import Select from "@/components/Select";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -381,7 +380,7 @@ export default function ReservationPage({ table, customers }: any) {
             <Filter className="w-4 h-4" />
             Filter
           </Button>
-          <div className="w-48">
+          {/* <div className="w-48">
             <Select
               options={[
                 { value: "", label: "Default (Created At DESC)" },
@@ -432,7 +431,7 @@ export default function ReservationPage({ table, customers }: any) {
               placeholder="Sort by..."
               isClearable={false}
             />
-          </div>
+          </div> */}
         </div>
         <div className="md:w-auto w-full">
           <Button

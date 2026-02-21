@@ -2,20 +2,23 @@ import React, { ButtonHTMLAttributes } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?:
-    | "primary"
-    | "success"
-    | "warning"
-    | "danger"
-    | "secondary"
-    | "white"
-    | "submit"
-    | "custom-color";
+  | "primary"
+  | "success"
+  | "warning"
+  | "danger"
+  | "secondary"
+  | "white"
+  | "submit"
+  | "custom-color";
+  isLoading?: boolean;
 }
 
 const Button: React.FC<ButtonProps> = ({
   variant = "primary",
   className,
   children,
+  isLoading = false,
+  disabled,
   ...props
 }) => {
   const baseStyles =
@@ -43,10 +46,17 @@ const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
-      className={`${baseStyles} ${variantStyles[variant]} ${className}`}
+      className={`${baseStyles} ${variantStyles[variant]} ${className} ${(disabled || isLoading) ? "opacity-50 cursor-not-allowed" : ""
+        }`}
+      disabled={disabled || isLoading}
       {...props}
     >
-      {children}
+      <div className="flex items-center justify-center gap-2">
+        {isLoading && (
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        )}
+        {children}
+      </div>
     </button>
   );
 };

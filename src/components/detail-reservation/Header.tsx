@@ -12,9 +12,11 @@ import Dropdown from "../Dropdown";
 import { useRouter } from "next/router";
 import { IReservation } from "@/types/reservation";
 import CancelModal from "../modals/reservation/CancelModal";
+import CheckInModal from "../modals/reservation/CheckInModal";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { getStatusBadgeColor } from "@/utils";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 interface Props {
   detail: IReservation;
@@ -23,7 +25,9 @@ interface Props {
 
 export default function HeaderReservation({ detail }: Props) {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCancelReservation = async (description: string) => {
@@ -62,6 +66,94 @@ export default function HeaderReservation({ detail }: Props) {
       setIsLoading(false);
     }
   };
+
+  const handleCheckout = async () => {
+    if (!user?.id) {
+      Swal.fire({
+        icon: "error",
+        title: "Unauthorized",
+        text: "User ID not found. Please log in again.",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const payload = {
+        id: detail?.id,
+        user_id: user.id,
+        items: detail?.details?.map((item) => ({
+          item_id: item.item_id,
+        })),
+      };
+
+      const res = await axios.post("/api/reservation/checkout", payload);
+
+      if (res.status === 200 || res.status === 201) {
+        Swal.fire({
+          icon: "success",
+          title: "Checkout Successful",
+          text: "The checkout process has been completed successfully.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+
+        // Reload page to reflect new status
+        router.reload();
+      }
+    } catch (error: any) {
+      console.error("Checkout error:", error);
+      const apiMessage = error.response?.data?.message;
+      const errorMessage = typeof apiMessage === "object" ? apiMessage.message : apiMessage;
+
+      Swal.fire({
+        icon: "error",
+        title: "Checkout Failed",
+        text: errorMessage || error.message || "An error occurred during checkout.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCheckIn = async (checkInItems: any[]) => {
+    setIsLoading(true);
+    try {
+      const payload = {
+        id: detail?.id,
+        items: checkInItems,
+      };
+
+      const res = await axios.post("/api/reservation/checkin", payload);
+
+      if (res.status === 200 || res.status === 201) {
+        Swal.fire({
+          icon: "success",
+          title: "Check In Successful",
+          text: "The check in process has been completed successfully.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+
+        setShowCheckInModal(false);
+        // Reload page to reflect new status
+        router.reload();
+      }
+    } catch (error: any) {
+      console.error("Check in error:", error);
+      const apiMessage = error.response?.data?.message;
+      const errorMessage = typeof apiMessage === "object" ? apiMessage.message : apiMessage;
+
+      Swal.fire({
+        icon: "error",
+        title: "Check In Failed",
+        text: errorMessage || error.message || "An error occurred during check in.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center gap-2">
@@ -109,6 +201,7 @@ export default function HeaderReservation({ detail }: Props) {
                   className="flex items-center gap-1 border border-orange-500"
                   type="button"
                   onClick={() => setShowCancelModal(true)}
+                  disabled={isLoading}
                 >
                   <XCircleIcon className="w-4 h-4 text-orange-500" />
                   <p className="text-xs text-orange-500">Cancel</p>
@@ -119,52 +212,36 @@ export default function HeaderReservation({ detail }: Props) {
                 <Dropdown
                   label={`Check Out ${detail?.details?.length || 0} items`}
                   triggerIcon={<ShoppingCartIcon className="w-4 h-4 text-white" />}
+                  isLoading={isLoading}
                   options={[
                     {
                       label: "Checkout",
-                      onClick: () => {
-                        console.log("Checkout clicked");
-                        Swal.fire({
-                          icon: "info",
-                          title: "Checkout",
-                          text: "Checkout action triggered",
-                          timer: 1500,
-                          showConfirmButton: false,
-                        });
-                      },
+                      onClick: handleCheckout,
                     },
-                    {
-                      label: "Pickup of goods",
-                      onClick: () => {
-                        console.log("Pickup of goods clicked");
-                        Swal.fire({
-                          icon: "info",
-                          title: "Pickup",
-                          text: "Pickup of goods action triggered",
-                          timer: 1500,
-                          showConfirmButton: false,
-                        });
-                      },
-                    },
+                    // {
+                    //   label: "Pickup of goods",
+                    //   onClick: () => {
+                    //     console.log("Pickup of goods clicked");
+                    //     Swal.fire({
+                    //       icon: "info",
+                    //       title: "Pickup",
+                    //       text: "Pickup of goods action triggered",
+                    //       timer: 1500,
+                    //       showConfirmButton: false,
+                    //     });
+                    //   },
+                    // },
                   ]}
                 />
               ) : detail?.status?.toUpperCase() === "CHECKOUT" ? (
                 <Dropdown
                   label={`Check In ${detail?.details?.length || 0} items`}
                   triggerIcon={<ShoppingCartIcon className="w-4 h-4 text-white" />}
+                  isLoading={isLoading}
                   options={[
                     {
                       label: "Check In",
-                      onClick: () => {
-                        console.log("Check In clicked");
-                        Swal.fire({
-                          icon: "info",
-                          title: "Check In",
-                          text: "Check In action triggered",
-                          timer: 1500,
-                          showConfirmButton: false,
-                        });
-                      },
+                      onClick: () => setShowCheckInModal(true),
                     },
                   ]}
                 />
@@ -202,6 +279,15 @@ export default function HeaderReservation({ detail }: Props) {
         open={showCancelModal}
         setOpen={setShowCancelModal}
         onConfirm={handleCancelReservation}
+        isLoading={isLoading}
+      />
+
+      {/* Check In Modal */}
+      <CheckInModal
+        open={showCheckInModal}
+        setOpen={setShowCheckInModal}
+        items={detail?.details || []}
+        onConfirm={handleCheckIn}
         isLoading={isLoading}
       />
     </div>

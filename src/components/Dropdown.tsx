@@ -14,6 +14,8 @@ interface DropdownProps {
     triggerIcon?: React.ReactNode;
     className?: string;
     buttonClassName?: string;
+    isLoading?: boolean;
+    disabled?: boolean;
 }
 
 const Dropdown: React.FC<DropdownProps> = ({
@@ -22,6 +24,8 @@ const Dropdown: React.FC<DropdownProps> = ({
     triggerIcon,
     className,
     buttonClassName,
+    isLoading,
+    disabled
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -46,12 +50,18 @@ const Dropdown: React.FC<DropdownProps> = ({
                     type="button"
                     className={cn(
                         "flex items-center gap-1 px-4 py-2 bg-[#F37021] text-white rounded-md hover:bg-orange-600 transition-colors text-xs font-medium",
+                        (disabled || isLoading) && "opacity-50 cursor-not-allowed grayscale",
                         buttonClassName
                     )}
-                    onClick={() => setIsOpen(!isOpen)}
+                    onClick={() => !disabled && !isLoading && setIsOpen(!isOpen)}
+                    disabled={disabled || isLoading}
                 >
-                    {triggerIcon}
-                    <span>{label}</span>
+                    {isLoading ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                        triggerIcon
+                    )}
+                    <span>{isLoading ? "Loading..." : label}</span>
                     <ChevronDownIcon className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} />
                 </button>
             </div>

@@ -1,5 +1,4 @@
 import React from "react";
-import { Filter } from "lucide-react";
 
 import Skeleton from "../Skeleton";
 
@@ -23,7 +22,6 @@ interface UpcomingListCardProps {
 const UpcomingListCard: React.FC<UpcomingListCardProps> = ({
     title,
     items,
-    location,
     onViewAll,
     loading = false,
     totalItems
@@ -34,13 +32,14 @@ const UpcomingListCard: React.FC<UpcomingListCardProps> = ({
                 <h3 className="text-lg font-bold text-gray-800">{title}</h3>
             </div>
 
-            <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+            {/* Filter Date */}
+            {/* <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
                 <span className="text-sm font-semibold text-gray-700">{location}</span>
                 <button className="flex items-center gap-1 text-xs text-gray-500 border border-gray-300 rounded px-2 py-1 hover:bg-gray-50 transition-colors">
                     <Filter className="w-3 h-3" />
                     Filter
                 </button>
-            </div>
+            </div> */}
 
             <div className="space-y-4 flex-grow">
                 {loading ? (
