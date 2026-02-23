@@ -14,16 +14,6 @@ export const NAVIGATIONS = [
     href: "/main/reservation",
     icon: "/icons/box-tick.svg",
   },
-  // {
-  //   title: "Check Out",
-  //   href: "/main/checkout",
-  //   icon: "/icons/shopping-cart.svg",
-  // },
-  {
-    title: "Category Items",
-    href: "/main/category",
-    icon: "/icons/box.svg",
-  },
   {
     title: "Items",
     href: "/main/items",
@@ -64,6 +54,16 @@ export const NAVIGATIONS = [
         href: "/main/report/sales-customer",
       },
     ],
+  },
+  {
+    title: "Timeline",
+    href: "/main/report/timeline",
+    icon: "/icons/calendar.svg",
+  },
+  {
+    title: "Category Items",
+    href: "/main/report/category-item",
+    icon: "/icons/box.svg",
   },
 ];
 
