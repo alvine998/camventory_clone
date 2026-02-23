@@ -5,10 +5,6 @@ interface FilterPopupProps {
     isOpen: boolean;
     onClose: () => void;
     onReset: () => void;
-    startDate: string;
-    endDate: string;
-    onStartDateChange: (date: string) => void;
-    onEndDateChange: (date: string) => void;
     className?: string;
 }
 
@@ -16,10 +12,6 @@ const FilterPopup: React.FC<FilterPopupProps> = ({
     isOpen,
     onClose,
     onReset,
-    startDate,
-    endDate,
-    onStartDateChange,
-    onEndDateChange,
     className,
 }) => {
     if (!isOpen) return null;
@@ -45,34 +37,6 @@ const FilterPopup: React.FC<FilterPopupProps> = ({
                     </button>
                 </div>
 
-                <div className="flex gap-4">
-                    <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            From:
-                        </label>
-                        <div className="relative">
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => onStartDateChange(e.target.value)}
-                                className="w-full pl-3 pr-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-orange-500"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            To:
-                        </label>
-                        <div className="relative">
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => onEndDateChange(e.target.value)}
-                                className="w-full pl-3 pr-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-orange-500"
-                            />
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     );

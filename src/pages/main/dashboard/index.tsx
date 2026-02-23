@@ -1,10 +1,9 @@
-import { FilterIcon } from "lucide-react";
+import { CalendarIcon, ArrowRightIcon } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import DonutChart from "@/components/dashboard/DonutChart";
 import StatsCard from "@/components/dashboard/StatsCard";
 import UpcomingListCard from "@/components/dashboard/UpcomingListCard";
 import BrokenItemsCard from "@/components/dashboard/BrokenItemsCard";
-import FilterPopup from "@/components/dashboard/FilterPopup";
 import Head from "next/head";
 import moment from "moment";
 import axios from "axios";
@@ -17,7 +16,6 @@ interface DashboardPageProps {
 
 export default function DashboardPage({ token }: DashboardPageProps) {
   const router = useRouter();
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [dateRange, setDateRange] = useState({
     start: moment().format("YYYY-MM-DD"),
     end: moment().add(30, "days").format("YYYY-MM-DD"),
@@ -37,13 +35,6 @@ export default function DashboardPage({ token }: DashboardPageProps) {
   const [upcomingReservations, setUpcomingReservations] = useState<any[]>([]);
   const [upcomingCheckouts, setUpcomingCheckouts] = useState<any[]>([]);
   const [brokenItemsData, setBrokenItemsData] = useState<any>({ items: [], total: 0 });
-
-  const handleResetFilter = () => {
-    setDateRange({
-      start: moment().format("YYYY-MM-DD"),
-      end: moment().add(30, "days").format("YYYY-MM-DD"),
-    });
-  };
 
   const fetchData = React.useCallback(async () => {
     setLoading(true);
@@ -188,23 +179,107 @@ export default function DashboardPage({ token }: DashboardPageProps) {
       </Head>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <h1 className="text-3xl font-extrabold text-orange-500">Overview</h1>
-        <div className="relative">
-          <button
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="border-2 border-gray-200 bg-white rounded-lg px-4 py-2 flex items-center gap-2 hover:border-orange-500 transition-all shadow-sm"
-          >
-            <FilterIcon className="w-5 h-5 text-gray-400" />
-            <span className="text-sm font-bold text-gray-600">Filter</span>
-          </button>
-          <FilterPopup
-            isOpen={isFilterOpen}
-            onClose={() => setIsFilterOpen(false)}
-            onReset={handleResetFilter}
-            startDate={dateRange.start}
-            endDate={dateRange.end}
-            onStartDateChange={(date) => setDateRange({ ...dateRange, start: date })}
-            onEndDateChange={(date) => setDateRange({ ...dateRange, end: date })}
-          />
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* From Input Box */}
+            <div className="relative group min-w-[160px]">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <span className="text-gray-500 text-sm font-normal">From</span>
+              </div>
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={(e) => {
+                  const date = e.target.value;
+                  const mStart = moment(date);
+                  const mEnd = moment(dateRange.end);
+                  let newEnd = dateRange.end;
+                  if (mStart.isAfter(mEnd)) {
+                    newEnd = date;
+                  } else if (mEnd.diff(mStart, "years", true) > 1) {
+                    newEnd = mStart.clone().add(1, "year").format("YYYY-MM-DD");
+                  }
+                  setDateRange({ start: date, end: newEnd });
+                }}
+                className="w-full pl-16 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 appearance-none bg-white transition-all hover:border-gray-300"
+              />
+              <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                <CalendarIcon className="w-5 h-5 text-gray-400" />
+              </div>
+            </div>
+
+            <div className="flex-shrink-0">
+              <ArrowRightIcon className="w-4 h-4 text-gray-400" />
+            </div>
+
+            {/* To Input Box */}
+            <div className="relative group min-w-[140px]">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <span className="text-gray-500 text-sm font-normal">To</span>
+              </div>
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) => {
+                  const date = e.target.value;
+                  const mEnd = moment(date);
+                  const mStart = moment(dateRange.start);
+                  let newStart = dateRange.start;
+                  if (mEnd.isBefore(mStart)) {
+                    newStart = date;
+                  } else if (mEnd.diff(mStart, "years", true) > 1) {
+                    newStart = mEnd.clone().subtract(1, "year").format("YYYY-MM-DD");
+                  }
+                  setDateRange({ start: newStart, end: date });
+                }}
+                className="w-full pl-12 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 appearance-none bg-white transition-all hover:border-gray-300"
+              />
+              <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                <CalendarIcon className="w-5 h-5 text-gray-400" />
+              </div>
+            </div>
+          </div>
+
+          <style jsx>{`
+            input[type="date"]::-webkit-calendar-picker-indicator {
+              position: absolute;
+              right: 12px;
+              top: 0;
+              bottom: 0;
+              opacity: 0;
+              width: 32px;
+              height: 100%;
+              cursor: pointer;
+              z-index: 10;
+            }
+            input[type="date"] {
+              color: transparent;
+            }
+            input[type="date"]::before {
+              content: attr(value);
+              position: absolute;
+              left: 3.5rem;
+              color: #4b5563;
+            }
+            .group:last-child input[type="date"]::before {
+              left: 2.8rem;
+            }
+          `}</style>
+
+          <div className="relative">
+            {/* <button
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className="border border-gray-200 bg-white rounded-xl px-4 py-2.5 flex items-center gap-2 hover:border-orange-500 transition-all shadow-sm"
+            >
+              <FilterIcon className="w-5 h-5 text-gray-400" />
+              <span className="text-sm font-bold text-gray-600">Other</span>
+            </button> */}
+            {/* <FilterPopup
+              isOpen={isFilterOpen}
+              onClose={() => setIsFilterOpen(false)}
+              onReset={handleResetFilter}
+            /> */}
+          </div>
         </div>
       </div>
 
