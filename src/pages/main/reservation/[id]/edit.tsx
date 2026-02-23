@@ -1,4 +1,5 @@
 import Button from "@/components/Button";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import Input from "@/components/Input";
 import AddEquipmentView from "@/components/reservation/AddEquipmentView";
 // import Select from "@/components/Select";
@@ -64,6 +65,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       users,
       customers,
       detail,
+      notificationsData,
+      unreadNotificationsData,
     ] = await Promise.all([
       axios.get(`${CONFIG.API_URL}/v1/master/categories`, {
         headers: { Authorization: token },
@@ -100,6 +103,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           Authorization: `${token}`,
         },
       }),
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
     ]);
 
     return {
@@ -111,6 +116,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         users: users.data?.data || [],
         customers: customers.data?.data || [],
         detail: detail.data?.data || {},
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
       },
     };
   } catch (error: any) {
@@ -118,7 +125,17 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       return { redirect: { destination: "/", permanent: false } };
     }
     return {
-      props: { categories: [], brands: [], bulkItems: [], singleItems: [] },
+      props: {
+        categories: [],
+        brands: [],
+        bulkItems: [],
+        singleItems: [],
+        users: [],
+        customers: [],
+        detail: {},
+        notifications: [],
+        unreadNotifications: [],
+      },
     };
   }
 };

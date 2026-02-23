@@ -9,6 +9,7 @@ import moment from "moment";
 import axios from "axios";
 import { parse } from "cookie";
 import { useRouter } from "next/router";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 
 interface DashboardPageProps {
   token: string;
@@ -356,9 +357,17 @@ export const getServerSideProps = async ({ req }: any) => {
   const cookies = parse(req.headers.cookie || "");
   const token = cookies.token || "";
 
+  // Fetch notifications for SSR
+  const [notificationsData, unreadNotificationsData] = await Promise.all([
+    fetchNotificationsServer(token),
+    fetchUnreadNotificationsServer(token),
+  ]);
+
   return {
     props: {
-      token
+      token,
+      notifications: notificationsData?.data || [],
+      unreadNotifications: unreadNotificationsData?.data || [],
     },
   };
 };

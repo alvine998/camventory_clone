@@ -1,4 +1,5 @@
 import Button from "@/components/Button";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import Input from "@/components/Input";
 import { useModal } from "@/components/Modal";
 import CustomerDeleteModal from "@/components/modals/customer/delete";
@@ -46,14 +47,18 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       params.set("location", location);
     }
 
-    const table = await axios.get(
-      `${CONFIG.API_URL}/v1/bulk-items?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `${token}`,
-        },
-      }
-    );
+    const [table, notificationsData, unreadNotificationsData] = await Promise.all([
+      axios.get(
+        `${CONFIG.API_URL}/v1/bulk-items?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      ),
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
 
     if (table?.status === 401) {
       return {
@@ -66,7 +71,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     // Optionally validate token...
     return {
-      props: { table: { data: table?.data?.data, ...table?.data?.meta } },
+      props: {
+        table: { data: table?.data?.data, ...table?.data?.meta },
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
+      },
     };
   } catch (error: any) {
     console.log(error);
@@ -79,7 +88,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { table: { data: [], meta: { total_data: 0 } } },
+      props: {
+        table: { data: [], meta: { total_data: 0 } },
+        notifications: [],
+        unreadNotifications: [],
+      },
     };
   }
 };

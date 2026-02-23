@@ -1,4 +1,5 @@
 import Button from "@/components/Button";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import Input from "@/components/Input";
 import { useModal } from "@/components/Modal";
 import CustomerCreateModal from "@/components/modals/customer/create";
@@ -41,14 +42,18 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       params.set("search", search);
     }
 
-    const table = await axios.get(
-      `${CONFIG.API_URL}/v1/customers?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `${token}`,
-        },
-      }
-    );
+    const [table, notificationsData, unreadNotificationsData] = await Promise.all([
+      axios.get(
+        `${CONFIG.API_URL}/v1/customers?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      ),
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
 
     if (table?.status === 401) {
       return {
@@ -61,7 +66,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     // Optionally validate token...
     return {
-      props: { table: { data: table?.data?.data, ...table?.data?.meta } },
+      props: {
+        table: { data: table?.data?.data, ...table?.data?.meta },
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
+      },
     };
   } catch (error: any) {
     console.log(error);
@@ -74,7 +83,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { table: [] },
+      props: {
+        table: [],
+        notifications: [],
+        unreadNotifications: [],
+      },
     };
   }
 };
@@ -140,7 +153,7 @@ export default function AdministratorPage({ table }: any) {
   useEffect(() => {
     const queryFilter = new URLSearchParams(filter).toString();
     const currentQuery = new URLSearchParams(window.location.search).toString();
-    
+
     // Only push if the filter has actually changed
     if (queryFilter !== currentQuery) {
       router.push(`?${queryFilter}`).catch(() => {

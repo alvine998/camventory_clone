@@ -1,4 +1,5 @@
 import Button from "@/components/Button";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import DateRangePicker from "@/components/DateRangePicker";
 import Modal, { useModal } from "@/components/Modal";
 import { CalendarDays } from "lucide-react";
@@ -61,15 +62,19 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       endDate: endTimestamp,
     };
 
-    const response = await axios.get(
-      `${CONFIG.API_URL}/v1/report/customer/${id}`,
-      {
-        params: paramsApi,
-        headers: {
-          Authorization: `${token}`,
-        },
-      }
-    );
+    const [response, notificationsData, unreadNotificationsData] = await Promise.all([
+      axios.get(
+        `${CONFIG.API_URL}/v1/report/customer/${id}`,
+        {
+          params: paramsApi,
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      ),
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
 
     if (response?.status === 401) {
       return {
@@ -86,6 +91,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         dateRange: { start: startDateStr, end: endDateStr },
         customerId: id,
         token: token,
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
       },
     };
   } catch (error: any) {
@@ -107,6 +114,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           end: moment().add(30, "days").format("DD/MM/YYYY"),
         },
         customerId: id,
+        notifications: [],
+        unreadNotifications: [],
       },
     };
   }

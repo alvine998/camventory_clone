@@ -1,4 +1,5 @@
 import Button from "@/components/Button";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import Input from "@/components/Input";
 import AddEquipmentView from "@/components/reservation/AddEquipmentView";
 import Select from "@/components/Select";
@@ -53,39 +54,49 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   try {
     const { page = "1", limit = "10", search = "" } = query;
 
-    const [categories, brands, bulkItems, singleItems, users, customers] =
-      await Promise.all([
-        axios.get(`${CONFIG.API_URL}/v1/master/categories`, {
+    const [
+      categories,
+      brands,
+      bulkItems,
+      singleItems,
+      users,
+      customers,
+      notificationsData,
+      unreadNotificationsData,
+    ] = await Promise.all([
+      axios.get(`${CONFIG.API_URL}/v1/master/categories`, {
+        headers: { Authorization: token },
+      }),
+      axios.get(`${CONFIG.API_URL}/v1/master/brands`, {
+        headers: { Authorization: token },
+      }),
+      axios.get(
+        `${CONFIG.API_URL}/v1/bulk-items?isAvailable=true&page=${page}&limit=${limit}${search ? `&search=${search}` : ""
+        }`,
+        {
           headers: { Authorization: token },
-        }),
-        axios.get(`${CONFIG.API_URL}/v1/master/brands`, {
+        }
+      ),
+      axios.get(
+        `${CONFIG.API_URL}/v1/single-items?statusItem=GOOD&statusBooking=AVAILABLE&page=${page}&limit=${limit}${search ? `&search=${search}` : ""
+        }`,
+        {
           headers: { Authorization: token },
-        }),
-        axios.get(
-          `${CONFIG.API_URL}/v1/bulk-items?isAvailable=true&page=${page}&limit=${limit}${search ? `&search=${search}` : ""
-          }`,
-          {
-            headers: { Authorization: token },
-          }
-        ),
-        axios.get(
-          `${CONFIG.API_URL}/v1/single-items?statusItem=GOOD&statusBooking=AVAILABLE&page=${page}&limit=${limit}${search ? `&search=${search}` : ""
-          }`,
-          {
-            headers: { Authorization: token },
-          }
-        ),
-        axios.get(`${CONFIG.API_URL}/accounts/v1/users/all?page=1&limit=100`, {
-          headers: {
-            Authorization: `${token}`,
-          },
-        }),
-        axios.get(`${CONFIG.API_URL}/v1/customers?page=1&limit=100`, {
-          headers: {
-            Authorization: `${token}`,
-          },
-        }),
-      ]);
+        }
+      ),
+      axios.get(`${CONFIG.API_URL}/accounts/v1/users/all?page=1&limit=100`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      }),
+      axios.get(`${CONFIG.API_URL}/v1/customers?page=1&limit=100`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      }),
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
 
     return {
       props: {
@@ -95,6 +106,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         singleItems: singleItems.data?.data || [],
         users: users.data?.data || [],
         customers: customers.data?.data || [],
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
       },
     };
   } catch (error: any) {
@@ -102,7 +115,16 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       return { redirect: { destination: "/", permanent: false } };
     }
     return {
-      props: { categories: [], brands: [], bulkItems: [], singleItems: [] },
+      props: {
+        categories: [],
+        brands: [],
+        bulkItems: [],
+        singleItems: [],
+        users: [],
+        customers: [],
+        notifications: [],
+        unreadNotifications: [],
+      },
     };
   }
 };

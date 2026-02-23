@@ -1,4 +1,5 @@
 import Badge from "@/components/Badge";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import HeaderReservation from "@/components/detail-reservation/Header";
 import Input from "@/components/Input";
 import { CONFIG } from "@/config";
@@ -39,7 +40,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    const [result, logsResult] = await Promise.all([
+    const [result, logsResult, notificationsData, unreadNotificationsData] = await Promise.all([
       axios.get(`${CONFIG.API_URL}/v1/reservation/${params.id}`, {
         headers: {
           Authorization: `${token}`,
@@ -50,6 +51,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           Authorization: `${token}`,
         },
       }),
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
     ]);
 
     if (result.status !== 200) {
@@ -63,6 +66,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         detail: result?.data,
         logs: logsResult?.data || null,
         query,
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
       },
     };
   } catch (error: any) {
@@ -76,7 +81,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { table: [], logs: null },
+      props: {
+        table: [],
+        logs: null,
+        notifications: [],
+        unreadNotifications: [],
+      },
     };
   }
 }

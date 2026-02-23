@@ -1,4 +1,5 @@
 import Header from "@/components/detail-item/Header";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import Tabs from "@/components/Tabs";
 import React from "react";
 import { itemTabs } from "./detail";
@@ -31,17 +32,17 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    let result = null;
-    let reservation = null;
+    let resultPromise;
+    let reservationPromise;
     let logs = null;
-    
+
     if (query.type === "bulk" && params) {
-      result = await axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
+      resultPromise = axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
         headers: {
           Authorization: `${token}`,
         },
       });
-      reservation = await axios.get(
+      reservationPromise = axios.get(
         `${CONFIG.API_URL}/v1/bulk-items/${params.id}/detail/reservations`,
         {
           headers: {
@@ -50,7 +51,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         }
       );
     } else if (query.type === "single" && params) {
-      result = await axios.get(
+      resultPromise = axios.get(
         `${CONFIG.API_URL}/v1/single-items/${params.id}`,
         {
           headers: {
@@ -58,7 +59,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           },
         }
       );
-      reservation = await axios.get(
+      reservationPromise = axios.get(
         `${CONFIG.API_URL}/v1/single-items/${params.id}/detail/reservations`,
         {
           headers: {
@@ -66,7 +67,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           },
         }
       );
-      
+
       // Fetch logs for single items
       try {
         const logsResponse = await axios.get(
@@ -89,9 +90,16 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       throw new Error(`Invalid query.type: ${query.type}`);
     }
 
-    if (reservation.status !== 200) {
+    const [result, reservationRes, notificationsData, unreadNotificationsData] = await Promise.all([
+      resultPromise,
+      reservationPromise,
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
+
+    if (reservationRes.status !== 200) {
       throw new Error(
-        `API request failed with status code ${reservation.status}`
+        `API request failed with status code ${reservationRes.status}`
       );
     }
 
@@ -105,8 +113,10 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         params,
         detail: result?.data,
         query,
-        reservation: reservation?.data?.data,
+        reservation: reservationRes?.data?.data,
         logs,
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
       },
     };
   } catch (error: any) {
@@ -120,7 +130,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { table: [] },
+      props: {
+        table: [],
+        notifications: [],
+        unreadNotifications: [],
+      },
     };
   }
 };
@@ -186,7 +200,7 @@ export default function Reservations({
 }: any) {
   console.log(reservation, "detail reservations");
   const logsData = logs?.data || [];
-  
+
   return (
     <div className="p-2">
       <Header detail={detail?.data} query={query} />

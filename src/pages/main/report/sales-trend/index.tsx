@@ -1,4 +1,5 @@
 import { Circle, TrendingDown, Upload } from "lucide-react";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import moment from "moment";
 import dynamic from "next/dynamic";
 import React, { useEffect, useMemo, useState } from "react";
@@ -106,14 +107,18 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    const response = await axios.get(`${CONFIG.API_URL}/v1/report/trend`, {
-      params: {
-        filterBy,
-      },
-      headers: {
-        Authorization: `${token}`,
-      },
-    });
+    const [response, notificationsData, unreadNotificationsData] = await Promise.all([
+      axios.get(`${CONFIG.API_URL}/v1/report/trend`, {
+        params: {
+          filterBy,
+        },
+        headers: {
+          Authorization: `${token}`,
+        },
+      }),
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
 
     if (response?.status === 401) {
       return {
@@ -129,6 +134,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         initialTrendData: response.data?.data || null,
         initialFilterBy: filterBy,
         token: token,
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
       },
     };
   } catch (error: any) {
@@ -146,6 +153,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       props: {
         initialTrendData: null,
         initialFilterBy: filterBy,
+        notifications: [],
+        unreadNotifications: [],
       },
     };
   }

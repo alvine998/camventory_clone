@@ -1,4 +1,5 @@
 import Button from "@/components/Button";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import Header from "@/components/detail-item/Header";
 import Tabs, { Tab } from "@/components/Tabs";
 import Toggle from "@/components/Toggle";
@@ -33,15 +34,15 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    let result = null;
+    let resultPromise;
     if (query.type === "bulk" && params) {
-      result = await axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
+      resultPromise = axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
         headers: {
           Authorization: `${token}`,
         },
       });
     } else if (query.type === "single" && params) {
-      result = await axios.get(
+      resultPromise = axios.get(
         `${CONFIG.API_URL}/v1/single-items/${params.id}`,
         {
           headers: {
@@ -53,12 +54,26 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       throw new Error(`Invalid query.type: ${query.type}`);
     }
 
+    const [result, notificationsData, unreadNotificationsData] = await Promise.all([
+      resultPromise,
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
+
     if (result.status !== 200) {
       throw new Error(`API request failed with status code ${result.status}`);
     }
 
     // Optionally validate token...
-    return { props: { params, detail: result?.data, query } };
+    return {
+      props: {
+        params,
+        detail: result?.data,
+        query,
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
+      }
+    };
   } catch (error: any) {
     console.log(error);
     if (error?.response?.status === 401) {
@@ -70,7 +85,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { table: [] },
+      props: {
+        table: [],
+        notifications: [],
+        unreadNotifications: []
+      },
     };
   }
 };

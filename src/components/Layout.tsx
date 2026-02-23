@@ -6,12 +6,19 @@ import Topbar from "./Topbar";
 import MobileMenu from "./MobileMenu";
 import { usePathname } from "next/navigation";
 import { TooltipProvider } from "./ui/tooltip";
+import { NotificationData } from "@/types/notification";
 
 interface Props {
   children: ReactNode;
+  notifications?: NotificationData[];
+  unreadNotifications?: NotificationData[];
 }
 
-export default function Layout({ children }: Props) {
+export default function Layout({
+  children,
+  notifications,
+  unreadNotifications,
+}: Props) {
   const [isWide, setIsWide] = useState<boolean>(true);
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const pathname = usePathname();
@@ -22,40 +29,41 @@ export default function Layout({ children }: Props) {
           <title>Camventory</title>
         </Head>
         <div className="flex flex-row max-h-screen h-screen overflow-hidden">
-        <div
-          className={`bg-black ${
-            isWide ? "w-1/4" : "w-[90px]"
-          } h-screen duration-300 transition-all lg:block hidden overflow-y-auto`}
-        >
-          <Sidebar
-            navigations={
-              pathname?.includes("/office") ? OFFICE_NAVIGATIONS : NAVIGATIONS
-            }
-            isWide={isWide}
-          />
-        </div>
-        <div className="w-full flex flex-col h-full overflow-y-auto">
-          <Topbar
-            isWide={isWide}
-            setIsWide={setIsWide}
-            setShowMenu={setShowMenu}
-            showMenu={showMenu}
-          />
-
-          <div className="lg:hidden block">
-            <MobileMenu
+          <div
+            className={`bg-black ${isWide ? "w-1/4" : "w-[90px]"
+              } h-screen duration-300 transition-all lg:block hidden overflow-y-auto`}
+          >
+            <Sidebar
               navigations={
                 pathname?.includes("/office") ? OFFICE_NAVIGATIONS : NAVIGATIONS
               }
-              showMenu={showMenu}
-              setShowMenu={setShowMenu}
+              isWide={isWide}
             />
           </div>
+          <div className="w-full flex flex-col h-full overflow-y-auto">
+            <Topbar
+              isWide={isWide}
+              setIsWide={setIsWide}
+              setShowMenu={setShowMenu}
+              showMenu={showMenu}
+              notifications={notifications}
+              unreadNotifications={unreadNotifications}
+            />
 
-          <main className="p-4 overflow-auto">{children}</main>
+            <div className="lg:hidden block">
+              <MobileMenu
+                navigations={
+                  pathname?.includes("/office") ? OFFICE_NAVIGATIONS : NAVIGATIONS
+                }
+                showMenu={showMenu}
+                setShowMenu={setShowMenu}
+              />
+            </div>
+
+            <main className="p-4 overflow-auto">{children}</main>
+          </div>
         </div>
       </div>
-    </div>
     </TooltipProvider>
   );
 }

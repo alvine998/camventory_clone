@@ -1,4 +1,5 @@
 import Header from "@/components/detail-item/Header";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import Tabs from "@/components/Tabs";
 import React, { useState } from "react";
 import Modal, { useModal } from "@/components/Modal";
@@ -28,12 +29,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    let result = null;
+    let resultPromise;
     let logs = null;
     let reservations = null;
 
     if (query.type === "bulk" && params) {
-      result = await axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
+      resultPromise = axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
         headers: {
           Authorization: `${token}`,
         },
@@ -51,7 +52,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         console.log("Error fetching bulk reservations:", e);
       }
     } else if (query.type === "single" && params) {
-      result = await axios.get(
+      resultPromise = axios.get(
         `${CONFIG.API_URL}/v1/single-items/${params.id}`,
         {
           headers: {
@@ -94,12 +95,28 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       throw new Error(`Invalid query.type: ${query.type}`);
     }
 
+    const [result, notificationsData, unreadNotificationsData] = await Promise.all([
+      resultPromise,
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
+
     if (result.status !== 200) {
       throw new Error(`API request failed with status code ${result.status}`);
     }
 
     // Optionally validate token...
-    return { props: { params, detail: result?.data, query, logs, reservations } };
+    return {
+      props: {
+        params,
+        detail: result?.data,
+        query,
+        logs,
+        reservations,
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
+      }
+    };
   } catch (error: any) {
     console.log(error);
     if (error?.response?.status === 401) {
@@ -111,7 +128,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { table: [] },
+      props: {
+        table: [],
+        notifications: [],
+        unreadNotifications: [],
+      },
     };
   }
 };

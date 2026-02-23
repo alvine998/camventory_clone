@@ -4,9 +4,6 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Calendar,
-  CalendarDays,
-  Clock,
   X,
   ChevronUp,
   ChevronDown,
@@ -33,6 +30,7 @@ import { parse } from "cookie";
 import moment from "moment";
 import { GetServerSideProps } from "next";
 import { ICalendarResponse, ICalendarReservation } from "@/types/reservation";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 
 interface Props {
   initialTimelineData: ICalendarReservation[];
@@ -79,11 +77,19 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
+    // Fetch notifications for SSR
+    const [notificationsData, unreadNotificationsData] = await Promise.all([
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
+
     return {
       props: {
         initialTimelineData: response.data?.data || [],
         initialStartDate: startDate,
         initialEndDate: endDate,
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
       },
     };
   } catch (error: any) {
@@ -109,7 +115,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
 export default function CalendarPage({ initialTimelineData, initialStartDate }: Props) {
   const calendarApiRef = useRef<any>(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<
     "dayGridMonth" | "timeGridWeek" | "timeGridDay"
   >("dayGridMonth");
@@ -120,6 +125,7 @@ export default function CalendarPage({ initialTimelineData, initialStartDate }: 
   const [showListModal, setShowListModal] = useState(false);
   const [selectedDateEvents, setSelectedDateEvents] = useState<ICalendarReservation[]>([]);
   const [selectedDateStr, setSelectedDateStr] = useState("");
+  const [headerTitle, setHeaderTitle] = useState("");
   const [selectedReservation, setSelectedReservation] = useState<ICalendarReservation | null>(null);
   const [adminDetailsExpanded, setAdminDetailsExpanded] = useState(true);
   const [loanDetailsExpanded, setLoanDetailsExpanded] = useState(true);
@@ -205,11 +211,14 @@ export default function CalendarPage({ initialTimelineData, initialStartDate }: 
     }
   }, []);
 
-  // Handle dates change in calendar
   const handleDatesSet = useCallback((dateInfo: any) => {
     // Store calendar API reference
     if (dateInfo.view && !calendarApiRef.current) {
       calendarApiRef.current = dateInfo.view.calendar;
+    }
+
+    if (dateInfo.view) {
+      setHeaderTitle(dateInfo.view.title);
     }
 
     // Fetch data when calendar dates change (but skip initial load since we have SSR data)
@@ -340,7 +349,6 @@ export default function CalendarPage({ initialTimelineData, initialStartDate }: 
   const handlePrevYear = useCallback(() => {
     if (calendarApiRef.current) {
       calendarApiRef.current.prevYear();
-      setCurrentDate(calendarApiRef.current.getDate());
 
       // Fetch new data for the new date range
       const view = calendarApiRef.current.view;
@@ -351,7 +359,6 @@ export default function CalendarPage({ initialTimelineData, initialStartDate }: 
   const handlePrev = useCallback(() => {
     if (calendarApiRef.current) {
       calendarApiRef.current.prev();
-      setCurrentDate(calendarApiRef.current.getDate());
 
       // Fetch new data for the new date range
       const view = calendarApiRef.current.view;
@@ -362,7 +369,6 @@ export default function CalendarPage({ initialTimelineData, initialStartDate }: 
   const handleNext = useCallback(() => {
     if (calendarApiRef.current) {
       calendarApiRef.current.next();
-      setCurrentDate(calendarApiRef.current.getDate());
 
       // Fetch new data for the new date range
       const view = calendarApiRef.current.view;
@@ -373,7 +379,6 @@ export default function CalendarPage({ initialTimelineData, initialStartDate }: 
   const handleNextYear = useCallback(() => {
     if (calendarApiRef.current) {
       calendarApiRef.current.nextYear();
-      setCurrentDate(calendarApiRef.current.getDate());
 
       // Fetch new data for the new date range
       const view = calendarApiRef.current.view;
@@ -384,7 +389,6 @@ export default function CalendarPage({ initialTimelineData, initialStartDate }: 
   const handleToday = useCallback(() => {
     if (calendarApiRef.current) {
       calendarApiRef.current.today();
-      setCurrentDate(calendarApiRef.current.getDate());
 
       // Fetch new data for the new date range
       const view = calendarApiRef.current.view;
@@ -440,11 +444,7 @@ export default function CalendarPage({ initialTimelineData, initialStartDate }: 
       <div className="flex lg:flex-row flex-col gap-4 items-center justify-between">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold text-orange-600">
-            {currentView === "dayGridMonth" &&
-              currentDate.toLocaleDateString("en-US", {
-                month: "long",
-                year: "numeric",
-              })}
+            {headerTitle}
           </h1>
         </div>
       </div>
@@ -486,48 +486,46 @@ export default function CalendarPage({ initialTimelineData, initialStartDate }: 
             <ChevronsRight className="w-4 h-4" />
           </button>
         </div>
-        {/* View Switcher */}
-        <div className="flex items-center bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => handleViewChange("dayGridMonth")}
-            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentView === "dayGridMonth"
-              ? "bg-white text-orange-600 shadow-sm"
-              : "text-gray-600 hover:text-gray-900"
-              }`}
-          >
-            <Calendar className="w-4 h-4" />
-            Month
-          </button>
-          <button
-            onClick={() => handleViewChange("timeGridWeek")}
-            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentView === "timeGridWeek"
-              ? "bg-white text-orange-600 shadow-sm"
-              : "text-gray-600 hover:text-gray-900"
-              }`}
-          >
-            <CalendarDays className="w-4 h-4" />
-            Week
-          </button>
-          <button
-            onClick={() => handleViewChange("timeGridDay")}
-            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentView === "timeGridDay"
-              ? "bg-white text-orange-600 shadow-sm"
-              : "text-gray-600 hover:text-gray-900"
-              }`}
-          >
-            <Clock className="w-4 h-4" />
-            Day
-          </button>
-        </div>
+        {/* View Switcher and Filters */}
         <div className="flex items-center gap-4">
+          <div className="flex items-center bg-gray-100 rounded-full p-1">
+            <button
+              onClick={() => handleViewChange("dayGridMonth")}
+              className={`px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${currentView === "dayGridMonth"
+                ? "bg-orange-500 text-white shadow-md"
+                : "text-gray-500 hover:text-gray-800"
+                }`}
+            >
+              Month
+            </button>
+            <button
+              onClick={() => handleViewChange("timeGridWeek")}
+              className={`px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${currentView === "timeGridWeek"
+                ? "bg-orange-500 text-white shadow-md"
+                : "text-gray-500 hover:text-gray-800"
+                }`}
+            >
+              Week
+            </button>
+            <button
+              onClick={() => handleViewChange("timeGridDay")}
+              className={`px-6 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${currentView === "timeGridDay"
+                ? "bg-orange-500 text-white shadow-md"
+                : "text-gray-500 hover:text-gray-800"
+                }`}
+            >
+              Day
+            </button>
+          </div>
+
           <button
             onClick={() => setShowFilterModal(true)}
-            className="py-1 px-3 bg-white rounded border-2 border-gray-500 flex items-center hover:bg-gray-200 duration-200 transition-all"
+            className="py-2 px-4 bg-white rounded-md border border-orange-500 text-orange-500 flex items-center hover:bg-orange-50 duration-200 transition-all font-semibold"
           >
-            <FilterIcon className="w-4 h-4" />
-            <p className="text-xs">Filter</p>
+            <FilterIcon className="w-4 h-4 mr-2" />
+            <span className="text-sm">Filter</span>
             {activeFilters.length > 0 && (
-              <span className="ml-1 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[16px] h-4 flex items-center justify-center">
+              <span className="ml-2 bg-orange-500 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center">
                 {activeFilters.length}
               </span>
             )}

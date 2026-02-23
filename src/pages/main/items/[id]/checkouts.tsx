@@ -1,4 +1,5 @@
 import Header from "@/components/detail-item/Header";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import Tabs from "@/components/Tabs";
 import React, { useEffect, useState } from "react";
 import { itemTabs } from "./detail";
@@ -27,17 +28,17 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    let result = null;
+    let resultPromise;
     let logs = null;
-    
+
     if (query.type === "bulk" && params) {
-      result = await axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
+      resultPromise = axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
         headers: {
           Authorization: `${token}`,
         },
       });
     } else if (query.type === "single" && params) {
-      result = await axios.get(
+      resultPromise = axios.get(
         `${CONFIG.API_URL}/v1/single-items/${params.id}`,
         {
           headers: {
@@ -45,7 +46,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           },
         }
       );
-      
+
       // Fetch logs for single items
       try {
         const logsResponse = await axios.get(
@@ -68,12 +69,27 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       throw new Error(`Invalid query.type: ${query.type}`);
     }
 
+    const [result, notificationsData, unreadNotificationsData] = await Promise.all([
+      resultPromise,
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
+
     if (result.status !== 200) {
       throw new Error(`API request failed with status code ${result.status}`);
     }
 
     // Optionally validate token...
-    return { props: { params, detail: result?.data, query, logs } };
+    return {
+      props: {
+        params,
+        detail: result?.data,
+        query,
+        logs,
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
+      }
+    };
 
     // Optionally validate token...
     return { props: { params } };
@@ -88,7 +104,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { table: [] },
+      props: {
+        table: [],
+        notifications: [],
+        unreadNotifications: []
+      },
     };
   }
 };

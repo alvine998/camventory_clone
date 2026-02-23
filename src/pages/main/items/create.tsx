@@ -1,4 +1,5 @@
 import Button from "@/components/Button";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import ButtonChoose from "@/components/ButtonChoose";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
@@ -36,25 +37,31 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     if (typeof search === "string" && search.trim() !== "") {
       params.set("search", search);
     }
-    const categories = await axios.get(
-      `${CONFIG.API_URL}/v1/master/categories`,
-      {
+    const [categories, brands, notificationsData, unreadNotificationsData] = await Promise.all([
+      axios.get(
+        `${CONFIG.API_URL}/v1/master/categories`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      ),
+      axios.get(`${CONFIG.API_URL}/v1/master/brands`, {
         headers: {
           Authorization: `${token}`,
         },
-      }
-    );
-    const brands = await axios.get(`${CONFIG.API_URL}/v1/master/brands`, {
-      headers: {
-        Authorization: `${token}`,
-      },
-    });
+      }),
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
 
     // Optionally validate token...
     return {
       props: {
         categories: categories?.data?.data || [],
         brands: brands?.data?.data || [],
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
       },
     };
   } catch (error: any) {
@@ -68,7 +75,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { table: [] },
+      props: {
+        table: [],
+        notifications: [],
+        unreadNotifications: [],
+      },
     };
   }
 };

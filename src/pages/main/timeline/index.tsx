@@ -3,6 +3,8 @@ import Head from "next/head";
 import { parse } from "cookie";
 import { GetServerSideProps } from "next";
 import axios from "axios";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
+import { NotificationData } from "@/types/notification";
 import moment from "moment";
 import { CONFIG } from "@/config";
 import {
@@ -30,6 +32,8 @@ interface Props {
     initialMeta: any;
     initialDate: string; // ISO string for the moment object
     initialView: "day" | "week" | "month";
+    notifications: NotificationData[];
+    unreadNotifications: NotificationData[];
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
@@ -69,17 +73,30 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
 
     try {
-        const response = await axios.get(`${CONFIG.API_URL}/v1/timeline`, {
-            params: {
-                page,
-                limit,
-                view: selectedView,
-                ...(searchQuery && { search: searchQuery }),
-                startDate: startTimestamp,
-                endDate: endTimestamp,
-            },
-            headers: { Authorization: token },
-        });
+        const [response, notificationsData, unreadNotificationsData] = await Promise.all([
+            axios.get(`${CONFIG.API_URL}/v1/timeline`, {
+                params: {
+                    page,
+                    limit,
+                    view: selectedView,
+                    ...(searchQuery && { search: searchQuery }),
+                    startDate: startTimestamp,
+                    endDate: endTimestamp,
+                },
+                headers: { Authorization: token },
+            }),
+            fetchNotificationsServer(token),
+            fetchUnreadNotificationsServer(token),
+        ]);
+
+        if (response?.status === 401) {
+            return {
+                redirect: {
+                    destination: "/",
+                    permanent: false,
+                },
+            };
+        }
 
         return {
             props: {
@@ -87,22 +104,34 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
                 initialMeta: response.data?.meta || null,
                 initialDate: currentMoment.toISOString(),
                 initialView: selectedView,
+                notifications: notificationsData?.data || [],
+                unreadNotifications: unreadNotificationsData?.data || [],
             },
         };
-    } catch (error) {
+    } catch (error: any) {
         console.error("SSR Error fetching timeline data:", error);
+        if (error?.response?.status === 401) {
+            return {
+                redirect: {
+                    destination: "/",
+                    permanent: false,
+                },
+            };
+        }
         return {
             props: {
                 initialTimelineData: [],
                 initialMeta: null,
                 initialDate: currentMoment.toISOString(),
                 initialView: selectedView,
+                notifications: [],
+                unreadNotifications: [],
             },
         };
     }
 };
 
-export default function TimelinePage({ initialTimelineData, initialMeta, initialDate, initialView }: Props) {
+export default function TimelinePage({ initialTimelineData, initialMeta, initialDate, initialView, notifications, unreadNotifications }: Props) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [timelineData, setTimelineData] = useState<ITimelineItem[]>(initialTimelineData);
@@ -114,7 +143,6 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
     const page = meta?.current_page || 1;
     const limit = meta?.total_data_per_page || 10;
 
-    // Route change loading state
     useEffect(() => {
         const handleStart = () => setLoading(true);
         const handleComplete = () => setLoading(false);
@@ -123,12 +151,15 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
         router.events.on("routeChangeComplete", handleComplete);
         router.events.on("routeChangeError", handleComplete);
 
+        // Usage for SSR hydration check
+        console.log("Timeline notifications:", notifications?.length);
+
         return () => {
             router.events.off("routeChangeStart", handleStart);
             router.events.off("routeChangeComplete", handleComplete);
             router.events.off("routeChangeError", handleComplete);
         };
-    }, [router]);
+    }, [router, notifications, unreadNotifications]);
 
     // Sync state with props from SSR
     useEffect(() => {

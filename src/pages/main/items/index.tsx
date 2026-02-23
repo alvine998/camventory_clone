@@ -15,11 +15,12 @@ import DataTable from "react-data-table-component";
 import FlagIcon from "../../../../public/icons/flag.svg";
 import Badge from "@/components/Badge";
 import { getStatusBadgeColor } from "@/utils";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
   const cookies = parse(req.headers.cookie || "");
-  const token = cookies.token;
+  const token = cookies.token || "";
 
   try {
     if (!token) {
@@ -30,6 +31,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
+
+    // Fetch notifications for SSR
+    const [notificationsData, unreadNotificationsData] = await Promise.all([
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
+
     const { page = 1, limit = 10, search = "", location, statusItem } = query;
 
     const params = new URLSearchParams({
@@ -72,11 +80,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    console.log(token, 'token')
 
-    // Optionally validate token...
     return {
-      props: { table: { data: table?.data?.data, ...table?.data?.meta } },
+      props: {
+        table: { data: table?.data?.data, ...table?.data?.meta },
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
+      },
     };
   } catch (error: any) {
     console.log(error);
@@ -89,7 +99,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { table: [] },
+      props: { table: { data: [] }, notifications: [], unreadNotifications: [] },
     };
   }
 };

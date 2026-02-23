@@ -1,4 +1,6 @@
 import Button from "@/components/Button";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
+import { NotificationData } from "@/types/notification";
 import { useModal } from "@/components/Modal";
 import CategoryCreateModal from "@/components/modals/category/create";
 import CategoryDeleteModal from "@/components/modals/category/delete";
@@ -37,6 +39,8 @@ interface Props {
     initialData: Category[];
     initialMeta: Meta;
     token: string;
+    notifications: NotificationData[];
+    unreadNotifications: NotificationData[];
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
@@ -65,13 +69,17 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
 
     try {
-        const response = await axios.get(
-            `${CONFIG.API_URL}/v1/master/categories`,
-            {
-                params,
-                headers: { Authorization: token },
-            }
-        );
+        const [response, notificationsData, unreadNotificationsData] = await Promise.all([
+            axios.get(
+                `${CONFIG.API_URL}/v1/master/categories`,
+                {
+                    params,
+                    headers: { Authorization: token },
+                }
+            ),
+            fetchNotificationsServer(token),
+            fetchUnreadNotificationsServer(token),
+        ]);
 
         return {
             props: {
@@ -84,6 +92,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
                     total_page: 1
                 },
                 token,
+                notifications: notificationsData?.data || [],
+                unreadNotifications: unreadNotificationsData?.data || [],
             },
         };
     } catch (error) {
@@ -98,13 +108,15 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
                     previous_page: 0,
                     total_page: 1
                 },
-                token,
+                notifications: [],
+                unreadNotifications: [],
+                token: token || "",
             },
         };
     }
 };
 
-export default function CategoryItemPage({ initialData, initialMeta }: Props) {
+export default function CategoryItemPage({ initialData, initialMeta, notifications, unreadNotifications }: Props) {
     const router = useRouter();
     const [show, setShow] = useState<boolean>(false);
     const [modal, setModal] = useState<useModal>();
@@ -112,7 +124,9 @@ export default function CategoryItemPage({ initialData, initialMeta }: Props) {
 
     useEffect(() => {
         setShow(true);
-    }, []);
+        // Props are purely for SSR hydration of the Topbar via Zustand
+        console.log("Notifications hydrated:", notifications?.length, unreadNotifications?.length);
+    }, [notifications, unreadNotifications]);
 
     const handleNavigation = useCallback((updates: any) => {
         const newQuery = { ...router.query, ...updates };

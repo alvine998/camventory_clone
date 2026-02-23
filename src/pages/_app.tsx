@@ -11,7 +11,14 @@ export default function App({ Component, pageProps }: AppProps) {
     setCurrentPath(router.pathname); // Update after component mounts
   }, [router.pathname]);
   if (currentPath?.includes("/main")) {
-    return <Layout>{<Component {...pageProps} />}</Layout>;
+    return (
+      <Layout
+        notifications={(pageProps as any).notifications}
+        unreadNotifications={(pageProps as any).unreadNotifications}
+      >
+        <Component {...pageProps} />
+      </Layout>
+    );
   }
   return <Component {...pageProps} />;
 }

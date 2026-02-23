@@ -12,6 +12,7 @@ import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import Swal from "sweetalert2";
 import { downloadReport, formatCurrency } from "@/utils/exportToExcel";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 
 // Dynamically import ApexCharts to avoid SSR issues
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -66,6 +67,7 @@ const chartOptions: ApexCharts.ApexOptions = {
   colors: ["#f97316"], // Orange color to match your theme
 };
 
+
 const parseDateString = (dateStr: string): Date => {
   if (!dateStr) return new Date();
   const [day, month, year] = dateStr.split('/').map(Number);
@@ -109,15 +111,19 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     const startTimestamp = moment(startDate, "DD/MM/YYYY").unix();
     const endTimestamp = moment(endDate, "DD/MM/YYYY").unix();
 
-    const response = await axios.get(`${CONFIG.API_URL}/v1/report/summary`, {
-      params: {
-        startDate: startTimestamp,
-        endDate: endTimestamp,
-      },
-      headers: {
-        Authorization: `${token}`,
-      },
-    });
+    const [response, notificationsData, unreadNotificationsData] = await Promise.all([
+      axios.get(`${CONFIG.API_URL}/v1/report/summary`, {
+        params: {
+          startDate: startTimestamp,
+          endDate: endTimestamp,
+        },
+        headers: {
+          Authorization: `${token}`,
+        },
+      }),
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
     console.log(response.data);
     console.log(startTimestamp, endTimestamp, 'startTimestamp, endTimestamp');
     if (response?.status === 401) {
@@ -128,12 +134,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-
     return {
       props: {
         initialReportData: response.data?.data || null,
         dateRange: { start: startDate, end: endDate },
         token: token,
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
       },
     };
   } catch (error: any) {
@@ -153,8 +160,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           start: moment().format("DD/MM/YYYY"),
           end: moment().add(30, "days").format("DD/MM/YYYY"),
         },
-        token: null,
-        errorMessage: error?.response?.data?.error?.message || "Failed to fetch report data",
+        notifications: [],
+        unreadNotifications: [],
       },
     };
   }

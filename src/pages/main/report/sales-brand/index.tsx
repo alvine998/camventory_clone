@@ -1,4 +1,5 @@
 import Button from "@/components/Button";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import DateRangePicker from "@/components/DateRangePicker";
 import Modal, { useModal } from "@/components/Modal";
 import { CalendarDays, Upload } from "lucide-react";
@@ -55,24 +56,27 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       brandParams.categoryID = categoryID;
     }
 
-    const reportResponse = await axios.get(
-      `${CONFIG.API_URL}/v1/report/brand`,
-      {
-        params: brandParams,
-        headers: {
-          Authorization: `${token}`,
-        },
-      }
-    );
-
-    const categories = await axios.get(
-      `${CONFIG.API_URL}/v1/master/categories?page=1&limit=100`,
-      {
-        headers: {
-          Authorization: `${token}`,
-        },
-      }
-    );
+    const [reportResponse, categories, notificationsData, unreadNotificationsData] = await Promise.all([
+      axios.get(
+        `${CONFIG.API_URL}/v1/report/brand`,
+        {
+          params: brandParams,
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      ),
+      axios.get(
+        `${CONFIG.API_URL}/v1/master/categories?page=1&limit=100`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      ),
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
 
     if (reportResponse?.status === 401 || categories?.status === 401) {
       return {
@@ -89,6 +93,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         categories: categories?.data?.data || [],
         dateRange: { start: startDateStr, end: endDateStr },
         token: token,
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
       },
     };
   } catch (error: any) {
@@ -111,6 +117,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           end: moment().add(30, "days").format("DD/MM/YYYY"),
         },
         token: token,
+        notifications: [],
+        unreadNotifications: [],
       },
     };
   }

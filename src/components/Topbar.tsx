@@ -4,12 +4,16 @@ import { Bell, MenuIcon } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
+import NotificationDropdown from "./NotificationDropdown";
+import { NotificationData } from "@/types/notification";
 
 interface Props {
   isWide: boolean;
   setIsWide: (any: boolean) => void;
   showMenu: boolean;
   setShowMenu: (any: boolean) => void;
+  notifications?: NotificationData[];
+  unreadNotifications?: NotificationData[];
 }
 
 export default function Topbar({
@@ -17,10 +21,13 @@ export default function Topbar({
   setIsWide,
   showMenu,
   setShowMenu,
+  notifications,
+  unreadNotifications,
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
   const { user } = useAuthStore();
 
   const handleLogout = async (e: any) => {
@@ -45,9 +52,8 @@ export default function Topbar({
           <Image
             alt={"icon"}
             src={`/icons/chevron-left-double.svg`}
-            className={`w-auto h-auto duration-200 transition-all ${
-              isWide ? "" : "rotate-180"
-            }`}
+            className={`w-auto h-auto duration-200 transition-all ${isWide ? "" : "rotate-180"
+              }`}
             layout="relative"
             width={5}
             height={5}
@@ -61,9 +67,20 @@ export default function Topbar({
       {/* Profile Only Desktop */}
       <div className="relative inline-block text-left">
         <div className="flex items-center gap-5">
-          <button>
-            <Bell className="w-6 h-6 text-orange-600" />
-          </button>
+          <div className="relative flex items-center">
+            <button onClick={() => setIsNotifOpen(!isNotifOpen)} className="relative">
+              <Bell className="w-6 h-6 text-orange-500 fill-orange-500" />
+              <div className="absolute -top-1 -right-1 flex items-center justify-center w-[14px] h-[14px] bg-red-500 text-white text-[9px] font-bold rounded-full border border-white">
+                1
+              </div>
+            </button>
+            <NotificationDropdown
+              isOpen={isNotifOpen}
+              onClose={() => setIsNotifOpen(false)}
+              initialNotifications={notifications}
+              initialUnreadNotifications={unreadNotifications}
+            />
+          </div>
           <button
             type="button"
             onClick={() => {
@@ -87,9 +104,8 @@ export default function Topbar({
             </div>
 
             <div
-              className={`absolute mt-24 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10 right-0 transform duration-150 transition-all ease-in-out ${
-                isOpen ? "opacity-100" : "opacity-0"
-              }`}
+              className={`absolute mt-24 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-10 right-0 transform duration-150 transition-all ease-in-out ${isOpen ? "opacity-100" : "opacity-0"
+                }`}
             >
               <ul className="py-0">
                 <li

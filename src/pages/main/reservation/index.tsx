@@ -12,11 +12,12 @@ import React, { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
 import { ColumnReservation } from "@/constants/column_reservation";
 import moment from "moment";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
   const cookies = parse(req.headers.cookie || "");
-  const token = cookies.token;
+  const token = cookies.token || "";
 
   try {
     if (!token) {
@@ -27,6 +28,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
+
+    // Fetch notifications for SSR
+    const [notificationsData, unreadNotificationsData] = await Promise.all([
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+    ]);
+
     const {
       page = 1,
       limit = 10,
@@ -148,7 +156,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     // Optionally validate token...
     return {
-      props: { table: table?.data, customers: customers?.data?.data || [] },
+      props: {
+        table: table?.data,
+        customers: customers?.data?.data || [],
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
+      },
     };
   } catch (error: any) {
     console.log(error);
@@ -161,7 +174,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { table: [] },
+      props: { table: [], notifications: [], unreadNotifications: [] },
     };
   }
 };

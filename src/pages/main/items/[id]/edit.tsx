@@ -1,4 +1,5 @@
 import Button from "@/components/Button";
+import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import ButtonChoose from "@/components/ButtonChoose";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
@@ -34,7 +35,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    const [categories, brands, itemResult] = await Promise.all([
+    const [categories, brands, itemResult, notificationsData, unreadNotificationsData] = await Promise.all([
       axios.get(`${CONFIG.API_URL}/v1/master/categories`, {
         headers: { Authorization: `${token}` },
       }),
@@ -50,6 +51,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
             headers: { Authorization: `${token}` },
           })
           : Promise.resolve({ data: { data: null } }),
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
     ]);
 
     return {
@@ -58,6 +61,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         brands: brands?.data?.data || [],
         itemData: itemResult?.data?.data || null,
         itemType: query.type || "single",
+        notifications: notificationsData?.data || [],
+        unreadNotifications: unreadNotificationsData?.data || [],
       },
     };
   } catch (error: any) {
@@ -71,7 +76,14 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { categories: [], brands: [], itemData: null, itemType: "single" },
+      props: {
+        categories: [],
+        brands: [],
+        itemData: null,
+        itemType: "single",
+        notifications: [],
+        unreadNotifications: [],
+      },
     };
   }
 };
