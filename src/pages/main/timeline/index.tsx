@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/router";
+import Barcode from "react-barcode";
 
 interface ITimelineItem {
     id: string;
@@ -48,6 +49,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     const { page = 1, limit = 10, search = "", date, view = "month" } = query;
     const currentMoment = date ? moment(date as string) : moment();
 
+    // Enforce min 3 chars for search
+    const searchQuery = (search as string).length > 3 ? (search as string) : "";
+
     let startTimestamp: number;
     let endTimestamp: number;
 
@@ -64,15 +68,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         endTimestamp = currentMoment.clone().endOf("month").unix();
     }
 
-    // Enforce min 3 chars for search
-    const searchQuery = (search as string).length >= 3 ? (search as string) : "";
-
     try {
         const response = await axios.get(`${CONFIG.API_URL}/v1/timeline`, {
             params: {
                 page,
                 limit,
-                search: searchQuery,
+                view: selectedView,
+                ...(searchQuery && { search: searchQuery }),
                 startDate: startTimestamp,
                 endDate: endTimestamp,
             },
@@ -211,6 +213,12 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
             item_name: string;
             barcode: string;
             reservations: ITimelineItem[]
+            id: string;
+            status: string;
+            start_date: string;
+            end_date: string;
+            customer_name: string;
+            book_id: string;
         }> = {};
 
         timelineData.forEach((item) => {
@@ -220,6 +228,12 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
                     item_name: item.item_name,
                     barcode: item.barcode,
                     reservations: [],
+                    id: item.id,
+                    status: item.status,
+                    start_date: item.start_date,
+                    end_date: item.end_date,
+                    customer_name: item.customer_name,
+                    book_id: item.book_id,
                 };
             }
             groups[key].reservations.push(item);
@@ -300,10 +314,6 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
                                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                             />
                         </div>
-                        <div className="flex -space-x-2">
-                            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white border-2 border-white font-bold">F</div>
-                            <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white border-2 border-white font-bold">R</div>
-                        </div>
                     </div>
 
                     <div className="overflow-x-auto border border-gray-100 rounded-lg">
@@ -352,12 +362,38 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
                                                     </div>
                                                     <div>
                                                         <p className="font-bold text-gray-800 text-sm leading-tight mb-1">{itemGroup.item_name}</p>
-                                                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-orange-100 text-orange-600">
-                                                            Booked
-                                                        </span>
-                                                        <div className="mt-1 flex items-center gap-1 opacity-50">
-                                                            <div className="text-[8px] font-mono">{itemGroup.barcode}</div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div
+                                                                className={`px-3 py-1 rounded-full border text-[11px] font-bold w-fit uppercase ${itemGroup.status?.toLowerCase() === "booked"
+                                                                    ? "bg-yellow-50 text-yellow-500 border-yellow-500"
+                                                                    : itemGroup.status?.toLowerCase() === "cancel" ||
+                                                                        itemGroup.status?.toLowerCase() === "cancelled"
+                                                                        ? "bg-red-50 text-red-500 border-red-500"
+                                                                        : itemGroup.status?.toLowerCase() === "checkout" ||
+                                                                            itemGroup.status?.toLowerCase() === "completed"
+                                                                            ? "bg-blue-50 text-blue-500 border-blue-500"
+                                                                            : "bg-purple-50 text-purple-500 border-purple-500" // Check In or others
+                                                                    }`}
+                                                            >
+                                                                {itemGroup.status}
+                                                            </div>
+                                                            {/* Barcode */}
+                                                            {itemGroup.barcode && (
+                                                                <div className="flex flex-col items-start scale-75 origin-left mt-2">
+                                                                    <Barcode
+                                                                        value={itemGroup.barcode}
+                                                                        format="CODE128"
+                                                                        width={1}
+                                                                        height={20}
+                                                                        displayValue={true}
+                                                                        fontSize={10}
+                                                                        margin={0}
+                                                                        background="transparent"
+                                                                    />
+                                                                </div>
+                                                            )}
                                                         </div>
+
                                                     </div>
                                                 </div>
                                             </td>

@@ -26,6 +26,7 @@ export interface IDetail {
   status: string;
   rate_day: number;
   qty: number;
+  serial_number: string;
 }
 
 export interface RefCustomer {

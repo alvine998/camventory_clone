@@ -322,8 +322,6 @@ export default function AdministratorPage({ table }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, router.isReady]);
 
-  console.log(data, "=> itemTabs")
-
   return (
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">

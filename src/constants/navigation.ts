@@ -57,12 +57,12 @@ export const NAVIGATIONS = [
   },
   {
     title: "Timeline",
-    href: "/main/report/timeline",
+    href: "/main/timeline",
     icon: "/icons/calendar.svg",
   },
   {
     title: "Category Items",
-    href: "/main/report/category-item",
+    href: "/main/category-item",
     icon: "/icons/box.svg",
   },
 ];

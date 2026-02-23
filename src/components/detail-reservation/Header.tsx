@@ -13,6 +13,7 @@ import { useRouter } from "next/router";
 import { IReservation } from "@/types/reservation";
 import CancelModal from "../modals/reservation/CancelModal";
 import CheckInModal from "../modals/reservation/CheckInModal";
+import PrintPDFModal from "../modals/reservation/PrintPDFModal";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { getStatusBadgeColor } from "@/utils";
@@ -28,6 +29,7 @@ export default function HeaderReservation({ detail }: Props) {
   const { user } = useAuthStore();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCancelReservation = async (description: string) => {
@@ -218,19 +220,6 @@ export default function HeaderReservation({ detail }: Props) {
                       label: "Checkout",
                       onClick: handleCheckout,
                     },
-                    // {
-                    //   label: "Pickup of goods",
-                    //   onClick: () => {
-                    //     console.log("Pickup of goods clicked");
-                    //     Swal.fire({
-                    //       icon: "info",
-                    //       title: "Pickup",
-                    //       text: "Pickup of goods action triggered",
-                    //       timer: 1500,
-                    //       showConfirmButton: false,
-                    //     });
-                    //   },
-                    // },
                   ]}
                 />
               ) : detail?.status?.toUpperCase() === "CHECKOUT" ? (
@@ -249,16 +238,7 @@ export default function HeaderReservation({ detail }: Props) {
                 <Button
                   variant="submit"
                   className="flex items-center gap-2"
-                  onClick={() => {
-                    console.log("Print PDF clicked");
-                    Swal.fire({
-                      icon: "info",
-                      title: "Print PDF",
-                      text: "Print PDF action triggered",
-                      timer: 1500,
-                      showConfirmButton: false,
-                    });
-                  }}
+                  onClick={() => setShowPrintModal(true)}
                 >
                   <PrinterIcon className="w-4 h-4 text-white" />
                   Print PDF
@@ -273,6 +253,13 @@ export default function HeaderReservation({ detail }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Print PDF Modal */}
+      <PrintPDFModal
+        open={showPrintModal}
+        setOpen={setShowPrintModal}
+        reservation={detail}
+      />
 
       {/* Cancel Modal */}
       <CancelModal
