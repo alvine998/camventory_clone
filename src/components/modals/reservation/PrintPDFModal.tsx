@@ -11,12 +11,16 @@ interface PrintPDFModalProps {
     open: boolean;
     setOpen: (open: boolean) => void;
     reservation: IReservation;
+    isCheckoutFlow?: boolean;
+    onCheckout?: (signaturePath: string) => void;
 }
 
 export default function PrintPDFModal({
     open,
     setOpen,
     reservation,
+    isCheckoutFlow = false,
+    onCheckout,
 }: PrintPDFModalProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [showSignaturePad, setShowSignaturePad] = useState(false);
@@ -41,6 +45,66 @@ export default function PrintPDFModal({
             await html2pdf().set(opt).from(element).save();
         } catch (error) {
             console.error("PDF Generation error:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCheckoutInternal = async () => {
+        if (!signatureDataUrl) {
+            const Swal = (await import("sweetalert2")).default;
+            Swal.fire({
+                icon: "warning",
+                title: "Signature Required",
+                text: "Please provide a signature before checking out.",
+            });
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const Swal = (await import("sweetalert2")).default;
+            const axios = (await import("axios")).default;
+
+            // 1. Convert DataURL to Blob more reliably
+            const byteString = atob(signatureDataUrl.split(',')[1]);
+            const mimeString = signatureDataUrl.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: mimeString });
+
+            // 2. Upload to /api/upload
+            const formData = new FormData();
+            formData.append("file", blob, "signature.png");
+            formData.append("category", "items"); // Using "items" as it's the default and proven category
+
+            const uploadRes = await axios.post("/api/upload", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data"
+                }
+            });
+
+            if (uploadRes.status === 200 || uploadRes.status === 201) {
+                const signaturePath = uploadRes.data.payload.path || uploadRes.data.payload.filename || uploadRes.data.payload.id || uploadRes.data.payload?.message;
+
+                if (onCheckout) {
+                    onCheckout(signaturePath);
+                }
+            } else {
+                throw new Error("Failed to upload signature");
+            }
+
+        } catch (error: any) {
+            console.error("Checkout process error:", error);
+            const Swal = (await import("sweetalert2")).default;
+            Swal.fire({
+                icon: "error",
+                title: "Process Failed",
+                text: error?.response?.data?.message || error.message || "An error occurred during the checkout process.",
+            });
         } finally {
             setIsLoading(false);
         }
@@ -255,9 +319,15 @@ export default function PrintPDFModal({
                         <Button variant="white" onClick={() => setOpen(false)}>
                             Cancel
                         </Button>
-                        <Button variant="submit" onClick={handleGenerate} isLoading={isLoading}>
-                            Generate
-                        </Button>
+                        {isCheckoutFlow ? (
+                            <Button variant="submit" onClick={handleCheckoutInternal} isLoading={isLoading}>
+                                Confirm Checkout
+                            </Button>
+                        ) : (
+                            <Button variant="submit" onClick={handleGenerate} isLoading={isLoading}>
+                                Generate
+                            </Button>
+                        )}
                     </div>
                 </div>
             </Modal>

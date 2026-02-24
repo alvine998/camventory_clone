@@ -16,7 +16,7 @@ export default async function handler(
       return res.status(405).json({ message: "Method Not Allowed" });
     }
 
-    const { id, user_id, items } = req.body;
+    const { id, user_id, items, signature } = req.body;
 
     if (!id) {
       return res.status(400).json({ message: "Reservation ID is required" });
@@ -27,6 +27,7 @@ export default async function handler(
       {
         user_id,
         items,
+        signature,
       },
       {
         headers: {

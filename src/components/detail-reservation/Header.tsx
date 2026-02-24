@@ -30,6 +30,7 @@ export default function HeaderReservation({ detail }: Props) {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [isCheckoutFlow, setIsCheckoutFlow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCancelReservation = async (description: string) => {
@@ -68,8 +69,7 @@ export default function HeaderReservation({ detail }: Props) {
       setIsLoading(false);
     }
   };
-
-  const handleCheckout = async () => {
+  const handleCheckout = async (signaturePath?: string) => {
     if (!user?.id) {
       Swal.fire({
         icon: "error",
@@ -84,9 +84,10 @@ export default function HeaderReservation({ detail }: Props) {
       const payload = {
         id: detail?.id,
         user_id: user.id,
-        items: detail?.details?.map((item) => ({
+        items: detail?.details?.map((item: any) => ({
           item_id: item.item_id,
         })),
+        signature: signaturePath || null,
       };
 
       const res = await axios.post("/api/reservation/checkout", payload);
@@ -100,8 +101,10 @@ export default function HeaderReservation({ detail }: Props) {
           showConfirmButton: false,
         });
 
+        setShowPrintModal(false);
+        setIsCheckoutFlow(false);
         // Reload page to reflect new status
-        router.reload();
+        router.push(`/main/reservation/${detail?.id}/detail`);
       }
     } catch (error: any) {
       console.error("Checkout error:", error);
@@ -155,6 +158,8 @@ export default function HeaderReservation({ detail }: Props) {
       setIsLoading(false);
     }
   };
+
+
 
   return (
     <div>
@@ -218,27 +223,46 @@ export default function HeaderReservation({ detail }: Props) {
                   options={[
                     {
                       label: "Checkout",
-                      onClick: handleCheckout,
+                      onClick: () => {
+                        setIsCheckoutFlow(true);
+                        setShowPrintModal(true);
+                      },
                     },
                   ]}
                 />
               ) : detail?.status?.toUpperCase() === "CHECKOUT" ? (
-                <Dropdown
-                  label={`Check In ${detail?.details?.length || 0} items`}
-                  triggerIcon={<ShoppingCartIcon className="w-4 h-4 text-white" />}
-                  isLoading={isLoading}
-                  options={[
-                    {
-                      label: "Check In",
-                      onClick: () => setShowCheckInModal(true),
-                    },
-                  ]}
-                />
+                <div className="flex gap-2 items-center">
+                  <Dropdown
+                    label={`Check In ${detail?.details?.length || 0} items`}
+                    triggerIcon={<ShoppingCartIcon className="w-4 h-4 text-white" />}
+                    isLoading={isLoading}
+                    options={[
+                      {
+                        label: "Check In",
+                        onClick: () => setShowCheckInModal(true),
+                      },
+                    ]}
+                  />
+                  <Button
+                    variant="submit"
+                    className="flex items-center gap-2"
+                    onClick={() => {
+                      setIsCheckoutFlow(false);
+                      setShowPrintModal(true);
+                    }}
+                  >
+                    <PrinterIcon className="w-4 h-4 text-white" />
+                    Print PDF
+                  </Button>
+                </div>
               ) : (
                 <Button
                   variant="submit"
                   className="flex items-center gap-2"
-                  onClick={() => setShowPrintModal(true)}
+                  onClick={() => {
+                    setIsCheckoutFlow(false);
+                    setShowPrintModal(true);
+                  }}
                 >
                   <PrinterIcon className="w-4 h-4 text-white" />
                   Print PDF
@@ -259,6 +283,8 @@ export default function HeaderReservation({ detail }: Props) {
         open={showPrintModal}
         setOpen={setShowPrintModal}
         reservation={detail}
+        isCheckoutFlow={isCheckoutFlow}
+        onCheckout={handleCheckout}
       />
 
       {/* Cancel Modal */}
