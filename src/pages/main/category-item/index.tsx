@@ -131,11 +131,6 @@ export default function CategoryItemPage({ initialData, initialMeta, notificatio
     const handleNavigation = useCallback((updates: any) => {
         const newQuery = { ...router.query, ...updates };
 
-        // Enforce min 3 chars for search
-        if (newQuery.search && newQuery.search.length < 3) {
-            delete newQuery.search;
-        }
-
         if (!newQuery.search) delete newQuery.search;
         if (Number(newQuery.page) === 1) delete newQuery.page;
         if (Number(newQuery.limit) === 10) delete newQuery.limit;
@@ -145,6 +140,24 @@ export default function CategoryItemPage({ initialData, initialMeta, notificatio
             query: newQuery,
         }, undefined, { shallow: false });
     }, [router]);
+
+    useEffect(() => {
+        // Only trigger if router is ready to avoid double/misaligned pushes
+        if (!router.isReady) return;
+
+        const delayDebounce = setTimeout(() => {
+            const currentSearch = router.query.search || "";
+
+            // Only update if search has changed and meets criteria
+            if (search !== currentSearch) {
+                if (search.length > 3 || search === "") {
+                    handleNavigation({ search, page: 1 });
+                }
+            }
+        }, 500);
+
+        return () => clearTimeout(delayDebounce);
+    }, [search, router.isReady, router.query.search, handleNavigation]);
 
     const columns: any[] = useMemo(() => [
         {
@@ -208,7 +221,13 @@ export default function CategoryItemPage({ initialData, initialMeta, notificatio
                                 placeholder="Search Category Item"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                onKeyDown={(e) => e.key === "Enter" && (!search || search.length > 3) && handleNavigation({ search, page: 1 })}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        if (search === "" || search.length > 3) {
+                                            handleNavigation({ search, page: 1 });
+                                        }
+                                    }
+                                }}
                                 className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-sm"
                             />
                         </div>
