@@ -5,6 +5,8 @@ export interface IReservation {
   pickup_location: string;
   start_date: number;
   end_date: number;
+  taking_goods: number;
+  returned_goods: number;
   status: string;
   description: string;
   created_at: number;
@@ -41,6 +43,8 @@ export interface RefCustomer {
   updated_by: string;
   phone_number: string;
   instagram_acc: string;
+  address: string;
+  phone: string;
   status: string;
 }
 

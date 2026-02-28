@@ -1,7 +1,7 @@
 import Header from "@/components/detail-item/Header";
 import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import Tabs from "@/components/Tabs";
-import React from "react";
+import React, { useState } from "react";
 import { itemTabs } from "./detail";
 import { GetServerSideProps } from "next";
 import { parse } from "cookie";
@@ -16,6 +16,7 @@ import Button from "@/components/Button";
 import moment from "moment";
 import axios from "axios";
 import { CONFIG } from "@/config";
+import Image from "next/image";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { req, params, query } = ctx;
@@ -199,6 +200,7 @@ export default function Reservations({
   logs,
 }: any) {
   console.log(reservation, "detail reservations");
+  const [showAllLogs, setShowAllLogs] = useState(false);
   const logsData = logs?.data || [];
 
   return (
@@ -235,33 +237,61 @@ export default function Reservations({
             <h1 className="text-lg font-bold">Extra Information</h1>
             <div className="mt-2 border-t border-gray-300">
               {query?.type === "single" ? (
-                <div className="mt-4 max-h-[300px] overflow-y-auto">
+                <div className="mt-4 max-h-[400px] overflow-y-auto relative pl-2">
+                  {/* Vertical line connector */}
+                  <div className="absolute left-[13px] top-4 bottom-4 w-[1px] bg-gray-200 z-0" />
+
                   {logsData.length > 0 ? (
-                    <div className="flex flex-col gap-3">
-                      {logsData.map((log: any, index: number) => (
-                        <div key={log.id || index} className="border border-gray-200 rounded p-3">
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-bold text-orange-500">
-                                  {log.action || "-"}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {moment.unix(log.created_at).format("DD MMM YYYY, HH:mm")}
-                                </span>
+                    <div className="flex flex-col gap-8">
+                      {logsData.slice(0, showAllLogs ? logsData.length : 5).map((log: any, index: number) => (
+                        <div key={log.id || index} className="relative flex flex-col pt-0.5">
+                          {/* Dot on line */}
+                          <div className="absolute left-[0px] top-[10px] w-7 h-7 flex items-center justify-center z-10">
+                            <div className="w-4 h-4 rounded-full border border-gray-300 bg-white" />
+                          </div>
+
+                          <div className="pl-12">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs font-bold text-orange-500 uppercase tracking-wider">
+                                {log.action || "-"}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {moment.unix(log.created_at).format("DD MMM YYYY, HH:mm")}
+                              </span>
+                            </div>
+
+                            <div className="flex gap-4 items-center">
+                              <Image
+                                alt="Avatar"
+                                src="/images/default-photo.svg"
+                                width={32}
+                                height={32}
+                                className="rounded-full bg-gray-100 flex-shrink-0 border border-gray-100"
+                              />
+                              <div className="p-3 bg-white border border-gray-200 rounded-lg shadow-sm w-full">
+                                {log.note && (
+                                  <p className="text-sm text-gray-700">{log.note}</p>
+                                )}
+                                {log.reason && (
+                                  <p className="text-xs text-gray-500 italic mt-1">
+                                    Reason: {log.reason}
+                                  </p>
+                                )}
                               </div>
-                              {log.note && (
-                                <p className="text-xs text-gray-700 mb-1">{log.note}</p>
-                              )}
-                              {log.reason && (
-                                <p className="text-xs text-gray-500 italic">
-                                  Reason: {log.reason}
-                                </p>
-                              )}
                             </div>
                           </div>
                         </div>
                       ))}
+                      {logsData.length > 5 && (
+                        <div className="pl-12">
+                          <button
+                            onClick={() => setShowAllLogs(!showAllLogs)}
+                            className="text-orange-500 text-xs font-bold hover:text-orange-600 transition-colors mt-2"
+                          >
+                            {showAllLogs ? "Show Less" : `Show More (${logsData.length - 5} more)`}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center justify-center py-8">

@@ -95,6 +95,7 @@ export default function Detail({ detail, logs, query }: any) {
   const reservationLogs: IReservationLogResponse = logs;
   const [itemOrder, setItemOrder] = useState<any>(itemDetail?.details || []);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showAllLogs, setShowAllLogs] = useState(false);
 
   // Update itemOrder when details change
   React.useEffect(() => {
@@ -250,69 +251,87 @@ export default function Detail({ detail, logs, query }: any) {
 
             {/* Logs Timeline */}
             <div className="flex flex-col relative pl-2">
-              {/* Vertical line connector */}
-              <div className="absolute left-[9px] top-2 bottom-2 w-[2px] bg-gray-200" />
+              {/* Vertical line connector - Adjusted to align with dots */}
+              {/* <div className="absolute left-[13px] top-4 bottom-4 w-[1px] bg-gray-200 z-0 " /> */}
 
-              <div className="flex flex-col gap-8">
+              <div className="flex flex-col gap-2">
                 {reservationLogs?.data && reservationLogs.data.length > 0 ? (
-                  [...reservationLogs.data]
-                    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                    .map((log: any, index: number) => {
-                      // Logic to determine icon and styling based on log content
-                      const isEmail = log.note.toLowerCase().includes("email");
-                      // const isPersonnel = !isEmail; // Default for now
+                  <>
+                    {[...reservationLogs.data]
+                      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                      .slice(0, showAllLogs ? reservationLogs.data.length : 5)
+                      .map((log: any, index: number) => {
+                        const isEmail = log.note.toLowerCase().includes("email");
 
-                      return (
-                        <div key={log.id} className="relative flex flex-col gap-2">
-                          {/* Dot on line */}
-                          <div className="absolute left-[0px] top-[10px] w-5 h-5 flex items-center justify-center z-10">
-                            <div className="w-4 h-4 rounded-full border-2 border-gray-200 bg-white" />
-                          </div>
-
-                          <div className="pl-10 mt-3">
-                            {/* Timestamp - Using current time or placeholder as API doesn't provide it yet */}
-                            <p className="text-xs text-gray-400 mb-2 font-medium">
-                              {moment(log.created_at).format("DD MMMM YYYY, HH:mm [WIB]")}
-                            </p>
-
-                            {index === 0 ? (
-                              // First log entry often looks boxed in mockups
-                              <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm flex gap-3 items-center">
-                                <Image
-                                  alt="Avatar"
-                                  src="/images/default-photo.svg"
-                                  width={32}
-                                  height={32}
-                                  className="rounded-full bg-gray-100"
-                                />
-                                <p className="text-sm text-gray-700 font-medium">
-                                  {log.note}
-                                </p>
+                        return (
+                          <div key={log.id} className="relative flex flex-col pt-0.5">
+                            {/* Dot on line - Hollow circle matching image */}
+                            <div>
+                              <div className="absolute left-[0px] top-[0px] w-7 h-7 flex items-center justify-center z-10">
+                                <div className="w-4 h-4 rounded-full border border-gray-300 bg-white" />
                               </div>
-                            ) : (
-                              <div className="flex gap-3 items-start">
-                                {isEmail ? (
-                                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center border border-green-200">
-                                    <Mail className="w-4 h-4 text-green-600" />
-                                  </div>
-                                ) : (
+                              <div className="absolute left-[0px] top-[35px] w-7 h-7 flex items-center justify-center z-10">
+                                <div className="w-0.5 h-[50px] border rounded border-gray-300 bg-gray-300" />
+                              </div>
+                            </div>
+
+                            <div className="pl-12">
+                              {/* Timestamp - Above the content as in image */}
+                              <p className="text-xs text-gray-400 mb-3 font-medium">
+                                {moment(log.created_at).format("DD MMMM YYYY, HH:mm [WIB]")}
+                              </p>
+
+                              {index === 0 || log.is_important ? (
+                                // Special entries or first entry boxed as in image
+                                <div className="flex gap-4 items-center">
                                   <Image
                                     alt="Avatar"
                                     src="/images/default-photo.svg"
-                                    width={32}
-                                    height={32}
-                                    className="rounded-full bg-gray-100 border border-gray-200"
+                                    width={36}
+                                    height={36}
+                                    className="rounded-full bg-gray-100 flex-shrink-0"
                                   />
-                                )}
-                                <p className="text-sm text-gray-700 font-medium pt-1.5">
-                                  {log.note}
-                                </p>
-                              </div>
-                            )}
+                                  <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm w-full">
+                                    <p className="text-sm text-gray-700 font-medium">
+                                      {log.note}
+                                    </p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex gap-4 items-center">
+                                  {isEmail ? (
+                                    <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center border border-green-200 flex-shrink-0">
+                                      <Mail className="w-5 h-5 text-green-600" />
+                                    </div>
+                                  ) : (
+                                    <Image
+                                      alt="Avatar"
+                                      src="/images/default-photo.svg"
+                                      width={36}
+                                      height={36}
+                                      className="rounded-full bg-gray-100 border border-gray-200 flex-shrink-0"
+                                    />
+                                  )}
+                                  <p className="text-sm text-gray-700 font-medium">
+                                    {log.note}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                      })}
+                    {reservationLogs.data.length > 5 && (
+                      <div className="pl-10 mt-4">
+                        <button
+                          onClick={() => setShowAllLogs(!showAllLogs)}
+                          className="text-orange-500 text-sm font-bold hover:text-orange-600 transition-colors"
+                        >
+                          {showAllLogs ? "Show Less" : `Show More (${reservationLogs.data.length - 5} more)`}
+                        </button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-10 px-4 bg-gray-50 border border-dashed border-gray-300 rounded-lg ml-8">
                     <p className="text-sm text-gray-500 italic">

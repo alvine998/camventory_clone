@@ -146,6 +146,8 @@ export default function PrintPDFModal({
         return () => window.removeEventListener("resize", resizeCanvas);
     }, [showSignaturePad]);
 
+    console.log(reservation)
+
     return (
         <>
             <Modal open={open} setOpen={setOpen} size="lg">
@@ -190,7 +192,7 @@ export default function PrintPDFModal({
                                     </div>
                                     <div className="text-right">
                                         <p className="font-bold text-gray-800 text-sm mb-1 uppercase">Lokasi Pengambilan</p>
-                                        <p className="text-xs text-gray-600">Jl. Cipadung Raya no.46, Bandung</p>
+                                        <p className="text-xs text-gray-600 uppercase">{reservation?.pickup_location}</p>
                                     </div>
                                 </div>
 
@@ -206,13 +208,13 @@ export default function PrintPDFModal({
                                         <div className="flex">
                                             <span className="w-32 font-bold text-gray-800 text-xs uppercase">Check-out on</span>
                                             <span className="text-xs text-gray-700 uppercase">
-                                                {moment(reservation.start_date).format("DD MMMM YYYY HH:mm A")}
+                                                {moment.unix(reservation.taking_goods).format("DD MMMM YYYY HH:mm A")}
                                             </span>
                                         </div>
                                         <div className="flex">
                                             <span className="w-32 font-bold text-gray-800 text-xs uppercase">Due back on</span>
                                             <span className="text-xs text-gray-700 uppercase">
-                                                {moment(reservation.end_date).format("DD MMMM YYYY HH:mm A")}
+                                                {moment.unix(reservation.returned_goods).format("DD MMMM YYYY HH:mm A")}
                                             </span>
                                         </div>
                                     </div>
@@ -221,16 +223,16 @@ export default function PrintPDFModal({
                                             <span className="w-12 font-bold text-gray-800 text-xs uppercase">From</span>
                                             <div className="flex-1 text-xs text-gray-700">
                                                 <p className="font-bold uppercase">Camventory</p>
-                                                <p>Jl. Cipadung Raya no. 46, Bandung</p>
-                                                <p>+62 812345678999</p>
+                                                <p>{reservation?.pickup_location}</p>
+                                                <p>{reservation?.ref_user?.phone}</p>
                                             </div>
                                         </div>
                                         <div className="flex mt-4">
                                             <span className="w-12 font-bold text-gray-800 text-xs uppercase">To</span>
                                             <div className="flex-1 text-xs text-gray-700">
                                                 <p className="font-bold uppercase">{reservation.ref_customer?.name}</p>
-                                                <p>{reservation.ref_customer?.instagram_acc}</p>
-                                                <p>{reservation.ref_customer?.phone_number}</p>
+                                                <p>{reservation.ref_customer?.address || ""}</p>
+                                                <p>{reservation.ref_customer?.phone || ""}</p>
                                             </div>
                                         </div>
                                     </div>
