@@ -204,7 +204,9 @@ export default function AdministratorPage({ table }: any) {
         queryParams.toString() !==
         new URLSearchParams(router.asPath.split("?")[1] || "").toString()
       ) {
-        router.push(`?${queryParams.toString()}`, undefined, { shallow: true });
+        router.push(`?${queryParams.toString()}`, undefined).catch(() => {
+          // Ignore navigation cancellation errors
+        });
       }
     }, 500);
 

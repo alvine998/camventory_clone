@@ -109,7 +109,6 @@ export default function AdministratorPage({ table }: any) {
   const [modal, setModal] = useState<useModal>();
   const router = useRouter();
   // Define filter state with proper types
-  // Define filter state with proper types
   const [filter, setFilter] = useState<{
     search?: string;
     location?: string;
@@ -119,7 +118,6 @@ export default function AdministratorPage({ table }: any) {
     statusItem?: string;
   }>(() => {
     // Try to get from router.query first, then fallback to window.location.search
-    // This handles cases where router.isReady might be true but query is somehow not fully populated or sync issues
     let search = typeof router.query.search === "string" ? router.query.search : "";
     let location = typeof router.query.location === "string" ? router.query.location : "all";
     let bulk = typeof router.query.bulk === "string" ? router.query.bulk : "";
@@ -309,20 +307,9 @@ export default function AdministratorPage({ table }: any) {
       const currentQueryString = currentQuery.toString();
 
       // Compare if the new query is actually different from current URL
-      // This prevents infinite loops or resetting to defaults if state matches URL
       if (newQueryString !== currentQueryString) {
-        // Double check against router.query to verify if we are just syncing up
-        // or actually changing something.
-        // If filter is default but URL has something, and we come here, we might overwrite.
-        // But we rely on the initial state sync to populate filter.
-
-        // Critical: Only push if we are sure the filter state is "fresher" or intended.
-        // If the filter state is default, but the URL has params, we shouldn't overwrite 
-        // unless the user explicitly cleared them.
-        // However, determining "user cleared" vs "not yet loaded" is hard.
-        // The `router.isReady` check + initial state sync should handle "not yet loaded".
-
-        router.push(`?${newQueryString}`, undefined, { shallow: true }).catch(() => {
+        // REMOVED shallow: true to allow getServerSideProps to re-run
+        router.push(`?${newQueryString}`, undefined).catch(() => {
           // Ignore navigation cancellation errors
         });
       }
@@ -363,7 +350,7 @@ export default function AdministratorPage({ table }: any) {
               }))
             }
           >
-            <option value="">All Locations</option>
+            <option value="all">All Locations</option>
             <option value="cipadung">Cipadung</option>
             <option value="dipatiukur">Dipatiukur</option>
           </select>
