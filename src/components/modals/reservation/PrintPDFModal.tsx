@@ -63,7 +63,6 @@ export default function PrintPDFModal({
 
         setIsLoading(true);
         try {
-            const Swal = (await import("sweetalert2")).default;
             const axios = (await import("axios")).default;
 
             // 1. Convert DataURL to Blob more reliably
@@ -164,7 +163,10 @@ export default function PrintPDFModal({
                         {/* Sidebar */}
                         <div className="w-1/4 p-4 border-r bg-white overflow-y-auto">
                             <div className="space-y-4">
-                                <div className="p-4 border-2 border-orange-500 rounded-lg bg-orange-50 cursor-pointer">
+                                <div
+                                    className="p-4 border-2 border-orange-500 rounded-lg bg-orange-50 cursor-pointer hover:bg-orange-100 transition-colors"
+                                    onClick={() => setShowSignaturePad(true)}
+                                >
                                     <h3 className="font-bold text-gray-800 text-sm">Check-out agreement with signature</h3>
                                     <div className="flex items-center gap-1 mt-1 text-gray-400">
                                         <Pencil className="w-3 h-3" />
@@ -301,15 +303,18 @@ export default function PrintPDFModal({
                                     </div>
                                 </div>
 
-                                {/* Floating Signature Button (Invisible in PDF output typically) */}
-                                <div className="absolute bottom-[200px] left-1/2 -translate-x-1/2 no-print" data-html2canvas-ignore="true">
-                                    <button
-                                        onClick={() => setShowSignaturePad(true)}
-                                        className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-orange-600 transition-colors"
-                                    >
-                                        <Pencil className="w-5 h-5" />
-                                    </button>
-                                </div>
+                                {/* Floating Signature Button Removed by User Request */}
+                                {isCheckoutFlow && !signatureDataUrl && (
+                                    <div className="absolute bottom-[200px] left-1/2 -translate-x-1/2 no-print" data-html2canvas-ignore="true">
+                                        <button
+                                            onClick={() => setShowSignaturePad(true)}
+                                            className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-orange-600 transition-colors animate-bounce"
+                                            title="Click to sign"
+                                        >
+                                            <Pencil className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

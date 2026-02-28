@@ -6,8 +6,13 @@ export const fetchNotificationsServer = async (
   limit: number = 7,
 ): Promise<NotificationResponse | null> => {
   try {
+    const baseUrl =
+      typeof window !== "undefined"
+        ? "/api-proxy"
+        : process.env.NEXT_PUBLIC_API_URL;
+
     const res = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_URL}/v1/notification?page=1&limit=${limit}`,
+      `${baseUrl}/v1/notification?page=1&limit=${limit}`,
       {
         headers: {
           Authorization: token,
@@ -26,8 +31,13 @@ export const fetchUnreadNotificationsServer = async (
   limit: number = 7,
 ): Promise<NotificationResponse | null> => {
   try {
+    const baseUrl =
+      typeof window !== "undefined"
+        ? "/api-proxy"
+        : process.env.NEXT_PUBLIC_API_URL;
+
     const res = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_URL}/v1/notification/unread?page=1&limit=${limit}`,
+      `${baseUrl}/v1/notification/unread?page=1&limit=${limit}`,
       {
         headers: {
           Authorization: token,

@@ -24,6 +24,7 @@ interface SelectComponentProps {
   name?: string;
   defaultValue?: any;
   fullWidth?: boolean;
+  menuPortalTarget?: HTMLElement | null;
 }
 
 const Select: React.FC<SelectComponentProps> = ({
@@ -42,6 +43,7 @@ const Select: React.FC<SelectComponentProps> = ({
   name,
   defaultValue,
   fullWidth = false,
+  menuPortalTarget,
 }) => {
   return (
     <div className={`flex flex-col ${fullWidth ? "w-full" : ""}`}>
@@ -70,6 +72,10 @@ const Select: React.FC<SelectComponentProps> = ({
         className={"w-full text-xs"}
         classNamePrefix="custom-select"
         name={name}
+        menuPortalTarget={menuPortalTarget}
+        styles={{
+          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+        }}
         defaultValue={
           defaultValue &&
           options.find((option) => option.value === defaultValue)

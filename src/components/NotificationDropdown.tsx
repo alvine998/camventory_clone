@@ -42,8 +42,10 @@ export default function NotificationDropdown({
         onClose();
     };
 
+    const fetchingRef = React.useRef(false);
+
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen || fetchingRef.current) return;
 
         // Skip fetch if we have initial data and haven't increased the limit yet
         if (activeTab === "all") {
@@ -54,26 +56,30 @@ export default function NotificationDropdown({
 
         const fetchNotifications = async () => {
             setLoading(true);
+            fetchingRef.current = true;
             try {
                 const currentLimit = activeTab === "all" ? limit : unreadLimit;
                 const data = activeTab === "all"
                     ? await fetchNotificationsServer(token || "", currentLimit)
                     : await fetchUnreadNotificationsServer(token || "", currentLimit);
 
-                if (activeTab === "all") {
-                    setNotifications(data?.data || []);
-                } else {
-                    setUnreadNotifications(data?.data || []);
+                if (data?.data) {
+                    if (activeTab === "all") {
+                        setNotifications(data.data);
+                    } else {
+                        setUnreadNotifications(data.data);
+                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch notifications:", error);
             } finally {
                 setLoading(false);
+                fetchingRef.current = false;
             }
         };
 
         fetchNotifications();
-    }, [isOpen, limit, unreadLimit, token, initialNotifications, initialUnreadNotifications, activeTab, notifications.length, unreadNotifications.length]);
+    }, [isOpen, limit, unreadLimit, token, initialNotifications, initialUnreadNotifications, activeTab]);
 
     if (!isOpen) return null;
 

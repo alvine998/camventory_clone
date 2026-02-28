@@ -100,6 +100,7 @@ export default function CheckInModal({
                                             onChange={(opt: any) => handleStatusChange(index, opt)}
                                             isClearable={false}
                                             fullWidth
+                                            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
                                         />
                                     </td>
                                     <td className="py-4">
