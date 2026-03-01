@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
+import Badge from "@/components/Badge";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -115,6 +116,39 @@ export default function AdministratorPage({ table }: any) {
           View
         </Link>
       </div>
+    ),
+    status_customer: (
+      <Badge
+        color={
+          item.status === "LOYAL_MEMBER"
+            ? "warning"
+            : item.status === "BLACKLIST_MEMBER"
+              ? "empty"
+              : "available"
+        }
+        text={
+          item.status === "LOYAL_MEMBER"
+            ? "Loyal Member"
+            : item.status === "BLACKLIST_MEMBER"
+              ? "Blacklist Member"
+              : "Regular Member"
+        }
+      >
+        <p
+          className={`text-[10px] font-bold ${item.status === "LOYAL_MEMBER"
+            ? "text-yellow-600"
+            : item.status === "BLACKLIST_MEMBER"
+              ? "text-red-500"
+              : "text-cyan-500"
+            }`}
+        >
+          {item.status === "LOYAL_MEMBER"
+            ? "Loyal Member"
+            : item.status === "BLACKLIST_MEMBER"
+              ? "Blacklist Member"
+              : "Regular Member"}
+        </p>
+      </Badge>
     ),
     action: (
       <div key={index} className="flex gap-2">

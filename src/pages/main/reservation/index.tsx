@@ -89,7 +89,18 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     let orderByParam: string | null = null;
 
     // Valid columns and directions
-    const validColumns = ["start_date", "end_date", "created_at", "id"];
+    const validColumns = [
+      "book_id",
+      "customer_name",
+      "created_at",
+      "rental_duration",
+      "start_date",
+      "end_date",
+      "status",
+      "pickup_location",
+      "employee_name",
+      "id",
+    ];
     const validDirections = ["asc", "desc"];
 
     // Handle order_by="" or order_by= (empty string means default)
@@ -465,6 +476,16 @@ export default function ReservationPage({ table, customers }: any) {
               data={data}
               pagination
               paginationServer
+              sortServer={true}
+              onSort={(column: any, sortDirection) => {
+                if (column.sortField) {
+                  setFilter((prev: any) => ({
+                    ...prev,
+                    order_by: `${column.sortField}:${sortDirection}`,
+                    page: 1,
+                  }));
+                }
+              }}
               paginationTotalRows={table?.meta?.total_data || 0}
               paginationRowsPerPageOptions={[10, 20, 50, 100]}
               highlightOnHover

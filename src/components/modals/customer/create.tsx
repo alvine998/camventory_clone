@@ -4,10 +4,9 @@ import Modal from "@/components/Modal";
 import Select from "@/components/Select";
 import { queryToUrlSearchParams } from "@/utils";
 import axios from "axios";
-import { XIcon } from "lucide-react";
-import Image from "next/image";
+import { UploadIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/router";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 interface Props {
@@ -22,9 +21,11 @@ export default function CustomerCreateModal({ open, setOpen }: Props) {
     file: null,
     path: null,
     preview: null,
+    name: "",
   });
   const [nik, setNik] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const params = queryToUrlSearchParams(router?.query)?.toString();
 
   const onUpload = async (file: any) => {
@@ -39,11 +40,10 @@ export default function CustomerCreateModal({ open, setOpen }: Props) {
         },
       });
       const { message } = response.data.payload;
-      setMetaFile({
-        file: file,
+      setMetaFile((prev: any) => ({
+        ...prev,
         path: message,
-        preview: URL.createObjectURL(file),
-      });
+      }));
       setLoading(false);
     } catch (error) {
       console.log(error);
@@ -89,33 +89,69 @@ export default function CustomerCreateModal({ open, setOpen }: Props) {
       setLoading(false);
     }
   };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setMetaFile({
+        file: file,
+        path: null,
+        preview: URL.createObjectURL(file),
+        name: file.name,
+      });
+      onUpload(file);
+    }
+  };
+
   return (
     <div>
       <Modal open={open} setOpen={setOpen}>
         <div className="border-b-2 border-gray-200 pb-4 flex justify-between gap-2">
-          <h1 className="text-center font-bold text-xl text-orange-500">
+          <h1 className="font-bold text-xl text-orange-500">
             Add Customer
           </h1>
           <button type="button" onClick={setOpen}>
             <XIcon className="w-6 h-6 text-orange-500" />
           </button>
         </div>
-        <form className="mt-4 flex flex-col gap-2" onSubmit={onSubmit}>
-          <div className="grid md:grid-cols-2 grid-cols-1 gap-2">
+        <form className="mt-6 flex flex-col gap-4" onSubmit={onSubmit}>
+          <div className="grid md:grid-cols-2 grid-cols-1 gap-x-6 gap-y-4">
+            {/* Row 1: KTP Photo & Name */}
+            <div className="flex flex-col">
+              <label className="mb-1 text-sm font-medium">
+                Customer ID Card Photo
+              </label>
+              <div className="flex items-center gap-2 border border-gray-300 rounded-md px-3 py-2 bg-white h-[46px]">
+                <span className="text-xs text-blue-500 truncate flex-1">
+                  {metaFile.name || "No file chosen"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-orange-500 text-white px-3 py-1 rounded flex items-center gap-1 text-xs hover:bg-orange-600 transition-colors"
+                >
+                  <UploadIcon className="w-3.5 h-3.5" />
+                  Upload
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  onChange={handleFileChange}
+                  accept="image/*"
+                />
+              </div>
+            </div>
+
             <Input
               label="Customer Name"
               required={true}
               placeholder="Enter Customer Name"
               name="name"
+              fullWidth
             />
-            <Input
-              label="Email"
-              required={true}
-              placeholder="Enter Email"
-              name="email"
-            />
-          </div>
-          <div className="grid md:grid-cols-2 grid-cols-1 gap-2">
+
+            {/* Row 2: NIK & Email */}
             <Input
               label="NIK"
               required={true}
@@ -131,7 +167,18 @@ export default function CustomerCreateModal({ open, setOpen }: Props) {
                 const onlyNums = e.target.value.replace(/[^0-9]/g, "");
                 setNik(onlyNums);
               }}
+              fullWidth
             />
+            <Input
+              label="Email"
+              required={true}
+              placeholder="Enter Email"
+              name="email"
+              type="email"
+              fullWidth
+            />
+
+            {/* Row 3: Phone Number & Status Customer */}
             <Input
               label="Phone Number"
               required={true}
@@ -146,66 +193,53 @@ export default function CustomerCreateModal({ open, setOpen }: Props) {
                 const onlyNums = e.target.value.replace(/[^0-9]/g, "");
                 setPhone(onlyNums);
               }}
+              fullWidth
             />
-          </div>
-          <div className="grid md:grid-cols-2 grid-cols-1 gap-2">
             <Select
               label="Status Customer"
               required={true}
               name="status"
               options={[
-                { value: "regular", label: "Regular Member" },
-                { value: "member", label: "Loyal Member" },
-                { value: "blacklist", label: "Blacklist Member" },
+                { value: "REGULAR_MEMBER", label: "Regular Member" },
+                { value: "LOYAL_MEMBER", label: "Loyal Member" },
+                { value: "BLACKLIST_MEMBER", label: "Blacklist Member" },
               ]}
+              fullWidth
             />
+
+            {/* Row 4: Instagram Account & Address */}
             <Input
               label="Instagram Account"
               required={true}
               placeholder="Enter Instagram Account"
               name="instagram_acc"
+              fullWidth
+            />
+            <Input
+              type="textarea"
+              label="Address"
+              required={true}
+              placeholder="Enter Address"
+              name="address"
+              fullWidth
             />
           </div>
 
-          <Input
-            label="Customer ID Card Photo"
-            placeholder="Enter Customer ID Card Photo"
-            name="path_ktp"
-            type="file"
-            onChange={(e: any) => {
-              if (e.target.files[0]) {
-                const file = e.target.files[0];
-                setMetaFile({
-                  file: file,
-                  path: null,
-                  preview: URL.createObjectURL(file),
-                });
-                onUpload(file);
-              }
-            }}
-          />
-
-          {metaFile.preview && (
-            <Image
-              src={metaFile.preview}
-              alt="image"
-              width={200}
-              height={150}
-              className="w-auto h-auto"
-              layout="responsive"
-            />
-          )}
-
-          <div className="w-full flex justify-end gap-2 border-t-2 border-t-gray-200 pt-4 mt-2">
+          <div className="w-full flex justify-end gap-3 border-t-2 border-t-gray-200 pt-6 mt-4">
             <Button
               variant="custom-color"
-              className="border border-orange-500 text-orange-500"
+              className="border border-orange-500 text-orange-500 hover:bg-orange-50 rounded-[8px] px-8"
               type="button"
               onClick={setOpen}
             >
-              Close
+              Cancel
             </Button>
-            <Button variant="submit" disabled={loading} type="submit">
+            <Button
+              variant="submit"
+              disabled={loading}
+              type="submit"
+              className="rounded-[8px] px-8"
+            >
               {loading ? "Loading..." : "Save"}
             </Button>
           </div>

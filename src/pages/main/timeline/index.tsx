@@ -11,6 +11,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Search,
+    Camera,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/router";
@@ -25,6 +26,7 @@ interface ITimelineItem {
     book_id: string;
     barcode: string;
     item_name: string;
+    full_path_image: string;
 }
 
 interface Props {
@@ -129,6 +131,28 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
             },
         };
     }
+};
+
+const TimelineImage = ({ src }: { src: string }) => {
+    const [hasError, setHasError] = useState(false);
+
+    if (hasError || !src) {
+        return (
+            <div className="flex items-center justify-center w-full h-full bg-gray-50 text-gray-400">
+                <Camera className="w-6 h-6 opacity-30" />
+            </div>
+        );
+    }
+
+    return (
+        <Image
+            src={src}
+            alt="Item"
+            layout="fill"
+            objectFit="cover"
+            onError={() => setHasError(true)}
+        />
+    );
 };
 
 export default function TimelinePage({ initialTimelineData, initialMeta, initialDate, initialView, notifications, unreadNotifications }: Props) {
@@ -250,6 +274,7 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
             end_date: string;
             customer_name: string;
             book_id: string;
+            full_path_image: string;
         }> = {};
 
         timelineData.forEach((item) => {
@@ -265,6 +290,7 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
                     end_date: item.end_date,
                     customer_name: item.customer_name,
                     book_id: item.book_id,
+                    full_path_image: item.full_path_image,
                 };
             }
             groups[key].reservations.push(item);
@@ -286,7 +312,6 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
                 return "bg-gray-400";
         }
     };
-
     return (
         <div className="bg-gray-50 min-h-screen">
             <Head>
@@ -384,11 +409,8 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
                                             <td className="p-4 sticky left-12 bg-white z-10 border-r border-gray-100 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-16 h-16 bg-gray-100 rounded-md overflow-hidden relative border border-gray-200">
-                                                        <Image
-                                                            src="/images/placeholder.png"
-                                                            alt={itemGroup.item_name}
-                                                            layout="fill"
-                                                            objectFit="cover"
+                                                        <TimelineImage
+                                                            src={itemGroup.full_path_image}
                                                         />
                                                     </div>
                                                     <div>

@@ -1,16 +1,18 @@
 import { IReservation } from "@/types/reservation";
 
-export const ColumnReservation = [
+export const ColumnReservation: any[] = [
   {
     name: "Book ID",
     selector: (row: IReservation) => row.book_id,
     sortable: true,
+    sortField: "book_id",
     width: "150px",
   },
   {
     name: "Customer Name",
     selector: (row: any) => row.customer_name_comp,
     sortable: true,
+    sortField: "customer_name",
     minWidth: "180px",
     wrap: true,
   },
@@ -18,54 +20,63 @@ export const ColumnReservation = [
     name: "Transaction Date",
     selector: (row: any) => row.transaction_date_comp,
     sortable: true,
+    sortField: "created_at",
     width: "150px",
   },
   {
     name: "Rental Duration",
     selector: (row: any) => row.rental_duration,
     sortable: true,
+    sortField: "rental_duration",
     width: "150px",
   },
   {
     name: "Start Date",
     selector: (row: any) => row.start_date_comp,
     sortable: true,
+    sortField: "start_date",
     minWidth: "120px",
   },
   {
     name: "End Date",
     selector: (row: any) => row.end_date_comp,
     sortable: true,
+    sortField: "end_date",
     minWidth: "120px",
   },
   {
     name: "Taking Goods",
     selector: (row: any) => row.taking_goods_comp,
     sortable: true,
+    sortField: "start_date",
     minWidth: "120px",
   },
   {
     name: "Returned Items",
     selector: (row: any) => row.returned_items_comp,
     sortable: true,
+    sortField: "end_date",
     minWidth: "120px",
   },
   {
     name: "Status",
     selector: (row: any) => row.status_comp,
     sortable: true,
+    sortField: "status",
     width: "150px",
   },
   {
     name: "Pickup Location",
     selector: (row: IReservation) => row.pickup_location,
     sortable: true,
+    sortField: "pickup_location",
     minWidth: "150px",
   },
   {
     name: "Employee",
     selector: (row: any) => row.employee_name,
-    sortable: true,
+    // sortable: true,
+    // sortField: "employee_name",
     minWidth: "130px",
   },
   {

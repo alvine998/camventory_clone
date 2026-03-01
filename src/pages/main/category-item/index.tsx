@@ -57,7 +57,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         };
     }
 
-    const { page = 1, limit = 10, search = "" } = query;
+    const { page = 1, limit = 10, search = "", sortBy = "" } = query;
 
     const params = new URLSearchParams({
         page: String(page),
@@ -66,6 +66,10 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     if (typeof search === "string" && search.trim() !== "") {
         params.set("search", search);
+    }
+
+    if (typeof sortBy === "string" && sortBy.trim() !== "") {
+        params.set("sortBy", sortBy);
     }
 
     try {
@@ -134,6 +138,7 @@ export default function CategoryItemPage({ initialData, initialMeta, notificatio
         if (!newQuery.search) delete newQuery.search;
         if (Number(newQuery.page) === 1) delete newQuery.page;
         if (Number(newQuery.limit) === 10) delete newQuery.limit;
+        if (!newQuery.sortBy) delete newQuery.sortBy;
 
         router.push({
             pathname: router.pathname,
@@ -248,6 +253,12 @@ export default function CategoryItemPage({ initialData, initialMeta, notificatio
                                 data={initialData}
                                 pagination
                                 paginationServer
+                                sortServer
+                                onSort={(column, sortDirection) => {
+                                    if (column.name === "Category Name") {
+                                        handleNavigation({ sortBy: `name_${sortDirection}`, page: 1 });
+                                    }
+                                }}
                                 paginationTotalRows={initialMeta.total_data}
                                 paginationDefaultPage={initialMeta.current_page}
                                 onChangePage={(page) => handleNavigation({ page })}

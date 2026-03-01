@@ -8,6 +8,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   showPassword?: boolean;
   setShowPassword?: (show: boolean) => void;
   fullWidth?: boolean;
+  rows?: number;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -35,9 +36,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {props.type == "password" ? (
           <>
             <div
-              className={`border flex flex-row justify-between items-center rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 ${className} ${
-                error ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`border flex flex-row justify-between items-center rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 ${className} ${error ? "border-red-500" : "border-gray-300"
+                }`}
             >
               <input
                 ref={ref}
@@ -80,9 +80,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         ) : props.type == "search" ? (
           <>
             <div
-              className={`border flex flex-row items-center rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 ${className} ${
-                error ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`border flex flex-row items-center rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 ${className} ${error ? "border-red-500" : "border-gray-300"
+                }`}
             >
               <Image
                 alt="eye"
@@ -102,13 +101,24 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             </div>
             {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
           </>
+        ) : props.type == "textarea" ? (
+          <>
+            <textarea
+              ref={ref as any}
+              className={`border text-xs rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className} ${error ? "border-red-500" : "border-gray-300"
+                }`}
+              required={required}
+              {...(props as any)}
+              rows={props.rows || 3}
+            />
+            {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+          </>
         ) : (
           <>
             <input
               ref={ref}
-              className={`border text-xs rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className} ${
-                error ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`border text-xs rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className} ${error ? "border-red-500" : "border-gray-300"
+                }`}
               required={required}
               {...props}
             />
