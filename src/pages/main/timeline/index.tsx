@@ -63,16 +63,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     const selectedView = view as "day" | "week" | "month";
 
-    if (selectedView === "day") {
-        startTimestamp = currentMoment.clone().startOf("day").unix();
-        endTimestamp = currentMoment.clone().endOf("day").unix();
-    } else if (selectedView === "week") {
-        startTimestamp = currentMoment.clone().startOf("week").unix();
-        endTimestamp = currentMoment.clone().endOf("week").unix();
-    } else {
-        startTimestamp = currentMoment.clone().startOf("month").unix();
-        endTimestamp = currentMoment.clone().endOf("month").unix();
-    }
+    // Always fetch the full month data for local filtering
+    startTimestamp = currentMoment.clone().startOf("month").unix();
+    endTimestamp = currentMoment.clone().endOf("month").unix();
 
     try {
         const [response, notificationsData, unreadNotificationsData] = await Promise.all([
@@ -218,6 +211,12 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
         return arr;
     }, [currentDate, view]);
 
+    const colWidth = useMemo(() => {
+        if (view === "day") return 120;
+        if (view === "week") return 100;
+        return 60; // Month view
+    }, [view]);
+
     const handleNavigation = useCallback((updates: any) => {
         setLoading(true);
         const newQuery = { ...router.query, ...updates };
@@ -227,7 +226,28 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
             delete newQuery.search;
         }
 
-        // Remove empty params
+        const currentMonth = moment(currentDate).format("YYYY-MM");
+        const nextDate = updates.date ? moment(updates.date) : moment(currentDate);
+        const nextMonth = nextDate.format("YYYY-MM");
+
+        const isMonthChange = currentMonth !== nextMonth;
+        const isSearchChange = updates.search !== undefined;
+        const isPaginationChange = updates.page !== undefined || updates.limit !== undefined;
+
+        // Shallow routing if it's just a view switch or date change within the same month
+        // Any search or pagination change MUST hit the server for new data
+        const isShallow = !isMonthChange && !isSearchChange && !isPaginationChange;
+
+        // Update local state immediately if shallow
+        if (isShallow) {
+            if (updates.view) setView(updates.view);
+            if (updates.date) setCurrentDate(moment(updates.date));
+        }
+
+        // Always update search state locally, regardless of shallow or full navigation
+        if (updates.search !== undefined) setSearch(updates.search);
+
+        // Remove empty params for cleaner URL
         if (!newQuery.search) delete newQuery.search;
         if (Number(newQuery.page) === 1) delete newQuery.page;
         if (Number(newQuery.limit) === 10) delete newQuery.limit;
@@ -236,18 +256,22 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
         router.push({
             pathname: router.pathname,
             query: newQuery,
-        }, undefined, { shallow: false });
-    }, [router]);
+        }, undefined, { shallow: isShallow });
+
+        if (isShallow) {
+            setLoading(false);
+        }
+    }, [router, currentDate]);
 
     const handlePrev = () => {
         const unit = view === "day" ? "day" : view === "week" ? "week" : "month";
-        const nextDate = moment(currentDate).subtract(1, unit).toISOString();
-        handleNavigation({ date: nextDate, page: 1 });
+        const prevDate = moment(currentDate).subtract(1, unit).format("YYYY-MM-DD");
+        handleNavigation({ date: prevDate, page: 1 });
     };
 
     const handleNext = () => {
         const unit = view === "day" ? "day" : view === "week" ? "week" : "month";
-        const nextDate = moment(currentDate).add(1, unit).toISOString();
+        const nextDate = moment(currentDate).add(1, unit).format("YYYY-MM-DD");
         handleNavigation({ date: nextDate, page: 1 });
     };
 
@@ -262,7 +286,7 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
         }
     };
 
-    // Group timeline data by item
+    // Group timeline data by item, filtering by current view range
     const groupedData = useMemo(() => {
         const groups: Record<string, {
             item_name: string;
@@ -277,7 +301,18 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
             full_path_image: string;
         }> = {};
 
+        // Define the visible range for filtering
+        const viewStart = days[0].clone().startOf('day');
+        const viewEnd = days[days.length - 1].clone().endOf('day');
+
         timelineData.forEach((item) => {
+            // Check if this reservation overlaps with the current view range
+            const itemStart = moment(item.start_date);
+            const itemEnd = moment(item.end_date);
+
+            const isVisible = itemEnd.isSameOrAfter(viewStart) && itemStart.isSameOrBefore(viewEnd);
+            if (!isVisible) return;
+
             const key = `${item.item_name}-${item.barcode}`;
             if (!groups[key]) {
                 groups[key] = {
@@ -297,7 +332,7 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
         });
 
         return Object.values(groups);
-    }, [timelineData]);
+    }, [timelineData, days]);
 
     const getStatusColor = (status: string) => {
         switch (status?.toUpperCase()) {
@@ -307,9 +342,23 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
                 return "bg-blue-500";
             case "CHECKIN":
             case "COMPLETED":
-                return "bg-green-500";
+                return "bg-green-500 shadow-green-500/20";
             default:
-                return "bg-gray-400";
+                return "bg-gray-400 shadow-gray-400/20";
+        }
+    };
+
+    const getStatusGradient = (status: string) => {
+        switch (status?.toUpperCase()) {
+            case "BOOKED":
+                return "from-amber-400 to-orange-500 shadow-orange-500/20";
+            case "CHECKOUT":
+                return "from-sky-400 to-blue-600 shadow-blue-500/20";
+            case "CHECKIN":
+            case "COMPLETED":
+                return "from-emerald-400 to-green-600 shadow-green-500/20";
+            default:
+                return "from-slate-400 to-gray-500 shadow-gray-400/20";
         }
     };
     return (
@@ -346,9 +395,13 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
                             {["Day", "Week", "Month"].map((v) => (
                                 <button
                                     key={v}
-                                    onClick={() => handleNavigation({ view: v.toLowerCase(), page: 1 })}
+                                    onClick={() => handleNavigation({
+                                        view: v.toLowerCase(),
+                                        page: 1,
+                                        date: currentDate.format("YYYY-MM-DD")
+                                    })}
                                     className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${view === v.toLowerCase()
-                                        ? "bg-orange-500 text-white shadow-md"
+                                        ? "bg-orange-500 text-white shadow-md font-bold"
                                         : "text-gray-500 hover:text-gray-700"
                                         }`}
                                 >
@@ -378,12 +431,27 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
                                 <tr className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-600 uppercase">
                                     <th className="p-4 text-left w-12 sticky left-0 bg-gray-50 z-20">No</th>
                                     <th className="p-4 text-left w-64 sticky left-12 bg-gray-50 z-20">Item Name</th>
-                                    {days.map((day) => (
-                                        <th key={day.format()} className="p-4 min-w-[100px] text-center border-l border-gray-100">
-                                            <div>{day.format("ddd").toUpperCase()}</div>
-                                            <div className="text-lg">{day.format("D")}</div>
+                                    {view === "day" ? (
+                                        <th className="p-4 text-center border-l border-gray-100">
+                                            <div className="flex items-center justify-center gap-2 text-sm font-bold text-gray-800">
+                                                <span>{days[0].format("ddd").toUpperCase()}</span>
+                                                <span className="text-orange-500">{days[0].format("D")}</span>
+                                            </div>
                                         </th>
-                                    ))}
+                                    ) : (
+                                        days.map((day) => (
+                                            <th
+                                                key={day.format()}
+                                                className="p-4 text-center border-l border-gray-100"
+                                                style={{ minWidth: `${colWidth}px`, width: `${colWidth}px` }}
+                                            >
+                                                <div className="text-[10px] opacity-60 font-medium">{day.format("ddd").toUpperCase()}</div>
+                                                <div className={`text-sm ${day.isSame(moment(), 'day') ? 'bg-orange-500 text-white w-7 h-7 flex items-center justify-center rounded-full mx-auto mt-1' : 'mt-1'}`}>
+                                                    {day.format("D")}
+                                                </div>
+                                            </th>
+                                        ))
+                                    )}
                                 </tr>
                             </thead>
                             <tbody>
@@ -408,16 +476,16 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
                                             <td className="p-4 text-sm text-gray-500 sticky left-0 bg-white z-10">{((page - 1) * limit) + idx + 1}</td>
                                             <td className="p-4 sticky left-12 bg-white z-10 border-r border-gray-100 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-16 h-16 bg-gray-100 rounded-md overflow-hidden relative border border-gray-200">
+                                                    <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden relative border border-gray-200 flex-shrink-0">
                                                         <TimelineImage
                                                             src={itemGroup.full_path_image}
                                                         />
                                                     </div>
-                                                    <div>
-                                                        <p className="font-bold text-gray-800 text-sm leading-tight mb-1">{itemGroup.item_name}</p>
+                                                    <div className="overflow-hidden">
+                                                        <p className="font-bold text-gray-800 text-xs leading-tight mb-1 truncate">{itemGroup.item_name}</p>
                                                         <div className="flex items-center gap-2">
                                                             <div
-                                                                className={`px-3 py-1 rounded-full border text-[11px] font-bold w-fit uppercase ${itemGroup.status?.toLowerCase() === "booked"
+                                                                className={`px-2 py-0.5 rounded-full border text-[9px] font-bold w-fit uppercase ${itemGroup.status?.toLowerCase() === "booked"
                                                                     ? "bg-yellow-50 text-yellow-500 border-yellow-500"
                                                                     : itemGroup.status?.toLowerCase() === "cancel" ||
                                                                         itemGroup.status?.toLowerCase() === "cancelled"
@@ -432,7 +500,7 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
                                                             </div>
                                                             {/* Barcode */}
                                                             {itemGroup.barcode && (
-                                                                <div className="flex flex-col items-start scale-75 origin-left mt-2">
+                                                                <div className="flex flex-col items-start scale-50 origin-left">
                                                                     <Barcode
                                                                         value={itemGroup.barcode}
                                                                         format="CODE128"
@@ -450,29 +518,70 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
                                                     </div>
                                                 </div>
                                             </td>
-                                            {days.map((day) => {
-                                                const dayReservations = itemGroup.reservations.filter(res => {
-                                                    const start = moment(res.start_date);
-                                                    const end = moment(res.end_date);
-                                                    return day.isSameOrAfter(start, "day") && day.isSameOrBefore(end, "day");
-                                                });
+                                            <td colSpan={days.length} className="p-0 relative min-h-[80px]">
+                                                {/* Grid Background Lines */}
+                                                <div className="absolute inset-0 flex pointer-events-none">
+                                                    {days.map((day) => (
+                                                        <div
+                                                            key={day.format()}
+                                                            className="h-full border-l border-gray-100 first:border-l-0"
+                                                            style={{ minWidth: `${colWidth}px`, width: `${colWidth}px` }}
+                                                        />
+                                                    ))}
+                                                </div>
 
-                                                return (
-                                                    <td key={day.format()} className="p-0 border-l border-gray-50 relative min-w-[100px]">
-                                                        <div className="h-full w-full min-h-[80px] flex flex-col justify-center gap-1 p-1">
-                                                            {dayReservations.map((res, i) => (
-                                                                <div
-                                                                    key={i}
-                                                                    className={`h-8 rounded-lg ${getStatusColor(res.status)} text-[10px] text-white font-bold flex items-center justify-center truncate px-2 shadow-sm`}
-                                                                    title={`${res.customer_name} (${res.status}) - ${res.book_id}`}
-                                                                >
-                                                                    {res.customer_name}
+                                                {/* Continuous Bars */}
+                                                <div className="relative min-h-[80px] py-4">
+                                                    {itemGroup.reservations.map((res, i) => {
+                                                        const start = moment(res.start_date);
+                                                        const end = moment(res.end_date);
+
+                                                        // Find start and end indices in the visible range
+                                                        const rangeStart = days[0].clone().startOf('day');
+                                                        const rangeEnd = days[days.length - 1].clone().endOf('day');
+
+                                                        if (end.isBefore(rangeStart) || start.isAfter(rangeEnd)) return null;
+
+                                                        const visibleStart = moment.max(start, rangeStart);
+                                                        const visibleEnd = moment.min(end, rangeEnd);
+
+                                                        const startIndex = days.findIndex(d => d.isSame(visibleStart, 'day'));
+                                                        const endIndex = days.findIndex(d => d.isSame(visibleEnd, 'day'));
+
+                                                        if (startIndex === -1 || endIndex === -1) return null;
+
+                                                        const left = view === "day" ? 0 : startIndex * colWidth;
+                                                        const width = view === "day" ? (days.length * colWidth || 800) : (endIndex - startIndex + 1) * colWidth;
+
+                                                        // Simple vertical offset for multiple reservations in same row
+                                                        const top = 16 + (i * 40);
+
+                                                        return (
+                                                            <div
+                                                                key={i}
+                                                                className={`absolute h-8 rounded-lg bg-gradient-to-r ${getStatusGradient(res.status)} text-[10px] text-white font-bold flex items-center justify-center truncate px-2 shadow-lg transition-all hover:scale-[1.01] hover:z-20 cursor-pointer group`}
+                                                                style={{
+                                                                    left: view === "day" ? "12px" : `${left + 4}px`,
+                                                                    width: view === "day" ? "calc(100% - 24px)" : `${width - 8}px`,
+                                                                    top: `${top}px`
+                                                                }}
+                                                                title={`${res.customer_name} (${res.status}) - ${res.book_id}`}
+                                                            >
+                                                                <span className="truncate">{res.customer_name}</span>
+
+                                                                {/* Hover Tooltip */}
+                                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900/95 backdrop-blur-sm text-white p-3 rounded-lg text-xs whitespace-nowrap z-30 shadow-2xl border border-white/10">
+                                                                    <p className="font-bold text-orange-400 mb-1">{res.customer_name}</p>
+                                                                    <p className="opacity-80">Reference: {res.book_id}</p>
+                                                                    <p className="opacity-80">Status: {res.status}</p>
+                                                                    <p className="opacity-80">Period: {moment(res.start_date).format('DD MMM')} - {moment(res.end_date).format('DD MMM YYYY')}</p>
+                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-gray-900/95" />
                                                                 </div>
-                                                            ))}
-                                                        </div>
-                                                    </td>
-                                                );
-                                            })}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))
                                 )}
