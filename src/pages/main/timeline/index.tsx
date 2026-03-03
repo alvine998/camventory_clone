@@ -58,14 +58,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     // Enforce min 3 chars for search
     const searchQuery = (search as string).length > 3 ? (search as string) : "";
 
-    let startTimestamp: number;
-    let endTimestamp: number;
-
     const selectedView = view as "day" | "week" | "month";
 
     // Always fetch the full month data for local filtering
-    startTimestamp = currentMoment.clone().startOf("month").unix();
-    endTimestamp = currentMoment.clone().endOf("month").unix();
+    const startTimestamp = currentMoment.clone().startOf("month").unix();
+    const endTimestamp = currentMoment.clone().endOf("month").unix();
 
     try {
         const [response, notificationsData, unreadNotificationsData] = await Promise.all([
@@ -334,19 +331,19 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
         return Object.values(groups);
     }, [timelineData, days]);
 
-    const getStatusColor = (status: string) => {
-        switch (status?.toUpperCase()) {
-            case "BOOKED":
-                return "bg-yellow-400";
-            case "CHECKOUT":
-                return "bg-blue-500";
-            case "CHECKIN":
-            case "COMPLETED":
-                return "bg-green-500 shadow-green-500/20";
-            default:
-                return "bg-gray-400 shadow-gray-400/20";
-        }
-    };
+    // const getStatusColor = (status: string) => {
+    //     switch (status?.toUpperCase()) {
+    //         case "BOOKED":
+    //             return "bg-yellow-400";
+    //         case "CHECKOUT":
+    //             return "bg-blue-500";
+    //         case "CHECKIN":
+    //         case "COMPLETED":
+    //             return "bg-green-500 shadow-green-500/20";
+    //         default:
+    //             return "bg-gray-400 shadow-gray-400/20";
+    //     }
+    // };
 
     const getStatusGradient = (status: string) => {
         switch (status?.toUpperCase()) {
