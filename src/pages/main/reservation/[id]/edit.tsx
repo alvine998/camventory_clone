@@ -1,7 +1,7 @@
 import Button from "@/components/Button";
 import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
 import AddEquipmentView from "@/components/reservation/AddEquipmentView";
-// import Select from "@/components/Select";
+import Select from "@/components/Select";
 import { CONFIG } from "@/config";
 import { IReservation } from "@/types/reservation";
 import axios from "axios";
@@ -168,16 +168,6 @@ export default function EditReservationPage({
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [showToPicker, setShowToPicker] = useState(false);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev: any) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
@@ -290,44 +280,46 @@ export default function EditReservationPage({
       <form onSubmit={onSubmit} className="mt-6 mb-20">
         {/* Customer & User */}
         <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
-          <div className="w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Customer <span className="text-red-500">*</span>
-            </label>
-            <select
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-xs"
-              name="customer_id"
-              value={formData.customer_id}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="">Select Customer</option>
-              {CUSTOMERS.map((customer) => (
-                <option key={customer.value} value={customer.value}>
-                  {customer.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              User/Employee <span className="text-red-500">*</span>
-            </label>
-            <select
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-xs"
-              name="user_id"
-              value={formData.user_id}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="">Select User/Employee</option>
-              {USERS.map((user) => (
-                <option key={user.value} value={user.value}>
-                  {user.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Select
+            options={CUSTOMERS}
+            value={
+              formData.customer_id
+                ? {
+                  label:
+                    customers.find((c) => c.id === formData.customer_id)?.name || "",
+                  value: formData.customer_id,
+                }
+                : null
+            }
+            onChange={(selected: any) =>
+              setFormData((prev: any) => ({ ...prev, customer_id: selected?.value || "" }))
+            }
+            placeholder="Select Customer"
+            label="Customer"
+            fullWidth
+            required
+            name="customer_id"
+          />
+          <Select
+            options={USERS}
+            value={
+              formData.user_id
+                ? {
+                  label:
+                    users.find((u) => u.id === formData.user_id)?.name || "",
+                  value: formData.user_id,
+                }
+                : null
+            }
+            onChange={(selected: any) =>
+              setFormData((prev: any) => ({ ...prev, user_id: selected?.value || "" }))
+            }
+            placeholder="Select User/Employee"
+            label="User/Employee"
+            fullWidth
+            required
+            name="user_id"
+          />
         </div>
 
         {/* Dates & Location */}
@@ -363,21 +355,24 @@ export default function EditReservationPage({
               </button>
             </div>
           </div>
-          <div className="w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Pickup Location <span className="text-red-500">*</span>
-            </label>
-            <select
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-xs"
-              name="pickup_location"
-              value={formData.pickup_location}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="dipatiukur">Dipatiukur</option>
-              <option value="cipadung">Cipadung</option>
-            </select>
-          </div>
+          <Select
+            options={[
+              { label: "Dipatiukur", value: "dipatiukur" },
+              { label: "Cipadung", value: "cipadung" },
+            ]}
+            value={{
+              label: formData.pickup_location === "dipatiukur" ? "Dipatiukur" : "Cipadung",
+              value: formData.pickup_location,
+            }}
+            onChange={(selected: any) =>
+              setFormData((prev: any) => ({ ...prev, pickup_location: selected?.value || "" }))
+            }
+            placeholder="Pickup Location"
+            label="Pickup Location"
+            fullWidth
+            required
+            name="pickup_location"
+          />
         </div>
 
         <DateTimePickerModal

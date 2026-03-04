@@ -147,6 +147,12 @@ export default function CreateReservationPage({
   const [showToPicker, setShowToPicker] = useState(false);
   const processedItemIdRef = useRef<string | null>(null);
 
+  const [reservationData, setReservationData] = useState({
+    customer_uuid: "",
+    user_uuid: "",
+    location: "dipatiukur",
+  });
+
   // Get today's date at start of day for comparison
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -155,7 +161,6 @@ export default function CreateReservationPage({
     e.preventDefault();
     setLoading(true);
 
-    const formData = new FormData(e.currentTarget);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -202,7 +207,7 @@ export default function CreateReservationPage({
     }
 
     const payload = {
-      ...Object.fromEntries(formData),
+      ...reservationData,
       start_date: fromDate ? Math.floor(fromDate.getTime() / 1000) : null,
       end_date: toDate ? Math.floor(toDate.getTime() / 1000) : null,
       items: JSON.stringify(
@@ -436,6 +441,18 @@ export default function CreateReservationPage({
               label: item.name,
               value: item.id,
             }))}
+            value={
+              reservationData.customer_uuid
+                ? {
+                  label:
+                    customers.find((c) => c.id === reservationData.customer_uuid)?.name || "",
+                  value: reservationData.customer_uuid,
+                }
+                : null
+            }
+            onChange={(selected: any) =>
+              setReservationData((prev) => ({ ...prev, customer_uuid: selected?.value || "" }))
+            }
             placeholder="Customer"
             label="Customer"
             fullWidth
@@ -447,6 +464,18 @@ export default function CreateReservationPage({
               label: item.name,
               value: item.id,
             }))}
+            value={
+              reservationData.user_uuid
+                ? {
+                  label:
+                    users.find((u) => u.id === reservationData.user_uuid)?.name || "",
+                  value: reservationData.user_uuid,
+                }
+                : null
+            }
+            onChange={(selected: any) =>
+              setReservationData((prev) => ({ ...prev, user_uuid: selected?.value || "" }))
+            }
             placeholder="User/Employee"
             label="User/Employee"
             fullWidth
@@ -495,6 +524,13 @@ export default function CreateReservationPage({
               { label: "Dipatiukur", value: "dipatiukur" },
               { label: "Cipadung", value: "cipadung" },
             ]}
+            value={{
+              label: reservationData.location === "dipatiukur" ? "Dipatiukur" : "Cipadung",
+              value: reservationData.location,
+            }}
+            onChange={(selected: any) =>
+              setReservationData((prev) => ({ ...prev, location: selected?.value || "" }))
+            }
             placeholder="Pickup Location"
             label="Pickup Location"
             fullWidth
