@@ -448,6 +448,7 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
                 start: parseDateString(tempDate.start),
                 end: parseDateString(tempDate.end)
               }}
+              setDate={setTempDate}
               onSave={(dateRange) => {
                 try {
                   const startDateStr = dateRange.start;

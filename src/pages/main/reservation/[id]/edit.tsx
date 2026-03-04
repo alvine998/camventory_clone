@@ -1,14 +1,14 @@
 import Button from "@/components/Button";
 import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
-import Input from "@/components/Input";
 import AddEquipmentView from "@/components/reservation/AddEquipmentView";
 // import Select from "@/components/Select";
 import { CONFIG } from "@/config";
 import { IReservation } from "@/types/reservation";
 import axios from "axios";
 import { parse } from "cookie";
-import { ArrowLeftIcon, PlusSquareIcon, Trash2Icon } from "lucide-react";
+import { ArrowLeftIcon, PlusSquareIcon, Trash2Icon, CalendarDays } from "lucide-react";
 import moment from "moment";
+import DateTimePickerModal from "@/components/DateTimePickerModal";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
@@ -153,19 +153,26 @@ export default function EditReservationPage({
   const [items, setItems] = useState<any[]>(detail?.details || []);
   const [view, setView] = useState<"form" | "select">("form");
 
-  const [formData, setFormData] = useState({
+  // Get today's date at start of day for comparison
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [formData, setFormData] = useState<any>({
     customer_id: detail?.ref_customer?.id || "",
     user_id: detail?.ref_user?.id || "",
     pickup_location: detail?.pickup_location || "dipatiukur",
-    from: moment(detail?.start_date * 1000).format("YYYY-MM-DD") || "",
-    to: moment(detail?.end_date * 1000).format("YYYY-MM-DD") || "",
+    from: detail?.start_date ? new Date(detail.start_date * 1000) : null,
+    to: detail?.end_date ? new Date(detail.end_date * 1000) : null,
   });
+
+  const [showFromPicker, setShowFromPicker] = useState(false);
+  const [showToPicker, setShowToPicker] = useState(false);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData((prev: any) => ({
       ...prev,
       [name]: value,
     }));
@@ -179,10 +186,10 @@ export default function EditReservationPage({
       ...detail,
       ...formData,
       start_date: formData.from
-        ? Math.floor(new Date(formData.from).getTime() / 1000)
+        ? Math.floor(formData.from.getTime() / 1000)
         : null,
       end_date: formData.to
-        ? Math.floor(new Date(formData.to).getTime() / 1000)
+        ? Math.floor(formData.to.getTime() / 1000)
         : null,
       items: JSON.stringify(
         items?.map((item: any) => ({
@@ -326,27 +333,35 @@ export default function EditReservationPage({
         {/* Dates & Location */}
         <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
           <div className="grid grid-cols-2 gap-4 w-full">
-            <Input
-              placeholder="From"
-              label="From"
-              name="from"
-              fullWidth
-              required
-              type="date"
-              value={formData.from}
-              onChange={handleInputChange}
-            />
-            <Input
-              placeholder="To"
-              label="To"
-              name="to"
-              fullWidth
-              required
-              type="date"
-              value={formData.to}
-              onChange={handleInputChange}
-              min={formData.from}
-            />
+            {/* From Input */}
+            <div className="flex flex-col gap-1 w-full">
+              <label className="text-sm font-bold text-gray-700">From</label>
+              <button
+                type="button"
+                onClick={() => setShowFromPicker(true)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 flex items-center justify-between text-left h-[42px] bg-white hover:border-orange-400 transition-colors"
+              >
+                <span className={`text-sm ${formData.from ? "text-gray-900" : "text-gray-400"}`}>
+                  {formData.from ? moment(formData.from).format("DD MMM YYYY, hh:mm A") : "Select Pickup Date"}
+                </span>
+                <CalendarDays className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+
+            {/* To Input */}
+            <div className="flex flex-col gap-1 w-full">
+              <label className="text-sm font-bold text-gray-700">To</label>
+              <button
+                type="button"
+                onClick={() => setShowToPicker(true)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 flex items-center justify-between text-left h-[42px] bg-white hover:border-orange-400 transition-colors"
+              >
+                <span className={`text-sm ${formData.to ? "text-gray-900" : "text-gray-400"}`}>
+                  {formData.to ? moment(formData.to).format("DD MMM YYYY, hh:mm A") : "Select Return Date"}
+                </span>
+                <CalendarDays className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
           </div>
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -364,6 +379,33 @@ export default function EditReservationPage({
             </select>
           </div>
         </div>
+
+        <DateTimePickerModal
+          open={showFromPicker}
+          onClose={() => setShowFromPicker(false)}
+          onApply={(date) => {
+            // If To date is before From date, update To date automatically
+            if (formData.to && date > formData.to) {
+              const nextDay = new Date(date);
+              nextDay.setHours(date.getHours() + 24);
+              setFormData((prev: any) => ({ ...prev, from: date, to: nextDay }));
+            } else {
+              setFormData({ ...formData, from: date });
+            }
+          }}
+          initialDate={formData.from || undefined}
+          title="Edit Pick Up Date & Time"
+          disabled={{ before: today }}
+        />
+
+        <DateTimePickerModal
+          open={showToPicker}
+          onClose={() => setShowToPicker(false)}
+          onApply={(date) => setFormData({ ...formData, to: date })}
+          initialDate={formData.to || formData.from || undefined}
+          title="Edit Return Date & Time"
+          disabled={{ before: formData.from || today }}
+        />
 
         {/* Equipment Section */}
         <div className="mt-4">

@@ -141,6 +141,23 @@ export default function SalesCustomerDetailPage({
     start: dateRange?.start || moment().format("DD/MM/YYYY"),
     end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
   });
+  const [tempDate, setTempDate] = useState({
+    start: dateRange?.start || moment().format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
+  });
+
+  // Update date and tempDate when dateRange changes (from SSR)
+  useEffect(() => {
+    if (dateRange) {
+      const newDate = {
+        start: dateRange.start,
+        end: dateRange.end,
+      };
+      setDate(newDate);
+      setTempDate(newDate);
+    }
+  }, [dateRange]);
+
   const [modal, setModal] = useState<useModal>();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -234,7 +251,8 @@ export default function SalesCustomerDetailPage({
           >
             <CalendarDays className="w-4 h-4 text-gray-500" />
             <p className="text-sm text-gray-500">
-              {date.start} - {date.end}
+              {moment(tempDate.start, "DD/MM/YYYY").format("DD MMM YYYY")} -{" "}
+              {moment(tempDate.end, "DD/MM/YYYY").format("DD MMM YYYY")}
             </p>
           </button>
         </div>
@@ -242,8 +260,8 @@ export default function SalesCustomerDetailPage({
           <Button
             type="button"
             onClick={() => {
-              const startTimestamp = moment(date.start, "DD/MM/YYYY").unix();
-              const endTimestamp = moment(date.end, "DD/MM/YYYY").unix();
+              const startTimestamp = moment(tempDate.start, "DD/MM/YYYY").unix();
+              const endTimestamp = moment(tempDate.end, "DD/MM/YYYY").unix();
 
               downloadReport(
                 `customer-detail/${customerId}`,
@@ -252,7 +270,7 @@ export default function SalesCustomerDetailPage({
                   endDate: endTimestamp,
                 },
                 token,
-                `Sales_Customer_Detail_${customerId}_Report_${moment(date.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(date.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
+                `Sales_Customer_Detail_${customerId}_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
                 [
                   { header: "Booking ID", key: "book_id" },
                   { header: "Status", key: "status" },
@@ -315,9 +333,10 @@ export default function SalesCustomerDetailPage({
         >
           <DateRangePicker
             date={{
-              start: parseDateString(date.start),
-              end: parseDateString(date.end),
+              start: parseDateString(tempDate.start),
+              end: parseDateString(tempDate.end),
             }}
+            setDate={setTempDate}
             onSave={(dateRange) => {
               try {
                 const startStr = dateRange.start;

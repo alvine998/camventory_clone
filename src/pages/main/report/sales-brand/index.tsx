@@ -10,10 +10,10 @@ import { CONFIG } from "@/config";
 import { GetServerSideProps } from "next";
 import { parse } from "cookie";
 import DataTable from "react-data-table-component";
-import Input from "@/components/Input";
-import { ColumnSalesBrand } from "@/constants/column_sales_brand";
 import { useRouter } from "next/router";
 import { downloadReport } from "@/utils/exportToExcel";
+import Select from "@/components/Select";
+import { ColumnSalesBrand } from "@/constants/column_sales_brand";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -32,8 +32,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     const {
       page = 1,
-      limit = 10,
-      categoryID = "",
+      limit = 999,
+      brandID = "",
       startDate = "",
       endDate = "",
     } = query;
@@ -44,30 +44,32 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     const startTimestamp = moment(startDateStr, "DD/MM/YYYY").unix();
     const endTimestamp = moment(endDateStr, "DD/MM/YYYY").unix();
+    console.log(startTimestamp, endTimestamp, "timestamp")
 
-    const brandParams: any = {
+    const params: any = {
       page,
       limit,
       startDate: startTimestamp,
       endDate: endTimestamp,
+      brandID: brandID
     };
 
-    if (typeof categoryID === "string" && categoryID.trim() !== "") {
-      brandParams.categoryID = categoryID;
+    if (query.brandID) {
+      params.brandID = query.brandID;
     }
 
-    const [reportResponse, categories, notificationsData, unreadNotificationsData] = await Promise.all([
+    const [reportResponse, brandsResponse, notificationsData, unreadNotificationsData] = await Promise.allSettled([
       axios.get(
         `${CONFIG.API_URL}/v1/report/brand`,
         {
-          params: brandParams,
+          params,
           headers: {
             Authorization: `${token}`,
           },
         }
       ),
       axios.get(
-        `${CONFIG.API_URL}/v1/master/categories?page=1&limit=100`,
+        `${CONFIG.API_URL}/v1/master/brands?page=1&limit=999`,
         {
           headers: {
             Authorization: `${token}`,
@@ -78,45 +80,34 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       fetchUnreadNotificationsServer(token),
     ]);
 
-    if (reportResponse?.status === 401 || categories?.status === 401) {
-      return {
-        redirect: {
-          destination: "/",
-          permanent: false,
-        },
-      };
-    }
+    const reportResult = reportResponse.status === "fulfilled" ? (reportResponse.value as any)?.data?.data : null;
+    const brandsResult = brandsResponse.status === "fulfilled" ? (brandsResponse.value as any)?.data?.data : [];
+    const notifications = notificationsData.status === "fulfilled" ? (notificationsData.value as any)?.data : [];
+    const unreadNotifications = unreadNotificationsData.status === "fulfilled" ? (unreadNotificationsData.value as any)?.data : [];
 
     return {
       props: {
-        reportData: reportResponse.data?.data || null,
-        categories: categories?.data?.data || [],
+        reportData: reportResult || null,
+        brands: brandsResult || [],
         dateRange: { start: startDateStr, end: endDateStr },
         token: token,
-        notifications: notificationsData?.data || [],
-        unreadNotifications: unreadNotificationsData?.data || [],
+        notifications: notifications || [],
+        unreadNotifications: unreadNotifications || [],
       },
     };
   } catch (error: any) {
-    console.log(error);
-    if (error?.response?.status === 401) {
-      return {
-        redirect: {
-          destination: "/",
-          permanent: false,
-        },
-      };
-    }
-
+    console.error("SSR Brand Report Error:", error);
+    // Even in total failure, try to preserve the date range from query if possible
+    const { startDate, endDate } = (ctx.query || {}) as any;
     return {
       props: {
         reportData: null,
-        categories: [],
+        brands: [],
         dateRange: {
-          start: moment().format("DD/MM/YYYY"),
-          end: moment().add(30, "days").format("DD/MM/YYYY"),
+          start: startDate || moment().format("DD/MM/YYYY"),
+          end: endDate || moment().add(30, "days").format("DD/MM/YYYY"),
         },
-        token: token,
+        token: "",
         notifications: [],
         unreadNotifications: [],
       },
@@ -137,17 +128,12 @@ const parseDateString = (dateStr: string): Date => {
   return date;
 };
 
-interface Props {
-  reportData: any;
-  dateRange: { start: string; end: string };
-  token: string;
-}
-
 export default function SalesBrandPage({
   reportData,
+  brands,
   dateRange,
   token,
-}: Props) {
+}: any) {
   const router = useRouter();
   const { query } = router;
 
@@ -236,27 +222,36 @@ export default function SalesBrandPage({
               {moment(tempDate.end, "DD/MM/YYYY").format("DD MMM YYYY")}
             </p>
           </button>
-          <Input type="search" placeholder="Search Brand" />
-          {/* <Select
-            defaultValue={currentCategoryId}
-            options={categories?.map((category) => ({
-              value: category.id,
-              label: category.name,
-            }))}
-            onChange={(value) => {
-              const selected = value as { value?: string | number } | null;
-              const categoryID = selected?.value ?? "";
+          <div className="w-64">
+            <Select
+              placeholder="All Brands"
+              isClearable
+              menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+              value={(() => {
+                const currentBrandId = query.brandID;
+                if (!currentBrandId || !brands) return null;
+                const options = brands.map((b: any) => ({ value: String(b.id), label: b.name }));
+                return options.find((opt: any) => opt.value === String(currentBrandId)) || null;
+              })()}
+              options={brands?.map((brand: any) => ({
+                value: String(brand.id),
+                label: brand.name,
+              }))}
+              onChange={(value) => {
+                const selected = value as { value?: string | number } | null;
+                const brandID = selected?.value ?? "";
 
-              router.push({
-                pathname: router.pathname,
-                query: {
-                  ...query,
-                  categoryID,
-                  page: 1,
-                },
-              });
-            }}
-          /> */}
+                router.push({
+                  pathname: router.pathname,
+                  query: {
+                    ...router.query, // Prefer the current full query from router instance
+                    brandID,
+                    page: 1,
+                  },
+                });
+              }}
+            />
+          </div>
         </div>
         <div>
           <Button
@@ -264,14 +259,14 @@ export default function SalesBrandPage({
             onClick={() => {
               const startTimestamp = moment(tempDate.start, "DD/MM/YYYY").unix();
               const endTimestamp = moment(tempDate.end, "DD/MM/YYYY").unix();
-              const categoryID = router.query.categoryID || "";
+              const brandID = router.query.brandID || "";
 
               downloadReport(
                 "brand",
                 {
                   startDate: startTimestamp,
                   endDate: endTimestamp,
-                  categoryID,
+                  brandID,
                 },
                 token,
                 `Sales_Brand_Report_${moment(tempDate.start, "DD/MM/YYYY").format("YYYYMMDD")}_${moment(tempDate.end, "DD/MM/YYYY").format("YYYYMMDD")}`,
@@ -313,7 +308,7 @@ export default function SalesBrandPage({
             paginationDefaultPage={currentPage}
             paginationPerPage={rowsPerPage}
             paginationTotalRows={reportData?.count || 0}
-            paginationRowsPerPageOptions={[10, 20, 50, 100]}
+            paginationRowsPerPageOptions={[10, 20, 50, 100, 999]}
             paginationServer
             onChangePage={handlePageChange}
             onChangeRowsPerPage={handleRowsPerPageChange}
@@ -357,6 +352,7 @@ export default function SalesBrandPage({
                 start: parseDateString(tempDate.start),
                 end: parseDateString(tempDate.end),
               }}
+              setDate={setTempDate}
               onSave={(dateRange) => {
                 setModal({ open: false, key: "", data: {} });
                 router.push({

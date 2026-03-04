@@ -55,7 +55,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       params.sortBy = sortBy;
     }
 
-    const [reportResponse, notificationsData, unreadNotificationsData] = await Promise.all([
+    const [reportResponse, notificationsResult, unreadNotificationsResult] = await Promise.allSettled([
       axios.get(
         `${CONFIG.API_URL}/v1/report/customer`,
         {
@@ -69,43 +69,31 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       fetchUnreadNotificationsServer(token),
     ]);
 
-    if (reportResponse?.status === 401) {
-      return {
-        redirect: {
-          destination: "/",
-          permanent: false,
-        },
-      };
-    }
+    const reportData = reportResponse.status === "fulfilled" ? reportResponse.value.data?.data : null;
+    const notifications = notificationsResult.status === "fulfilled" ? (notificationsResult.value as any)?.data : [];
+    const unreadNotifications = unreadNotificationsResult.status === "fulfilled" ? (unreadNotificationsResult.value as any)?.data : [];
 
     return {
       props: {
-        reportData: reportResponse.data?.data || null,
-        meta: reportResponse.data?.meta || null,
+        reportData: reportData || null,
+        meta: reportResponse.status === "fulfilled" ? reportResponse.value.data?.meta : null,
         dateRange: { start: startDateStr, end: endDateStr },
         initialSortBy: sortBy || "",
         token: token,
-        notifications: notificationsData?.data || [],
-        unreadNotifications: unreadNotificationsData?.data || [],
+        notifications: notifications || [],
+        unreadNotifications: unreadNotifications || [],
       },
     };
   } catch (error: any) {
-    console.log(error);
-    if (error?.response?.status === 401) {
-      return {
-        redirect: {
-          destination: "/",
-          permanent: false,
-        },
-      };
-    }
+    console.error("SSR Customer Report Error:", error);
+    const { startDate, endDate } = (ctx.query || {}) as any;
     return {
       props: {
         reportData: null,
         meta: null,
         dateRange: {
-          start: moment().format("DD/MM/YYYY"),
-          end: moment().add(30, "days").format("DD/MM/YYYY"),
+          start: startDate || moment().format("DD/MM/YYYY"),
+          end: endDate || moment().add(30, "days").format("DD/MM/YYYY"),
         },
         initialSortBy: "",
         notifications: [],
@@ -247,7 +235,7 @@ export default function SalesCustomerPage({
               router.push({
                 pathname: router.pathname,
                 query: {
-                  ...(typeof query === "object" && query !== null ? query : {}),
+                  ...router.query,
                   sortBy: sort,
                   page: 1,
                 },
@@ -373,6 +361,7 @@ export default function SalesCustomerPage({
                 start: parseDateString(tempDate.start),
                 end: parseDateString(tempDate.end),
               }}
+              setDate={setTempDate}
               onSave={(dateRange) => {
                 setModal({ open: false, key: "", data: {} });
                 router.push({

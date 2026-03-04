@@ -207,7 +207,11 @@ export default function AddEquipmentView({
                                         <h3 className="font-bold text-sm truncate">{item.name}</h3>
                                         <div className="text-[10px] text-gray-500 flex justify-between">
                                             <span>Type: {item.isBulk ? "Product" : "Product"}</span>
-                                            <span>Avail: {item.qty || 10} item</span>
+                                            {
+                                                tab === "bulk" && (
+                                                    <span>Avail: {item.qty || 10} item</span>
+                                                )
+                                            }
                                         </div>
 
                                         {tab === "single" ? (

@@ -1,17 +1,18 @@
 import Button from "@/components/Button";
 import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
-import Input from "@/components/Input";
 import AddEquipmentView from "@/components/reservation/AddEquipmentView";
 import Select from "@/components/Select";
+import DateTimePickerModal from "@/components/DateTimePickerModal";
 import { CONFIG } from "@/config";
 import axios from "axios";
 import { parse } from "cookie";
-import { ArrowLeftIcon, PlusSquareIcon, Trash2Icon } from "lucide-react";
+import { ArrowLeftIcon, PlusSquareIcon, Trash2Icon, CalendarDays } from "lucide-react";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import React, { useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
+import moment from "moment";
 
 // ✅ Types
 interface Category {
@@ -140,21 +141,23 @@ export default function CreateReservationPage({
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [view, setView] = useState<"form" | "select">("form");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
+  const [showFromPicker, setShowFromPicker] = useState(false);
+  const [showToPicker, setShowToPicker] = useState(false);
   const processedItemIdRef = useRef<string | null>(null);
 
-  // Get today's date in YYYY-MM-DD format
-  const today = new Date().toISOString().split("T")[0];
+  // Get today's date at start of day for comparison
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const fromDate = formData.get("from")?.toString();
-    const toDate = formData.get("to")?.toString();
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     // Validate dates
     if (fromDate && fromDate < today) {
@@ -200,14 +203,8 @@ export default function CreateReservationPage({
 
     const payload = {
       ...Object.fromEntries(formData),
-      start_date: formData.get("from")
-        ? Math.floor(
-          new Date(formData.get("from")!.toString()).getTime() / 1000
-        )
-        : null,
-      end_date: formData.get("to")
-        ? Math.floor(new Date(formData.get("to")!.toString()).getTime() / 1000)
-        : null,
+      start_date: fromDate ? Math.floor(fromDate.getTime() / 1000) : null,
+      end_date: toDate ? Math.floor(toDate.getTime() / 1000) : null,
       items: JSON.stringify(
         items?.map((item: any) => ({
           uuid: item.id,
@@ -461,37 +458,37 @@ export default function CreateReservationPage({
         {/* Dates & Location */}
         <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
           <div className="grid grid-cols-2 gap-4 w-full">
-            <Input
-              placeholder="From"
-              label="From"
-              name="from"
-              fullWidth
-              required
-              type="date"
-              min={today}
-              value={fromDate}
-              onChange={(e) => {
-                const selectedFromDate = e.target.value;
-                setFromDate(selectedFromDate);
-                // If "to" date is before the new "from" date, clear it
-                if (toDate && selectedFromDate && toDate < selectedFromDate) {
-                  setToDate("");
-                }
-              }}
-            />
-            <Input
-              placeholder="To"
-              label="To"
-              name="to"
-              fullWidth
-              required
-              type="date"
-              min={fromDate || today}
-              value={toDate}
-              onChange={(e) => {
-                setToDate(e.target.value);
-              }}
-            />
+            {/* From Input */}
+            <div className="flex flex-col gap-1 w-full">
+              <label className="text-sm font-bold text-gray-700">From</label>
+              <button
+                type="button"
+                onClick={() => setShowFromPicker(true)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 flex items-center justify-between text-left h-[42px] bg-white hover:border-orange-400 transition-colors"
+              >
+                <span className={`text-sm ${fromDate ? "text-gray-900" : "text-gray-400"}`}>
+                  {fromDate ? moment(fromDate).format("DD MMM YYYY, hh:mm A") : "Select Pickup Date"}
+                </span>
+                <CalendarDays className="w-4 h-4 text-gray-400" />
+              </button>
+              <input type="hidden" name="from" value={fromDate ? fromDate.toISOString() : ""} />
+            </div>
+
+            {/* To Input */}
+            <div className="flex flex-col gap-1 w-full">
+              <label className="text-sm font-bold text-gray-700">To</label>
+              <button
+                type="button"
+                onClick={() => setShowToPicker(true)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 flex items-center justify-between text-left h-[42px] bg-white hover:border-orange-400 transition-colors"
+              >
+                <span className={`text-sm ${toDate ? "text-gray-900" : "text-gray-400"}`}>
+                  {toDate ? moment(toDate).format("DD MMM YYYY, hh:mm A") : "Select Return Date"}
+                </span>
+                <CalendarDays className="w-4 h-4 text-gray-400" />
+              </button>
+              <input type="hidden" name="to" value={toDate ? toDate.toISOString() : ""} />
+            </div>
           </div>
           <Select
             options={[
@@ -505,6 +502,33 @@ export default function CreateReservationPage({
             name="location"
           />
         </div>
+
+        {/* Date Time Picker Modals */}
+        <DateTimePickerModal
+          open={showFromPicker}
+          onClose={() => setShowFromPicker(false)}
+          onApply={(date) => {
+            setFromDate(date);
+            // If To date is before From date, update To date automatically to From date + 1 day
+            if (toDate && date > toDate) {
+              const nextDay = new Date(date);
+              nextDay.setHours(date.getHours() + 24); // Use 24 hours to keep same time
+              setToDate(nextDay);
+            }
+          }}
+          initialDate={fromDate || undefined}
+          title="Select Pick Up Date & Time"
+          disabled={{ before: today }}
+        />
+
+        <DateTimePickerModal
+          open={showToPicker}
+          onClose={() => setShowToPicker(false)}
+          onApply={(date) => setToDate(date)}
+          initialDate={toDate || fromDate || undefined}
+          title="Select Return Date & Time"
+          disabled={{ before: fromDate || today }}
+        />
 
         {/* Equipment Section */}
         <div className="mt-4">

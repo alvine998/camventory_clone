@@ -190,6 +190,7 @@ export default function DashboardPage({ token }: DashboardPageProps) {
               <input
                 type="date"
                 value={dateRange.start}
+                max={dateRange.end}
                 onChange={(e) => {
                   const date = e.target.value;
                   const mStart = moment(date);
@@ -221,6 +222,7 @@ export default function DashboardPage({ token }: DashboardPageProps) {
               <input
                 type="date"
                 value={dateRange.end}
+                min={dateRange.start > moment().format("YYYY-MM-DD") ? dateRange.start : moment().format("YYYY-MM-DD")}
                 onChange={(e) => {
                   const date = e.target.value;
                   const mEnd = moment(date);

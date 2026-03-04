@@ -8,6 +8,7 @@ import axios from "axios";
 import { CONFIG } from "@/config";
 import { parse } from "cookie";
 import { GetServerSideProps } from "next";
+import { useRouter } from "next/router";
 import { downloadReport } from "@/utils/exportToExcel";
 import Button from "@/components/Button";
 
@@ -120,6 +121,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       fetchUnreadNotificationsServer(token),
     ]);
 
+    console.log(response.data, "response");
+
     if (response?.status === 401) {
       return {
         redirect: {
@@ -169,11 +172,17 @@ export default function SalesSummaryPage({
   initialFilterBy?: string;
   token: string;
 }) {
+  const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const [trendData, setTrendData] = useState<TrendData | null>(initialTrendData);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [filterBy, setFilterBy] = useState<string>(initialFilterBy);
+
+  // Sync state with props when SSR data changes
+  useEffect(() => {
+    setTrendData(initialTrendData);
+    setFilterBy(initialFilterBy);
+  }, [initialTrendData, initialFilterBy]);
 
   // This ensures the component is mounted before rendering the chart
   useEffect(() => {
@@ -181,7 +190,7 @@ export default function SalesSummaryPage({
     return () => setIsMounted(false);
   }, []);
 
-  const periods = [
+  const periods = useMemo(() => [
     {
       value: "day",
       label: "Today",
@@ -198,46 +207,14 @@ export default function SalesSummaryPage({
       value: "year",
       label: "1 Year",
     },
-  ];
+  ], []);
   const [selectType, setSelectType] = useState<string>("Sales");
 
-  const fetchTrendData = async (period: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      setFilterBy(period);
-
-      const cookies = parse(document.cookie || "");
-      const token = cookies.token;
-
-      if (!token) {
-        setError("Token tidak ditemukan");
-        setLoading(false);
-        return;
-      }
-
-      const response = await axios.get(`${CONFIG.API_URL}/v1/report/trend`, {
-        params: {
-          filterBy: period,
-        },
-        headers: {
-          Authorization: `${token}`,
-        },
-      });
-
-      console.log(response.data, "response");
-
-      if (response.data.status === 1) {
-        setTrendData(response.data.data);
-      } else {
-        setError(response.data.error?.message || "Gagal mengambil data trend");
-      }
-    } catch (err: any) {
-      console.error("Error fetching trend data:", err);
-      setError(err.response?.data?.error?.message || "Gagal mengambil data trend");
-    } finally {
-      setLoading(false);
-    }
+  const handleFilterChange = (period: string) => {
+    setLoading(true);
+    router.push({
+      query: { ...router.query, filterBy: period }
+    });
   };
 
   // Bangun data chart dari response API
@@ -267,9 +244,13 @@ export default function SalesSummaryPage({
       };
     }
 
-    const chartCategories = trendData.date.map((ts) =>
-      moment(ts).isValid() ? moment(ts).format("DD MMM") : ""
-    );
+    const chartCategories = trendData.date.map((ts) => {
+      if (!moment(ts).isValid()) return "";
+      // If filtering by year, show Month Year (e.g. "Jan 2024")
+      if (filterBy === "year") return moment(ts).format("MMM YYYY");
+      // Otherwise show Day Month (e.g. "01 Mar")
+      return moment(ts).format("DD MMM");
+    });
 
     const chartSeries = [
       {
@@ -285,7 +266,7 @@ export default function SalesSummaryPage({
     ];
 
     return { chartCategories, chartSeries };
-  }, [trendData]);
+  }, [trendData, filterBy]);
 
   const mergedChartOptions: ApexCharts.ApexOptions = useMemo(
     () => ({
@@ -308,13 +289,13 @@ export default function SalesSummaryPage({
       {/* Header 1 */}
       <div className="flex items-center gap-2 mt-2">
         <Select
-          defaultValue={filterBy}
+          value={periods.find(p => p.value === filterBy)}
           options={periods}
-          onChange={(value) => {
-            const selected = value as { value?: string } | null;
-            console.log(selected);
-            if (selected?.value) {
-              fetchTrendData(selected.value);
+          isClearable={false}
+          onChange={(selected) => {
+            const val = (selected as { value: string })?.value;
+            if (val && val !== filterBy) {
+              handleFilterChange(val);
             }
           }}
         />
@@ -363,20 +344,28 @@ export default function SalesSummaryPage({
                   filterBy,
                 },
                 token,
-                `Sales_Trend_Report_${moment().format("YYYYMMDD")}`,
+                `${selectType}_Trend_Report_${moment().format("YYYYMMDD")}`,
                 [
                   {
                     header: "Date",
                     key: "date",
-                    formatter: (value) => value ? moment(value).format("DD MMM YYYY") : "-"
+                    formatter: (value) => {
+                      if (!value) return "-";
+                      const m = moment(value);
+                      return filterBy === "year" ? m.format("MMM YYYY") : m.format("DD MMM YYYY");
+                    }
                   },
                   {
                     header: "Prior Date",
                     key: "prior_date",
-                    formatter: (value) => value ? moment(value).format("DD MMM YYYY") : "-"
+                    formatter: (value) => {
+                      if (!value) return "-";
+                      const m = moment(value);
+                      return filterBy === "year" ? m.format("MMM YYYY") : m.format("DD MMM YYYY");
+                    }
                   },
-                  { header: "Current Sales", key: "sum" },
-                  { header: "Prior Sales", key: "prior_sum" },
+                  { header: `Current ${selectType}`, key: "sum" },
+                  { header: `Prior ${selectType}`, key: "prior_sum" },
                   { header: "Difference", key: "diff" },
                   { header: "Ratio (%)", key: "ratio" },
                 ]
@@ -430,9 +419,9 @@ export default function SalesSummaryPage({
         {loading && (
           <p className="text-center text-gray-500 text-sm mb-2">Memuat data...</p>
         )}
-        {error && !loading && (
+        {/* {error && !loading && (
           <p className="text-center text-red-500 text-sm mb-2">{error}</p>
-        )}
+        )} */}
         {isMounted && (
           <div className="w-full">
             <Chart
