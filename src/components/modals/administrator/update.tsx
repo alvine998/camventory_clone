@@ -18,6 +18,7 @@ interface Props {
 export default function AdminUpdateModal({ open, setOpen, data }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const params = queryToUrlSearchParams(router?.query)?.toString();
 
   const onSubmit = async (e: any) => {
@@ -65,78 +66,98 @@ export default function AdminUpdateModal({ open, setOpen, data }: Props) {
         </div>
         <form className="mt-4 flex flex-col gap-2" onSubmit={onSubmit}>
           <input type="hidden" name="id" value={data.id} />
-          <Input
-            label="Name"
-            required={true}
-            placeholder="Enter Name"
-            name="name"
-            defaultValue={data.name}
-          />
-          <Input
-            label="Email"
-            required={true}
-            placeholder="Enter Email"
-            name="email"
-            type="email"
-            defaultValue={data.email}
-          />
-          <Input
-            label="Password"
-            placeholder="Enter Password"
-            name="password"
-            type="password"
-          />
-          <Input
-            label="Phone Number"
-            required={true}
-            placeholder="Enter Phone Number"
-            name="phone"
-            type="number"
-            defaultValue={data.phone}
-          />
-          <Select
-            options={[
-              { value: "all", label: "All" },
-              { value: "cipadung", label: "Cipadung" },
-              { value: "dipatiukur", label: "Dipatiukur" },
-            ]}
-            label="Placement"
-            required={true}
-            placeholder="Choose Placement"
-            name="location"
-            defaultValue={data.location}
-          />
-          <Select
-            options={[
-              { value: "ADMIN", label: "Admin" },
-              { value: "STAFF", label: "Staff" },
-              { value: "HEAD_STAFF", label: "Head Staff" },
-            ]}
-            label="Role"
-            required={true}
-            placeholder="Choose Role"
-            name="role"
-            defaultValue={data.role}
-          />
-          <Select
-            options={[
-              { value: "ACTIVE", label: "Active" },
-              { value: "INACTIVE", label: "Inactive" },
-              { value: "SUSPEND", label: "Suspend" },
-            ]}
-            label="Status"
-            required={true}
-            placeholder="Choose Status"
-            name="status"
-            defaultValue={data.status}
-          />
-          <Input
-            label="Address"
-            required={true}
-            placeholder="Enter Address"
-            name="address"
-            defaultValue={data.address}
-          />
+          <div className="flex gap-2 md:flex-row flex-col">
+            <Input
+              label="Name"
+              required={true}
+              placeholder="Enter Name"
+              name="name"
+              defaultValue={data.name}
+              fullWidth
+            />
+            <Input
+              label="Email"
+              required={true}
+              placeholder="Enter Email"
+              name="email"
+              type="email"
+              defaultValue={data.email}
+              fullWidth
+            />
+          </div>
+          <div className="flex gap-2 md:flex-row flex-col">
+            <Input
+              label="Password"
+              placeholder="Enter Password"
+              name="password"
+              type="password"
+              fullWidth
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+            />
+            <Input
+              label="Phone Number"
+              required={true}
+              placeholder="Enter Phone Number"
+              name="phone"
+              type="number"
+              defaultValue={data.phone}
+              fullWidth
+            />
+          </div>
+          <div className="flex gap-2 md:flex-row flex-col">
+            <Select
+              options={[
+                { value: "all", label: "All" },
+                { value: "cipadung", label: "Cipadung" },
+                { value: "dipatiukur", label: "Dipatiukur" },
+              ]}
+              label="Placement"
+              required={true}
+              placeholder="Choose Placement"
+              name="location"
+              defaultValue={data.location}
+              fullWidth
+            />
+            <Select
+              options={[
+                { label: "Admin", value: "ADMIN" },
+                { label: "Staff", value: "STAFF" },
+                { label: "Kepala Staff", value: "KEPALA_STAFF" },
+              ]}
+              label="Role"
+              required={true}
+              placeholder="Choose Role"
+              name="role"
+              defaultValue={data.role}
+              fullWidth
+            />
+          </div>
+          <div className="flex gap-2 md:flex-row flex-col">
+            <Select
+              options={[
+                { value: "ACTIVE", label: "Active" },
+                { value: "INACTIVE", label: "Inactive" },
+                { value: "FREEZE", label: "Freeze" },
+              ]}
+              label="Status"
+              required={true}
+              placeholder="Choose Status"
+              name="status"
+              defaultValue={data.status}
+              fullWidth
+            />
+            <Input
+              label="Address"
+              required={true}
+              placeholder="Enter Address"
+              name="address"
+              defaultValue={data.address}
+              type="textarea"
+              fullWidth
+            />
+          </div>
+
           <div className="w-full flex justify-end gap-2 border-t-2 border-t-gray-200 pt-4 mt-2">
             <Button
               variant="custom-color"

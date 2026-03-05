@@ -13,6 +13,7 @@ import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
+import Badge from "@/components/Badge";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -28,19 +29,30 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       };
     }
-    const filters = {
-      page: query.page || 1,
-      limit: query.limit || 10,
-    };
+    const { page = 1, limit = 10, search = "" } = query;
+
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+
+    if (
+      typeof search === "string" &&
+      search.trim() !== "" &&
+      search.length > 3
+    ) {
+      params.set("search", search);
+    }
 
     const table = await axios.get(
-      `${CONFIG.API_URL}/accounts/v1/users/all?page=${filters.page}&limit=${filters.limit}`,
+      `${CONFIG.API_URL}/accounts/v1/users/all?${params.toString()}`,
       {
         headers: {
           Authorization: `${token}`,
         },
       }
     );
+    console.log(token, 'token')
 
     if (table?.status === 401) {
       return {
@@ -79,8 +91,32 @@ export default function AdministratorPage({ table }: any) {
       setShow(true);
     }
   }, []);
+  const roles = [
+    { label: "Admin", value: "ADMIN" },
+    { label: "Staff", value: "STAFF" },
+    { label: "Kepala Staff", value: "KEPALA_STAFF" },
+  ]
   const data = [...table].map((item, index) => ({
     ...item,
+    role: roles.find((role) => role.value === item?.role)?.label,
+    status_comp: (
+      <Badge
+        color={
+          item.status === "ACTIVE"
+            ? "available"
+            : item.status === "INACTIVE"
+              ? "empty"
+              : "freeze"
+        }
+        text={
+          item.status === "ACTIVE"
+            ? "Active"
+            : item.status === "INACTIVE"
+              ? "InActive"
+              : "Freeze"
+        }
+      />
+    ),
     action: (
       <div key={index} className="flex gap-2">
         <Button
@@ -117,8 +153,16 @@ export default function AdministratorPage({ table }: any) {
 
   useEffect(() => {
     const queryFilter = new URLSearchParams(filter).toString();
-    router.push(`?${queryFilter}`);
-  }, [filter, router]);
+    const currentQuery = new URLSearchParams(window.location.search).toString();
+
+    // Only push if the filter has actually changed
+    if (queryFilter !== currentQuery) {
+      router.push(`?${queryFilter}`).catch(() => {
+        // Ignore navigation cancellation errors
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
   return (
     <div>
       <div className="flex lg:flex-row flex-col gap-2 items-center justify-between">

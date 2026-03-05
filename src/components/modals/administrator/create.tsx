@@ -17,6 +17,7 @@ interface Props {
 export default function AdminCreateModal({ open, setOpen }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const params = queryToUrlSearchParams(router?.query)?.toString();
 
   const onSubmit = async (e: any) => {
@@ -63,71 +64,90 @@ export default function AdminCreateModal({ open, setOpen }: Props) {
           </button>
         </div>
         <form className="mt-4 flex flex-col gap-2" onSubmit={onSubmit}>
-          <Input
-            label="Name"
-            required={true}
-            placeholder="Enter Name"
-            name="name"
-          />
-          <Input
-            label="Email"
-            required={true}
-            placeholder="Enter Email"
-            name="email"
-            type="email"
-          />
-          <Input
-            label="Password"
-            required={true}
-            placeholder="Enter Password"
-            name="password"
-            type="password"
-          />
-          <Input
-            label="Phone Number"
-            required={true}
-            placeholder="Enter Phone Number"
-            name="phone"
-            type="number"
-          />
-          <Select
-            options={[
-              { value: "all", label: "All" },
-              { value: "cipadung", label: "Cipadung" },
-              { value: "dipatiukur", label: "Dipatiukur" },
-            ]}
-            label="Placement"
-            required={true}
-            placeholder="Choose Placement"
-            name="location"
-          />
-          <Select
-            options={[
-              { value: "Admin", label: "Admin" },
-              { value: "Staff", label: "Staff" },
-              { value: "Head Staff", label: "Head Staff" },
-            ]}
-            label="Role"
-            required={true}
-            placeholder="Choose Role"
-            name="role"
-          />
-          <Select
-            options={[
-              { value: "Active", label: "Active" },
-              { value: "Inactive", label: "Inactive" },
-              { value: "Suspend", label: "Suspend" },
-            ]}
-            label="Status"
-            required={true}
-            placeholder="Choose Status"
-            name="status"
-          />
-          <Input
-            label="Address"
-            placeholder="Enter Address"
-            name="address"
-          />
+          <div className="flex gap-2 md:flex-row flex-col w-full">
+            <Input
+              label="Name"
+              required={true}
+              placeholder="Enter Name"
+              name="name"
+              fullWidth
+            />
+            <Input
+              label="Email"
+              required={true}
+              placeholder="Enter Email"
+              name="email"
+              type="email"
+              fullWidth
+            />
+          </div>
+          <div className="flex gap-2 md:flex-row flex-col w-full">
+            <Input
+              label="Password"
+              required={true}
+              placeholder="Enter Password"
+              name="password"
+              type="password"
+              fullWidth
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+            />
+            <Input
+              label="Phone Number"
+              required={true}
+              placeholder="Enter Phone Number"
+              name="phone"
+              type="number"
+              fullWidth
+            />
+          </div>
+          <div className="flex gap-2 md:flex-row flex-col">
+            <Select
+              options={[
+                { value: "all", label: "All" },
+                { value: "cipadung", label: "Cipadung" },
+                { value: "dipatiukur", label: "Dipatiukur" },
+              ]}
+              label="Placement"
+              required={true}
+              placeholder="Choose Placement"
+              name="location"
+              fullWidth
+            />
+            <Select
+              options={[
+                { label: "Admin", value: "ADMIN" },
+                { label: "Staff", value: "STAFF" },
+                { label: "Kepala Staff", value: "KEPALA_STAFF" },
+              ]}
+              label="Role"
+              required={true}
+              placeholder="Choose Role"
+              name="role"
+              fullWidth
+            />
+          </div>
+          <div className="flex gap-2 md:flex-row flex-col">
+            <Select
+              options={[
+                { value: "ACTIVE", label: "Active" },
+                { value: "INACTIVE", label: "Inactive" },
+                { value: "FREEZE", label: "Freeze" },
+              ]}
+              label="Status"
+              required={true}
+              placeholder="Choose Status"
+              name="status"
+              fullWidth
+            />
+            <Input
+              label="Address"
+              placeholder="Enter Address"
+              name="address"
+              type="textarea"
+              fullWidth
+            />
+          </div>
           <div className="w-full flex justify-end gap-2 border-t-2 border-t-gray-200 pt-4 mt-2">
             <Button
               variant="custom-color"
