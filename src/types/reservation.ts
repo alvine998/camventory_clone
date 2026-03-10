@@ -46,6 +46,7 @@ export interface RefCustomer {
   address: string;
   phone: string;
   status: string;
+  signature?: string;
 }
 
 export interface RefUser {

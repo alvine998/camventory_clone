@@ -97,6 +97,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const cookies = parse(req.headers.cookie || "");
   const token = cookies.token;
   const filterBy = (query.filterBy as string) || "week";
+  const trendBy = (query.trendBy as string) || "sales";
 
   try {
     if (!token) {
@@ -112,6 +113,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       axios.get(`${CONFIG.API_URL}/v1/report/trend`, {
         params: {
           filterBy,
+          trendBy,
         },
         headers: {
           Authorization: `${token}`,
@@ -136,6 +138,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       props: {
         initialTrendData: response.data?.data || null,
         initialFilterBy: filterBy,
+        initialTrendBy: trendBy,
         token: token,
         notifications: notificationsData?.data || [],
         unreadNotifications: unreadNotificationsData?.data || [],
@@ -156,6 +159,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       props: {
         initialTrendData: null,
         initialFilterBy: filterBy,
+        initialTrendBy: trendBy,
         notifications: [],
         unreadNotifications: [],
       },
@@ -166,10 +170,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 export default function SalesSummaryPage({
   initialTrendData,
   initialFilterBy = "week",
+  initialTrendBy = "sales",
   token,
 }: {
   initialTrendData: TrendData | null;
   initialFilterBy?: string;
+  initialTrendBy?: string;
   token: string;
 }) {
   const router = useRouter();
@@ -177,12 +183,15 @@ export default function SalesSummaryPage({
   const [trendData, setTrendData] = useState<TrendData | null>(initialTrendData);
   const [loading, setLoading] = useState(false);
   const [filterBy, setFilterBy] = useState<string>(initialFilterBy);
+  const [trendBy, setTrendBy] = useState<string>(initialTrendBy);
 
   // Sync state with props when SSR data changes
   useEffect(() => {
+    setLoading(false);
     setTrendData(initialTrendData);
     setFilterBy(initialFilterBy);
-  }, [initialTrendData, initialFilterBy]);
+    setTrendBy(initialTrendBy);
+  }, [initialTrendData, initialFilterBy, initialTrendBy]);
 
   // This ensures the component is mounted before rendering the chart
   useEffect(() => {
@@ -208,12 +217,23 @@ export default function SalesSummaryPage({
       label: "1 Year",
     },
   ], []);
-  const [selectType, setSelectType] = useState<string>("Sales");
+
+  const selectType = useMemo(() => {
+    return trendBy === "profit" ? "Profit" : "Sales";
+  }, [trendBy])
 
   const handleFilterChange = (period: string) => {
     setLoading(true);
     router.push({
-      query: { ...router.query, filterBy: period }
+      query: { ...router.query, filterBy: period, trendBy }
+    });
+  };
+
+  const handleTypeChange = (type: string) => {
+    if (trendBy === type) return;
+    setLoading(true);
+    router.push({
+      query: { ...router.query, filterBy, trendBy: type }
     });
   };
 
@@ -309,7 +329,7 @@ export default function SalesSummaryPage({
         <div className="ml-4 flex items-center gap-4">
           <button
             type="button"
-            onClick={() => setSelectType("Sales")}
+            onClick={() => handleTypeChange("sales")}
             className="flex items-center gap-2"
           >
             <div className="relative flex items-center justify-center w-5 h-5">
@@ -322,7 +342,7 @@ export default function SalesSummaryPage({
           </button>
           <button
             type="button"
-            onClick={() => setSelectType("Profit")}
+            onClick={() => handleTypeChange("profit")}
             className="flex items-center gap-2"
           >
             <div className="relative flex items-center justify-center w-5 h-5">
@@ -342,6 +362,7 @@ export default function SalesSummaryPage({
                 "trend",
                 {
                   filterBy,
+                  trendBy,
                 },
                 token,
                 `${selectType}_Trend_Report_${moment().format("YYYYMMDD")}`,

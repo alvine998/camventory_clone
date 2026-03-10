@@ -28,6 +28,13 @@ export default function PrintPDFModal({
     const sigCanvas = useRef<SignatureCanvas>(null);
     const printRef = useRef<HTMLDivElement>(null);
 
+    const existingSignaturePath = reservation?.ref_customer?.signature;
+    const existingSignatureUrl = existingSignaturePath
+        ? `${process.env.NEXT_PUBLIC_IMAGE_URL}/${existingSignaturePath}`
+        : null;
+
+    const displaySignature = signatureDataUrl || existingSignatureUrl;
+
     const handleGenerate = async () => {
         if (!printRef.current) return;
         setIsLoading(true);
@@ -51,7 +58,7 @@ export default function PrintPDFModal({
     };
 
     const handleCheckoutInternal = async () => {
-        if (!signatureDataUrl) {
+        if (!displaySignature) {
             const Swal = (await import("sweetalert2")).default;
             Swal.fire({
                 icon: "warning",
@@ -63,6 +70,21 @@ export default function PrintPDFModal({
 
         setIsLoading(true);
         try {
+            // If we are using an existing signature and no new one was drawn,
+            // directly pass the existing path to onCheckout
+            if (!signatureDataUrl && existingSignaturePath) {
+                if (onCheckout) {
+                    onCheckout(existingSignaturePath);
+                }
+                setIsLoading(false);
+                return;
+            }
+
+            if (!signatureDataUrl) {
+                setIsLoading(false);
+                return;
+            }
+
             const axios = (await import("axios")).default;
 
             // 1. Convert DataURL to Blob more reliably
@@ -172,7 +194,7 @@ export default function PrintPDFModal({
                                     <h3 className="font-bold text-gray-800 text-sm">Check-out agreement with signature</h3>
                                     <div className="flex items-center gap-1 mt-1 text-gray-400">
                                         <Pencil className="w-3 h-3" />
-                                        <span className="text-[10px]">{signatureDataUrl ? "Signed" : "Need signature"}</span>
+                                        <span className="text-[10px]">{displaySignature ? "Signed" : "Need signature"}</span>
                                     </div>
                                 </div>
                             </div>
@@ -283,8 +305,8 @@ export default function PrintPDFModal({
                                         <p className="font-bold text-gray-800 text-[10px] mb-4 uppercase">Notes:</p>
                                         <p className="font-bold text-gray-800 text-[10px] mb-2 uppercase">Signature and date:</p>
                                         <div className="mt-4 flex flex-col items-center">
-                                            {signatureDataUrl ? (
-                                                <Image src={signatureDataUrl} alt="Signature" width={100} height={48} unoptimized className="max-w-full h-12 object-contain" />
+                                            {displaySignature ? (
+                                                <Image src={displaySignature} alt="Signature" width={100} height={48} unoptimized className="max-w-full h-12 object-contain" />
                                             ) : (
                                                 <div className="w-24 h-12 border border-dashed border-gray-200 rounded flex items-center justify-center">
                                                     <Pencil className="w-6 h-6 text-gray-200" />
@@ -306,7 +328,7 @@ export default function PrintPDFModal({
                                 </div>
 
                                 {/* Floating Signature Button Removed by User Request */}
-                                {isCheckoutFlow && !signatureDataUrl && (
+                                {isCheckoutFlow && !displaySignature && (
                                     <div className="absolute bottom-[200px] left-1/2 -translate-x-1/2 no-print" data-html2canvas-ignore="true">
                                         <button
                                             onClick={() => setShowSignaturePad(true)}
