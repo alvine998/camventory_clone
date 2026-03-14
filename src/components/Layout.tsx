@@ -7,6 +7,7 @@ import MobileMenu from "./MobileMenu";
 import { usePathname } from "next/navigation";
 import { TooltipProvider } from "./ui/tooltip";
 import { NotificationData } from "@/types/notification";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 interface Props {
   children: ReactNode;
@@ -22,6 +23,27 @@ export default function Layout({
   const [isWide, setIsWide] = useState<boolean>(true);
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const pathname = usePathname();
+  const { user } = useAuthStore();
+  const role = user?.role?.toLowerCase();
+
+  const filterNavigations = (navs: typeof NAVIGATIONS) => {
+    return navs.filter((nav) => {
+      const title = nav.title.toLowerCase();
+      if (role === "admin") return true;
+      if (role === "kepala staff" || role === "kepala_staff") {
+        return ["dashboard", "calendar", "reservation", "customers", "items"].includes(title);
+      }
+      if (role === "staff") {
+
+        return ["dashboard", "calendar", "reservation", "customers"].includes(title);
+      }
+      return false;
+    });
+  };
+
+  const currentNavigations = pathname?.includes("/office") ? OFFICE_NAVIGATIONS : NAVIGATIONS;
+  const filteredNavigations = filterNavigations(currentNavigations);
+
   return (
     <TooltipProvider>
       <div>
@@ -34,9 +56,7 @@ export default function Layout({
               } h-screen duration-300 transition-all lg:block hidden overflow-y-auto`}
           >
             <Sidebar
-              navigations={
-                pathname?.includes("/office") ? OFFICE_NAVIGATIONS : NAVIGATIONS
-              }
+              navigations={filteredNavigations}
               isWide={isWide}
             />
           </div>
@@ -52,9 +72,7 @@ export default function Layout({
 
             <div className="lg:hidden block">
               <MobileMenu
-                navigations={
-                  pathname?.includes("/office") ? OFFICE_NAVIGATIONS : NAVIGATIONS
-                }
+                navigations={filteredNavigations}
                 showMenu={showMenu}
                 setShowMenu={setShowMenu}
               />
@@ -67,3 +85,4 @@ export default function Layout({
     </TooltipProvider>
   );
 }
+
