@@ -42,9 +42,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       endDate = "",
     } = query;
 
-    const startDateStr = (startDate as string) || moment().format("DD/MM/YYYY");
-    const endDateStr =
-      (endDate as string) || moment().add(30, "days").format("DD/MM/YYYY");
+    const startDateStr = (startDate as string) || moment().subtract(30, "days").format("DD/MM/YYYY");
+    const endDateStr = (endDate as string) || moment().format("DD/MM/YYYY");
 
     const startTimestamp = moment(startDateStr, "DD/MM/YYYY").unix();
     const endTimestamp = moment(endDateStr, "DD/MM/YYYY").unix();
@@ -108,8 +107,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       props: {
         reportData: null,
         dateRange: {
-          start: moment().format("DD/MM/YYYY"),
-          end: moment().add(30, "days").format("DD/MM/YYYY"),
+          start: moment().subtract(30, "days").format("DD/MM/YYYY"),
+          end: moment().format("DD/MM/YYYY"),
         },
         initialProductName: "",
         initialSortBy: "",
@@ -152,12 +151,12 @@ export default function SalesProductPage({
   const { query } = router;
 
   const [date, setDate] = useState({
-    start: dateRange?.start || moment().format("DD/MM/YYYY"),
-    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
+    start: dateRange?.start || moment().subtract(30, "days").format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().format("DD/MM/YYYY"),
   });
   const [tempDate, setTempDate] = useState({
-    start: dateRange?.start || moment().format("DD/MM/YYYY"),
-    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
+    start: dateRange?.start || moment().subtract(30, "days").format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().format("DD/MM/YYYY"),
   });
   const [productName, setProductName] = useState<string>(
     initialProductName || ""

@@ -40,9 +40,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     } = query;
 
     // Get date range from query or use defaults
-    const startDateStr = (startDate as string) || moment().format("DD/MM/YYYY");
-    const endDateStr =
-      (endDate as string) || moment().add(30, "days").format("DD/MM/YYYY");
+    const startDateStr = (startDate as string) || moment().subtract(30, "days").format("DD/MM/YYYY");
+    const endDateStr = (endDate as string) || moment().format("DD/MM/YYYY");
 
     // Convert dates to Unix timestamps
     const startTimestamp = moment(startDateStr, "DD/MM/YYYY").unix();
@@ -118,8 +117,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         reportData: null,
         categories: [],
         dateRange: {
-          start: moment().format("DD/MM/YYYY"),
-          end: moment().add(30, "days").format("DD/MM/YYYY"),
+          start: moment().subtract(30, "days").format("DD/MM/YYYY"),
+          end: moment().format("DD/MM/YYYY"),
         },
         notifications: [],
         unreadNotifications: [],
@@ -158,12 +157,12 @@ export default function SalesCategoryPage({
   const { query } = router;
 
   const [date, setDate] = useState({
-    start: dateRange?.start || moment().format("DD/MM/YYYY"),
-    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
+    start: dateRange?.start || moment().subtract(30, "days").format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().format("DD/MM/YYYY"),
   });
   const [tempDate, setTempDate] = useState({
-    start: dateRange?.start || moment().format("DD/MM/YYYY"),
-    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
+    start: dateRange?.start || moment().subtract(30, "days").format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().format("DD/MM/YYYY"),
   });
   const [modal, setModal] = useState<useModal>();
   const [isMounted, setIsMounted] = useState(false);

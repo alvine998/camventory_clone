@@ -84,7 +84,9 @@ const parseDateString = (dateStr: string): Date => {
 interface ReportData {
   date: number[] | null;
   sum_by_date: number[] | null;
-  total_sum_by_date: number;
+  net_sales: number;
+  profit: number;
+  gross_sales: number;
   tax: number;
 }
 
@@ -104,8 +106,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
 
     // Get date range from query or use defaults
-    const startDate = (query.startDate as string) || moment().format("DD/MM/YYYY");
-    const endDate = (query.endDate as string) || moment().add(30, "days").format("DD/MM/YYYY");
+    const startDate = (query.startDate as string) || moment().subtract(30, "days").format("DD/MM/YYYY");
+    const endDate = (query.endDate as string) || moment().format("DD/MM/YYYY");
 
     // Convert dates to Unix timestamps
     const startTimestamp = moment(startDate, "DD/MM/YYYY").unix();
@@ -157,8 +159,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       props: {
         initialReportData: null,
         dateRange: {
-          start: moment().format("DD/MM/YYYY"),
-          end: moment().add(30, "days").format("DD/MM/YYYY"),
+          start: moment().subtract(30, "days").format("DD/MM/YYYY"),
+          end: moment().format("DD/MM/YYYY"),
         },
         notifications: [],
         unreadNotifications: [],
@@ -171,12 +173,12 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
   const router = useRouter();
   const { query } = router;
   const [date, setDate] = useState({
-    start: dateRange?.start || moment().format("DD/MM/YYYY"),
-    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
+    start: dateRange?.start || moment().subtract(30, "days").format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().format("DD/MM/YYYY"),
   });
   const [tempDate, setTempDate] = useState({
-    start: dateRange?.start || moment().format("DD/MM/YYYY"),
-    end: dateRange?.end || moment().add(30, "days").format("DD/MM/YYYY"),
+    start: dateRange?.start || moment().subtract(30, "days").format("DD/MM/YYYY"),
+    end: dateRange?.end || moment().format("DD/MM/YYYY"),
   });
   // Update date and tempDate when dateRange changes (from SSR)
   useEffect(() => {
@@ -320,9 +322,10 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
                     key: "date",
                     formatter: (value) => value ? moment.unix(value).format("DD MMM YYYY") : "-"
                   },
-                  { header: "Net Sales", key: "net_sales" },
-                  { header: "Tax", key: "tax" },
-                  { header: "Gross Sales", key: "gross_sales" },
+                   { header: "Net Sales", key: "net_sales" },
+                   { header: "Tax", key: "tax" },
+                   { header: "Gross Sales", key: "gross_sales" },
+                   { header: "Profit", key: "profit" },
                 ]
               );
             }}
@@ -369,7 +372,7 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
               </h5>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p>Gross Sales</p>
-                <p>{formatCurrency(reportData?.total_sum_by_date || 0)}</p>
+                <p>{formatCurrency(reportData?.gross_sales || 0)}</p>
               </div>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p>Discount</p>
@@ -381,7 +384,7 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
               </div>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p className="font-bold">Total Net Sales</p>
-                <p className="font-bold">{formatCurrency(reportData?.total_sum_by_date || 0)}</p>
+                <p className="font-bold">{formatCurrency(reportData?.net_sales || 0)}</p>
               </div>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p>Tax</p>
@@ -390,7 +393,7 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p className="font-bold">Total Sales</p>
                 <p className="font-bold">
-                  {formatCurrency((reportData?.total_sum_by_date || 0) + (reportData?.tax || 0))}
+                  {formatCurrency((reportData?.net_sales || 0) + (reportData?.tax || 0))}
                 </p>
               </div>
             </div>
@@ -409,7 +412,7 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
               <h5 className="text-gray-500">Total Net Sales - Base Price</h5>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p>Total Net Sales</p>
-                <p>{formatCurrency(reportData?.total_sum_by_date || 0)}</p>
+                <p>{formatCurrency(reportData?.net_sales || 0)}</p>
               </div>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p>Base price</p>
@@ -417,7 +420,7 @@ export default function SalesSummaryPage({ initialReportData, dateRange, errorMe
               </div>
               <div className="flex items-center gap-2 justify-between mt-2 pb-2 border-b border-b-gray-300">
                 <p>Total Profit</p>
-                <p>{formatCurrency(reportData?.total_sum_by_date || 0)}</p>
+                <p>{formatCurrency(reportData?.profit || 0)}</p>
               </div>
             </div>
           )}

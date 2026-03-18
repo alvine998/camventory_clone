@@ -82,21 +82,25 @@ const chartOptions: ApexCharts.ApexOptions = {
 
 interface TrendData {
   date: number[];
-  prior_date: number[];
+  prior_date?: number[];
   sum_by_date: number[];
-  sum_by_date_prior: number[];
-  diff: number[];
-  ratio: number[];
-  total_sum_by_date: number;
-  total_sum_by_date_prior: number;
-  ratio_result: number;
+  sum_by_date_prior?: number[];
+  diff?: number[];
+  ratio?: number[];
+  total_sum_by_date?: number;
+  total_sum_by_date_prior?: number;
+  ratio_result?: number;
+  net_sales: number;
+  profit: number;
+  gross_sales: number;
+  tax: number;
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { req, query } = ctx;
   const cookies = parse(req.headers.cookie || "");
   const token = cookies.token;
-  const filterBy = (query.filterBy as string) || "week";
+  const filterBy = (query.filterBy as string) || "month";
   const trendBy = (query.trendBy as string) || "sales";
 
   try {
@@ -169,7 +173,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
 export default function SalesSummaryPage({
   initialTrendData,
-  initialFilterBy = "week",
+  initialFilterBy = "month",
   initialTrendBy = "sales",
   token,
 }: {
@@ -265,11 +269,11 @@ export default function SalesSummaryPage({
     }
 
     const chartCategories = trendData.date.map((ts) => {
-      if (!moment(ts).isValid()) return "";
+      if (!moment.unix(ts).isValid()) return "";
       // If filtering by year, show Month Year (e.g. "Jan 2024")
-      if (filterBy === "year") return moment(ts).format("MMM YYYY");
+      if (filterBy === "year") return moment.unix(ts).format("MMM YYYY");
       // Otherwise show Day Month (e.g. "01 Mar")
-      return moment(ts).format("DD MMM");
+      return moment.unix(ts).format("DD MMM");
     });
 
     const chartSeries = [
@@ -299,8 +303,8 @@ export default function SalesSummaryPage({
     [chartCategories]
   );
 
-  const currentTotal = trendData?.total_sum_by_date ?? 0;
-  const priorTotal = trendData?.total_sum_by_date_prior ?? 0;
+  // const currentTotal = trendData?.total_sum_by_date ?? 0;
+  // const priorTotal = trendData?.total_sum_by_date_prior ?? 0;
   const ratioResult = trendData?.ratio_result ?? 0;
 
   return (
@@ -402,36 +406,45 @@ export default function SalesSummaryPage({
         </div>
       </div>
 
-      <h2 className="font-bold text-xl mt-4">{selectType}</h2>
+      <h2 className="font-bold text-xl mt-4">Financial Summary</h2>
       {/* Header 2 */}
-      <div className="flex items-start gap-10 mt-2">
-        <div className="flex gap-2">
-          <div className="rounded bg-orange-600 w-5 h-5"></div>
-          <div>
-            <p className="text-sm text-gray-600">Current Period</p>
-            <p className="font-semibold">
-              Rp{currentTotal.toLocaleString("id-ID")}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <div className="rounded bg-orange-600 w-5 h-5"></div>
-          <div>
-            <p className="text-sm text-gray-600">Prior Period</p>
-            <p className="font-semibold">
-              Rp{priorTotal.toLocaleString("id-ID")}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-2 items-center">
-          <div className="rounded border-orange-600 border p-1">
-            <TrendingDown className="w-3 h-3 text-orange-600" />
-          </div>
-          <p className="text-sm text-orange-600">
-            {ratioResult.toFixed(2)}%
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-4">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+          <p className="text-sm text-gray-500 mb-1">Gross Sales</p>
+          <p className="text-xl font-bold text-gray-800">
+            Rp{trendData?.gross_sales?.toLocaleString("id-ID") || 0}
           </p>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+          <p className="text-sm text-gray-500 mb-1">Tax</p>
+          <p className="text-xl font-bold text-red-500">
+            Rp{trendData?.tax?.toLocaleString("id-ID") || 0}
+          </p>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+          <p className="text-sm text-gray-500 mb-1">Net Sales</p>
+          <p className="text-xl font-bold text-orange-600">
+            Rp{trendData?.net_sales?.toLocaleString("id-ID") || 0}
+          </p>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Profit</p>
+              <p className="text-xl font-bold text-green-600">
+                Rp{trendData?.profit?.toLocaleString("id-ID") || 0}
+              </p>
+            </div>
+            {ratioResult !== 0 && (
+              <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${ratioResult > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                <TrendingDown className={`w-3 h-3 ${ratioResult > 0 ? "rotate-180" : ""}`} />
+                <span>{Math.abs(ratioResult).toFixed(2)}%</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

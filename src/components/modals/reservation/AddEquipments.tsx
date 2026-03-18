@@ -10,14 +10,11 @@ import {
   XIcon,
 } from "lucide-react";
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import ScannerModal from "../../ScannerModal";
+import Swal from "sweetalert2";
 
-// Import Quagga for barcode scanning
-declare global {
-  interface Window {
-    Quagga: any;
-  }
-}
+// Removed Quagga declaration as we're using ScannerModal
 
 interface Item {
   id: string;
@@ -53,9 +50,7 @@ export default function AddEquipmentsModal({
   const [tab, setTab] = useState<"single" | "bulk">("single");
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
-  const [showScanner, setShowScanner] = useState(false);
-  const [scanning, setScanning] = useState(false);
-  const [scanSuccess, setScanSuccess] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   /** ✅ Add single item */
   const addEquipment = (item: Item) => {
@@ -85,6 +80,49 @@ export default function AddEquipmentsModal({
     });
   };
 
+  const handleScanSuccess = (decodedText: string) => {
+    // Search in singleItems and bulkItems
+    const allItems = [...singleItems, ...bulkItems];
+    console.log("Decoded text:", decodedText);
+
+    // Find item by ID or Serial Number (barcode)
+    const foundItem = allItems.find(item =>
+      item.id === decodedText ||
+      item.serial_number === decodedText
+    );
+
+    if (foundItem) {
+      // Determine if it's single or bulk
+      const isSingle = tab === "single";
+
+      if (isSingle) {
+        addEquipment(foundItem);
+      } else {
+        adjustBulkQty(foundItem, 1);
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Item Added',
+        text: `${foundItem.name} has been added to the list.`,
+        timer: 1500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+    } else {
+      Swal.fire({
+        icon: 'error',
+        title: 'Not Found',
+        text: `No item found with ID or Serial Number: ${decodedText}`,
+        timer: 2000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+    }
+  };
+
   /** ✅ Reset filters */
   const resetFilters = () => {
     setSearchTerm("");
@@ -92,161 +130,22 @@ export default function AddEquipmentsModal({
     setFilter?.({});
   };
 
-  /** ✅ Start camera for barcode scanning */
-  const startCamera = async () => {
-    try {
-      setShowScanner(true);
-      setScanning(true);
-      
-      // Wait for the DOM element to be available
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const scannerElement = document.querySelector('#scanner-container');
-      if (!scannerElement) {
-        throw new Error('Scanner container not found');
-      }
-      
-      // Load Quagga dynamically
-      const Quagga = (await import('quagga')).default;
-      
-      Quagga.init({
-        inputStream: {
-          name: "Live",
-          type: "LiveStream",
-          target: scannerElement,
-          constraints: {
-            width: 480,
-            height: 320,
-            facingMode: "environment" // Use back camera
-          },
-        },
-        decoder: {
-          readers: [
-            "code_128_reader",
-            "ean_reader",
-            "ean_8_reader",
-            "code_39_reader",
-            "code_39_vin_reader",
-            "codabar_reader",
-            "upc_reader",
-            "upc_e_reader",
-            "i2of5_reader"
-          ]
-        },
-        locate: true,
-        locator: {
-          patchSize: "medium",
-          halfSample: true
-        }
-      }, (err: any) => {
-        if (err) {
-          console.error('Quagga initialization error:', err);
-          alert('Unable to initialize camera. Please check permissions.');
-          stopCamera();
-          return;
-        }
-        console.log("Initialization finished. Ready to start");
-        Quagga.start();
-      });
+  // Cleanup removed as we're using ScannerModal
 
-      // Handle successful barcode detection
-      Quagga.onDetected((data: any) => {
-        console.log('Barcode detected:', data.codeResult.code);
-        
-        // Stop camera immediately and prevent multiple detections
-        Quagga.stop();
-        
-        // Set the barcode in search field
-        setSearchTerm(data.codeResult.code);
-        
-        // Update UI states
-        setShowScanner(false);
-        setScanning(false);
-        
-        // Show success feedback briefly
-        setScanSuccess(true);
-        setTimeout(() => {
-          setScanSuccess(false);
-        }, 2000); // Show success message for 2 seconds
-        
-        // Clean up camera resources
-        setTimeout(() => {
-          stopCamera();
-        }, 100);
-      });
-
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      alert('Unable to access camera. Please check permissions.');
-      stopCamera();
-    }
-  };
-
-  /** ✅ Stop camera */
-  const stopCamera = () => {
-    try {
-      if (typeof window !== 'undefined' && window.Quagga) {
-        // Stop Quagga scanner
-        window.Quagga.stop();
-        
-        // Clear the scanner container
-        const scannerElement = document.querySelector('#scanner-container');
-        if (scannerElement) {
-          scannerElement.innerHTML = '';
-        }
-        
-        // Clean up any video streams
-        const videos = document.querySelectorAll('video');
-        videos.forEach(video => {
-          if (video.srcObject) {
-            const stream = video.srcObject as MediaStream;
-            stream.getTracks().forEach(track => {
-              track.stop();
-            });
-            video.srcObject = null;
-          }
-        });
-        
-        // Remove any canvas elements created by Quagga
-        const canvases = document.querySelectorAll('canvas');
-        canvases.forEach(canvas => {
-          if (canvas.parentNode) {
-            canvas.parentNode.removeChild(canvas);
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error stopping camera:', error);
-    }
-    setShowScanner(false);
-    setScanning(false);
-  };
-
-  /** ✅ Handle scan button click */
-  const handleScanClick = () => {
-    if (showScanner) {
-      stopCamera();
-      setScanSuccess(false); // Reset success state when manually stopping
-    } else {
-      startCamera();
-    }
-  };
-
-  /** ✅ Filter items based on search term and location */
   const getFilteredItems = () => {
     const currentItems = tab === "single" ? singleItems : bulkItems;
-    
+
     return currentItems.filter((item) => {
       // Search filter - now includes barcode/serial number
-      const matchesSearch = searchTerm === "" || 
+      const matchesSearch = searchTerm === "" ||
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.serial_number && item.serial_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.id && item.id.toLowerCase().includes(searchTerm.toLowerCase()));
-      
+
       // Location filter (assuming items have a location property)
-      const matchesLocation = locationFilter === "all" || 
+      const matchesLocation = locationFilter === "all" ||
         (item as any).location === locationFilter;
-      
+
       return matchesSearch && matchesLocation;
     });
   };
@@ -257,48 +156,6 @@ export default function AddEquipmentsModal({
   ];
 
   const filteredItems = getFilteredItems();
-  console.log(filteredItems);
-
-  // Cleanup camera when modal closes
-  useEffect(() => {
-    if (!open) {
-      // Always stop camera when modal closes, regardless of showScanner state
-      stopCamera();
-      setScanSuccess(false);
-    }
-  }, [open]);
-
-  // Cleanup on component unmount
-  useEffect(() => {
-    return () => {
-      // Force cleanup on unmount
-      try {
-        if (typeof window !== 'undefined' && window.Quagga) {
-          window.Quagga.stop();
-        }
-        
-        // Clean up any video streams
-        const videos = document.querySelectorAll('video');
-        videos.forEach(video => {
-          if (video.srcObject) {
-            const stream = video.srcObject as MediaStream;
-            stream.getTracks().forEach(track => {
-              track.stop();
-            });
-            video.srcObject = null;
-          }
-        });
-        
-        // Clear scanner container
-        const scannerElement = document.querySelector('#scanner-container');
-        if (scannerElement) {
-          scannerElement.innerHTML = '';
-        }
-      } catch (error) {
-        console.error('Error during component cleanup:', error);
-      }
-    };
-  }, []);
 
   return (
     <Modal open={open} setOpen={setOpen} size="md">
@@ -323,21 +180,11 @@ export default function AddEquipmentsModal({
       <div className="mt-2 flex gap-2">
         <button
           type="button"
-          className={`flex items-center gap-2 border rounded p-2 transition-colors ${
-            showScanner 
-              ? 'border-red-500 bg-red-50 text-red-600' 
-              : 'border-gray-300 hover:border-orange-500 hover:bg-orange-50'
-          }`}
-          onClick={handleScanClick}
+          className="flex items-center gap-2 border rounded p-2 transition-colors border-gray-300 hover:border-orange-500 hover:bg-orange-50"
+          onClick={() => setIsScannerOpen(true)}
         >
-          {showScanner ? (
-            <XIcon className="w-5 h-5" />
-          ) : (
-            <ScanQrCodeIcon className="w-5 h-5 text-gray-500" />
-          )}
-          <p className="text-xs text-gray-500">
-            {showScanner ? 'Stop Scan' : 'Scan'}
-          </p>
+          <ScanQrCodeIcon className="w-5 h-5 text-orange-500" />
+          <p className="text-xs text-gray-500">Scan QR / Barcode</p>
         </button>
         <Input
           type="search"
@@ -384,51 +231,12 @@ export default function AddEquipmentsModal({
         </button>
       </div>
 
-      {/* Camera Scanner */}
-      {(showScanner || scanSuccess) && (
-        <div className="mt-4 border rounded-lg p-4 bg-gray-50">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-700">Barcode Scanner</h3>
-            <button
-              type="button"
-              onClick={() => {
-                stopCamera();
-                setScanSuccess(false);
-              }}
-              className="text-red-500 hover:text-red-600"
-            >
-              <XIcon className="w-4 h-4" />
-            </button>
-          </div>
-          
-          <div className="relative">
-            <div 
-              id="scanner-container" 
-              className="w-full h-48 bg-black rounded overflow-hidden"
-            />
-            
-            {scanning && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm">
-                  Scanning for barcode...
-                </div>
-              </div>
-            )}
-            
-            {scanSuccess && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-green-600 bg-opacity-90 text-white px-4 py-2 rounded text-sm font-semibold">
-                  ✓ Barcode Scanned Successfully!
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            {scanSuccess ? 'Barcode detected and camera stopped' : 'Point your camera at a barcode to scan it automatically'}
-          </p>
-        </div>
-      )}
+      {/* Scanner Modal Triggered */}
+      <ScannerModal
+        open={isScannerOpen}
+        setOpen={setIsScannerOpen}
+        onScanSuccess={handleScanSuccess}
+      />
 
       {/* Item List */}
       <div className="mt-4 flex flex-col gap-2">
@@ -438,111 +246,110 @@ export default function AddEquipmentsModal({
           </div>
         ) : (
           filteredItems.map((item) => {
-          return (
-            <div
-              key={item.id}
-              className="flex items-center justify-between gap-2 border p-2 rounded hover:bg-gray-100"
-            >
+            return (
               <div
-                className="flex items-center gap-2 cursor-pointer"
-                onClick={() =>
-                  tab === "single" ? addEquipment(item) : adjustBulkQty(item, 1)
-                }
+                key={item.id}
+                className="flex items-center justify-between gap-2 border p-2 rounded hover:bg-gray-100"
               >
-                {item.full_path_image ? (
-                  <Image
-                    src={item.full_path_image}
-                    alt={item.name}
-                    width={50}
-                    height={50}
-                    className="w-12 h-12 object-cover rounded"
-                  />
+                <div
+                  className="flex items-center gap-2 cursor-pointer"
+                  onClick={() =>
+                    tab === "single" ? addEquipment(item) : adjustBulkQty(item, 1)
+                  }
+                >
+                  {item.full_path_image ? (
+                    <Image
+                      src={item.full_path_image}
+                      alt={item.name}
+                      width={50}
+                      height={50}
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded">
+                      <p className="text-xs text-gray-500">No Image</p>
+                    </div>
+                  )}
+                  <div className="flex flex-col">
+                    <p className="text-sm font-semibold">{item.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {item?.qty ? "Item" : "Product"}
+                    </p>
+                  </div>
+                </div>
+
+                {tab === "single" ? (
+                  <button
+                    type="button"
+                    className="bg-orange-200 rounded p-1"
+                    onClick={() => addEquipment(item)}
+                    disabled={item?.added == 1}
+                  >
+                    {item?.added == 1 ? (
+                      <span className="text-xs text-orange-500">Added</span>
+                    ) : (
+                      <PlusCircleIcon className="w-5 h-5 text-orange-500" />
+                    )}
+                  </button>
                 ) : (
-                  <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded">
-                    <p className="text-xs text-gray-500">No Image</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={items.find((i) => i.id === item.id)?.added === 0}
+                      onClick={() => {
+                        if (items.find((i) => i.id === item.id)?.added == 1) {
+                          setItems(items.filter((i) => i.id !== item.id));
+                          return;
+                        }
+                        if (item?.added && item?.added > 0) {
+                          const result = items.map((i) => {
+                            if (i.id === item.id) {
+                              return { ...i, added: (i.added || 0) - 1 };
+                            }
+                            return i;
+                          });
+                          setItems(result);
+                        }
+                      }}
+                    >
+                      <MinusCircleIcon
+                        className={`w-5 h-5 ${item?.qty ? "text-orange-500" : "text-gray-400"
+                          }`}
+                      />
+                    </button>
+                    <p>{items.find((i) => i.id === item.id)?.added || 0}</p>
+                    <button
+                      type="button"
+                      disabled={
+                        items.find((i) => i.id === item.id)?.added === item?.qty
+                      }
+                      onClick={() => {
+                        if (
+                          items?.find(
+                            (i) => i.id === item.id && i?.qty && i?.added
+                          )
+                        ) {
+                          const result = items.map((i) => {
+                            if (i.id === item.id) {
+                              return { ...i, added: (i.added || 0) + 1 };
+                            }
+                            return i;
+                          });
+                          setItems(result);
+                        } else {
+                          const result = [...items, { ...item, added: 1 }];
+                          setItems(result);
+                          console.log(result);
+                        }
+                      }}
+                    >
+                      <PlusCircleIcon className="w-5 h-5 text-orange-500" />
+                    </button>
                   </div>
                 )}
-                <div className="flex flex-col">
-                  <p className="text-sm font-semibold">{item.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {item?.qty ? "Item" : "Product"}
-                  </p>
-                </div>
               </div>
-
-              {tab === "single" ? (
-                <button
-                  type="button"
-                  className="bg-orange-200 rounded p-1"
-                  onClick={() => addEquipment(item)}
-                  disabled={item?.added == 1}
-                >
-                  {item?.added == 1 ? (
-                    <span className="text-xs text-orange-500">Added</span>
-                  ) : (
-                    <PlusCircleIcon className="w-5 h-5 text-orange-500" />
-                  )}
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={items.find((i) => i.id === item.id)?.added === 0}
-                    onClick={() => {
-                      if (items.find((i) => i.id === item.id)?.added == 1) {
-                        setItems(items.filter((i) => i.id !== item.id));
-                        return;
-                      }
-                      if (item?.added && item?.added > 0) {
-                        const result = items.map((i) => {
-                          if (i.id === item.id) {
-                            return { ...i, added: (i.added || 0) - 1 };
-                          }
-                          return i;
-                        });
-                        setItems(result);
-                      }
-                    }}
-                  >
-                    <MinusCircleIcon
-                      className={`w-5 h-5 ${
-                        item?.qty ? "text-orange-500" : "text-gray-400"
-                      }`}
-                    />
-                  </button>
-                  <p>{items.find((i) => i.id === item.id)?.added || 0}</p>
-                  <button
-                    type="button"
-                    disabled={
-                      items.find((i) => i.id === item.id)?.added === item?.qty
-                    }
-                    onClick={() => {
-                      if (
-                        items?.find(
-                          (i) => i.id === item.id && i?.qty && i?.added
-                        )
-                      ) {
-                        const result = items.map((i) => {
-                          if (i.id === item.id) {
-                            return { ...i, added: (i.added || 0) + 1 };
-                          }
-                          return i;
-                        });
-                        setItems(result);
-                      } else {
-                        const result = [...items, { ...item, added: 1 }];
-                        setItems(result);
-                        console.log(result);
-                      }
-                    }}
-                  >
-                    <PlusCircleIcon className="w-5 h-5 text-orange-500" />
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })
+            );
+          })
         )}
       </div>
 

@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import React, { useState } from "react";
+import ScannerModal from "../ScannerModal";
+import Swal from "sweetalert2";
 
 interface Item {
     id: string;
@@ -26,6 +28,7 @@ interface Item {
     added?: number;
     category?: string;
     location?: string;
+    barcode?: string;
 }
 
 interface Props {
@@ -51,6 +54,7 @@ export default function AddEquipmentView({
     const [searchTerm, setSearchTerm] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("all");
     const [locationFilter, setLocationFilter] = useState("all");
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
 
     const addEquipment = (item: Item) => {
         if (!items.some((i) => i.id === item.id)) {
@@ -77,6 +81,51 @@ export default function AddEquipmentView({
             }
             return prev;
         });
+    };
+
+    const handleScanSuccess = (decodedText: string) => {
+        // Search in singleItems and bulkItems
+        const allItems = [...singleItems, ...bulkItems];
+        console.log("Decoded text:", decodedText);
+
+        // Find item by ID or Serial Number (barcode)
+        const foundItem = allItems.find(item =>
+            item.id === decodedText ||
+            item.serial_number === decodedText ||
+            item.barcode === decodedText
+        );
+
+        if (foundItem) {
+            // Determine if it's single or bulk
+            // If it has category field it's likely single-item, otherwise check isBulk
+            const isSingle = !!foundItem.category;
+
+            if (isSingle) {
+                addEquipment(foundItem);
+            } else {
+                adjustBulkQty(foundItem, 1);
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Item Added',
+                text: `${foundItem.name} has been added to the list.`,
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Not Found',
+                text: `No item found with ID or Serial Number: ${decodedText}`,
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
     };
 
     const getFilteredItems = () => {
@@ -131,9 +180,13 @@ export default function AddEquipmentView({
 
                 {/* Search & Filters */}
                 <div className="flex flex-wrap gap-4 items-center">
-                    <button className="flex items-center gap-2 border rounded-md px-3 py-2 text-gray-500 hover:border-orange-500">
-                        <ScanQrCodeIcon className="w-4 h-4" />
-                        <span className="text-sm">Scan</span>
+                    <button
+                        type="button"
+                        onClick={() => setIsScannerOpen(true)}
+                        className="flex items-center gap-2 border rounded-md px-3 py-2 text-gray-500 hover:border-orange-500 hover:bg-orange-50 transition-colors"
+                    >
+                        <ScanQrCodeIcon className="w-4 h-4 text-orange-500" />
+                        <span className="text-sm font-medium">Scan QR / Barcode</span>
                     </button>
 
                     <div className="flex-1 min-w-[200px]">
@@ -288,6 +341,12 @@ export default function AddEquipmentView({
                     Save
                 </Button>
             </div>
+
+            <ScannerModal
+                open={isScannerOpen}
+                setOpen={setIsScannerOpen}
+                onScanSuccess={handleScanSuccess}
+            />
         </div>
     );
 }
