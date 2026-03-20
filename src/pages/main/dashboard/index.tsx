@@ -181,9 +181,9 @@ export default function DashboardPage({ token }: DashboardPageProps) {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <h1 className="text-3xl font-extrabold text-orange-500">Overview</h1>
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center lg:flex-row flex-col gap-3">
             {/* From Input Box */}
-            <div className="relative group min-w-[160px]">
+            <div className="relative group lg:min-w-[160px] min-w-[300px]">
               <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                 <span className="text-gray-500 text-sm font-normal">From</span>
               </div>
@@ -215,7 +215,7 @@ export default function DashboardPage({ token }: DashboardPageProps) {
             </div>
 
             {/* To Input Box */}
-            <div className="relative group min-w-[140px]">
+            <div className="relative group lg:min-w-[140px] min-w-[300px]">
               <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                 <span className="text-gray-500 text-sm font-normal">To</span>
               </div>

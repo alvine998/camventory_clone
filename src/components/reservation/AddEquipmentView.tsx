@@ -55,6 +55,8 @@ export default function AddEquipmentView({
     const [categoryFilter, setCategoryFilter] = useState("all");
     const [locationFilter, setLocationFilter] = useState("all");
     const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 12;
 
     const addEquipment = (item: Item) => {
         if (!items.some((i) => i.id === item.id)) {
@@ -140,10 +142,16 @@ export default function AddEquipmentView({
         });
     };
 
+    const filteredItems = getFilteredItems();
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedItems = filteredItems.slice(startIndex, startIndex + itemsPerPage);
+
     const resetFilters = () => {
         setSearchTerm("");
         setCategoryFilter("all");
         setLocationFilter("all");
+        setCurrentPage(1);
     };
 
     const itemTabs = [
@@ -151,7 +159,7 @@ export default function AddEquipmentView({
         { label: "Bulk Items", href: "bulk" },
     ];
 
-    const filteredItems = getFilteredItems();
+    // const filteredItemsCount = filteredItems.length;
 
     return (
         <div className="flex flex-col min-h-screen bg-white">
@@ -174,7 +182,10 @@ export default function AddEquipmentView({
                     <TabsValue
                         tabs={itemTabs}
                         value={tab}
-                        setValue={(val) => setTab(val as "single" | "bulk")}
+                        setValue={(val) => {
+                            setTab(val as "single" | "bulk");
+                            setCurrentPage(1);
+                        }}
                     />
                 </div>
 
@@ -195,7 +206,10 @@ export default function AddEquipmentView({
                             placeholder="Search Product ..."
                             fullWidth
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1);
+                            }}
                         />
                     </div>
 
@@ -204,7 +218,10 @@ export default function AddEquipmentView({
                             options={[{ value: "all", label: "Category Product" }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
                             placeholder="Category Product"
                             value={categoryFilter === "all" ? null : { value: categoryFilter, label: categories.find(c => c.id === categoryFilter)?.name || "Category" }}
-                            onChange={(opt: any) => setCategoryFilter(opt?.value || "all")}
+                            onChange={(opt: any) => {
+                                setCategoryFilter(opt?.value || "all");
+                                setCurrentPage(1);
+                            }}
                             fullWidth
                         />
                     </div>
@@ -218,7 +235,10 @@ export default function AddEquipmentView({
                             ]}
                             placeholder="Location"
                             value={locationFilter === "all" ? null : { value: locationFilter, label: locationFilter.charAt(0).toUpperCase() + locationFilter.slice(1) }}
-                            onChange={(opt: any) => setLocationFilter(opt?.value || "all")}
+                            onChange={(opt: any) => {
+                                setLocationFilter(opt?.value || "all");
+                                setCurrentPage(1);
+                            }}
                             fullWidth
                         />
                     </div>
@@ -242,7 +262,7 @@ export default function AddEquipmentView({
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                        {filteredItems.map((item) => {
+                        {paginatedItems.map((item) => {
                             const addedItem = items.find(i => i.id === item.id);
                             const addedCount = addedItem?.added || addedItem?.qty || 0;
 
@@ -318,19 +338,70 @@ export default function AddEquipmentView({
             </div>
 
             {/* Pagination */}
-            <div className="p-4 flex justify-center">
-                <div className="flex items-center gap-1">
-                    <button className="p-1 border rounded hover:bg-gray-50 disabled:opacity-30"><ChevronsLeftIcon className="w-4 h-4" /></button>
-                    <button className="p-1 border rounded hover:bg-gray-50 disabled:opacity-30"><ChevronLeftIcon className="w-4 h-4" /></button>
-                    <button className="px-3 py-1 border rounded bg-orange-500 text-white font-bold">1</button>
-                    <button className="px-3 py-1 border rounded hover:bg-gray-50">2</button>
-                    <button className="px-3 py-1 border rounded hover:bg-gray-50">3</button>
-                    <span className="px-2">...</span>
-                    <button className="px-3 py-1 border rounded hover:bg-gray-50">10</button>
-                    <button className="p-1 border rounded hover:bg-gray-50"><ChevronRightIcon className="w-4 h-4" /></button>
-                    <button className="p-1 border rounded hover:bg-gray-50"><ChevronsRightIcon className="w-4 h-4" /></button>
+            {totalPages > 1 && (
+                <div className="p-4 flex justify-center">
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setCurrentPage(1)}
+                            disabled={currentPage === 1}
+                            className="p-1 border rounded hover:bg-gray-50 disabled:opacity-30"
+                        >
+                            <ChevronsLeftIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="p-1 border rounded hover:bg-gray-50 disabled:opacity-30"
+                        >
+                            <ChevronLeftIcon className="w-4 h-4" />
+                        </button>
+
+                        {[...Array(totalPages)].map((_, i) => {
+                            const page = i + 1;
+                            // Show first page, last page, and pages around current page
+                            if (
+                                page === 1 ||
+                                page === totalPages ||
+                                (page >= currentPage - 1 && page <= currentPage + 1)
+                            ) {
+                                return (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`px-3 py-1 border rounded font-bold ${currentPage === page
+                                            ? "bg-orange-500 text-white"
+                                            : "hover:bg-gray-50 text-gray-600"
+                                            }`}
+                                    >
+                                        {page}
+                                    </button>
+                                );
+                            } else if (
+                                page === currentPage - 2 ||
+                                page === currentPage + 2
+                            ) {
+                                return <span key={page} className="px-1 text-gray-400">...</span>;
+                            }
+                            return null;
+                        })}
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="p-1 border rounded hover:bg-gray-50 disabled:opacity-30"
+                        >
+                            <ChevronRightIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => setCurrentPage(totalPages)}
+                            disabled={currentPage === totalPages}
+                            className="p-1 border rounded hover:bg-gray-50 disabled:opacity-30"
+                        >
+                            <ChevronsRightIcon className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Footer Actions */}
             <div className="sticky bottom-0 bg-white border-t p-4 flex justify-end gap-4 shadow-lg">
