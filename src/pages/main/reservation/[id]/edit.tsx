@@ -452,6 +452,7 @@ export default function EditReservationPage({
                       </div>
                       <button
                         type="button"
+                        className="bg-[#FF57571A] p-2 rounded"
                         onClick={() => {
                           setItems(items.filter((i) => i.id !== item.id));
                           Swal.fire({
@@ -479,7 +480,7 @@ export default function EditReservationPage({
             type="button"
             onClick={() => router.push("/main/reservation")}
           >
-            Cancel
+            Back
           </Button>
           <Button disabled={loading} variant="submit" type="submit">
             {loading ? "Loading..." : "Save"}
