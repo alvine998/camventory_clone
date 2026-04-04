@@ -30,7 +30,7 @@ export default function Layout({
   const filterNavigations = (navs: typeof NAVIGATIONS) => {
     return navs.filter((nav) => {
       const title = nav.title.toLowerCase();
-      if (role === "super") return true;
+      if (role === "admin" || role === "super") return true;
       if (role === "kepala staff" || role === "kepala_staff") {
         return ["dashboard", "calendar", "reservation", "customers", "items"].includes(title);
       }
