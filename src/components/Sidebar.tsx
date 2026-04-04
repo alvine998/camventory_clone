@@ -2,7 +2,7 @@ import { INavigation } from "@/types/navigation";
 import { ChevronDown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/router";
 import React, { useState } from "react";
 
 interface Props {
@@ -11,7 +11,8 @@ interface Props {
 }
 
 export default function Sidebar({ navigations, isWide }: Props) {
-  const pathname = usePathname();
+  const router = useRouter();
+  const pathname = router.pathname;
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   return (
     <div className="flex flex-col items-center py-6">

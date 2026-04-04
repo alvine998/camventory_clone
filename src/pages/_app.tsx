@@ -19,7 +19,7 @@ export default function App({ Component, pageProps }: AppProps) {
     if (!currentPath || !role) return;
 
     const isAllowed = (path: string) => {
-      if (role === "admin") return true;
+      if (role === "admin" || role === "super") return true;
 
       const pathLower = path.toLowerCase();
       const commonPaths = [
@@ -40,8 +40,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
       // Restrict access to other /main and /office/main paths
       if (
-        pathLower.startsWith("/main") ||
-        pathLower.startsWith("/office/main")
+        pathLower.startsWith("/main")
       ) {
         return false;
       }
@@ -54,7 +53,9 @@ export default function App({ Component, pageProps }: AppProps) {
     }
   }, [currentPath, role, router]);
 
-  if (currentPath?.includes("/main")) {
+  const isDashboard = currentPath?.includes("/main") || currentPath?.includes("/office/main");
+
+  if (isDashboard) {
     return (
       <Layout
         notifications={(pageProps as any).notifications}

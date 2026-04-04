@@ -43,7 +43,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     const startTimestamp = moment(startDateStr, "DD/MM/YYYY").unix();
     const endTimestamp = moment(endDateStr, "DD/MM/YYYY").unix();
-    console.log(startTimestamp, endTimestamp, "timestamp")
+    console.log(token, "token")
 
     const params: any = {
       page,

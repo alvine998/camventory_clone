@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/router";
 
 export default function NotFound() {
-  const pathname = usePathname();
-  console.log(pathname?.includes("main"), "path");
+  const router = useRouter();
+  const pathname = router.asPath;
   return (
     <div className="flex flex-col items-center justify-center h-screen text-center">
       <h1 className="text-6xl font-bold text-red-500">404</h1>

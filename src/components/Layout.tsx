@@ -4,7 +4,7 @@ import { NAVIGATIONS, OFFICE_NAVIGATIONS } from "@/constants/navigation";
 import Head from "next/head";
 import Topbar from "./Topbar";
 import MobileMenu from "./MobileMenu";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/router";
 import { TooltipProvider } from "./ui/tooltip";
 import { NotificationData } from "@/types/notification";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -22,14 +22,15 @@ export default function Layout({
 }: Props) {
   const [isWide, setIsWide] = useState<boolean>(true);
   const [showMenu, setShowMenu] = useState<boolean>(false);
-  const pathname = usePathname();
+  const router = useRouter();
+  const pathname = router.asPath;
   const { user } = useAuthStore();
   const role = user?.role?.toLowerCase();
 
   const filterNavigations = (navs: typeof NAVIGATIONS) => {
     return navs.filter((nav) => {
       const title = nav.title.toLowerCase();
-      if (role === "admin") return true;
+      if (role === "super") return true;
       if (role === "kepala staff" || role === "kepala_staff") {
         return ["dashboard", "calendar", "reservation", "customers", "items"].includes(title);
       }
@@ -42,7 +43,7 @@ export default function Layout({
   };
 
   const currentNavigations = pathname?.includes("/office") ? OFFICE_NAVIGATIONS : NAVIGATIONS;
-  const filteredNavigations = filterNavigations(currentNavigations);
+  const filteredNavigations = pathname?.includes("/office") ? currentNavigations : filterNavigations(currentNavigations);
 
   return (
     <TooltipProvider>
