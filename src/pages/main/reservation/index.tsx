@@ -254,20 +254,20 @@ export default function ReservationPage({ table, customers }: any) {
     taking_goods_comp: (
       <div className="py-2">
         <h5 className="font-bold text-gray-800">
-          {moment(item.start_date * 1000).format("DD MMM")}
+          {item.taking_goods ? moment(item.taking_goods * 1000).format("DD MMM") : "-"}
         </h5>
         <p className="text-gray-400 text-xs">
-          {moment(item.start_date * 1000).format("ddd hh:mm A")}
+          {item.taking_goods ? moment(item.taking_goods * 1000).format("ddd hh:mm A") : "-"}
         </p>
       </div>
     ),
     returned_items_comp: (
       <div className="py-2">
         <h5 className="font-bold text-gray-800">
-          {moment(item.end_date * 1000).format("DD MMM")}
+          {item.returned_goods ? moment(item.returned_goods * 1000).format("DD MMM") : "-"}
         </h5>
         <p className="text-gray-400 text-xs">
-          {moment(item.end_date * 1000).format("ddd hh:mm A")}
+          {item.returned_goods ? moment(item.returned_goods * 1000).format("ddd hh:mm A") : "-"}
         </p>
       </div>
     ),
