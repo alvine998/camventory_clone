@@ -16,6 +16,7 @@ interface Props {
 
 export default function Header({ detail, query }: Props) {
   const router = useRouter();
+  console.log(detail, "detail")
   const [notesModalOpen, setNotesModalOpen] = useState<boolean>(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const conditions = [
@@ -137,16 +138,20 @@ export default function Header({ detail, query }: Props) {
                 </div>
               )}
             </div>
-            <div className="flex gap-1 items-center flex-shrink-0 mt-2">
-              <Image
-                alt="icon"
-                src={"/icons/box_gray.svg"}
-                width={20}
-                height={20}
-                className={"w-auto h-auto"}
-              />
-              <p className="text-xs text-gray-500">{query.type}</p>
-            </div>
+            {
+              query?.type === "single" ? (
+                <div className="flex gap-1 items-center flex-shrink-0 mt-2">
+                  <Image
+                    alt="icon"
+                    src={"/icons/box_gray.svg"}
+                    width={20}
+                    height={20}
+                    className={"w-auto h-auto"}
+                  />
+                  <p className="text-xs text-gray-500">{query.type}</p>
+                </div>
+              ) : ""
+            }
           </div>
         </div>
       </div>

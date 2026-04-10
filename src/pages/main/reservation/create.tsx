@@ -13,6 +13,7 @@ import { useRouter } from "next/router";
 import React, { useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 import moment from "moment";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 // ✅ Types
 interface Category {
@@ -147,11 +148,19 @@ export default function CreateReservationPage({
   const [showToPicker, setShowToPicker] = useState(false);
   const processedItemIdRef = useRef<string | null>(null);
 
+  const { user } = useAuthStore();
   const [reservationData, setReservationData] = useState({
     customer_uuid: "",
-    user_uuid: "",
+    user_uuid: user?.id || "",
     location: "dipatiukur",
   });
+
+  // Sync user_uuid if user object from store becomes available later
+  useEffect(() => {
+    if (user?.id && !reservationData.user_uuid) {
+      setReservationData((prev) => ({ ...prev, user_uuid: user.id }));
+    }
+  }, [user, reservationData.user_uuid]);
 
   // Get today's date at start of day for comparison
   const today = new Date();
@@ -481,6 +490,7 @@ export default function CreateReservationPage({
             fullWidth
             required
             name="user_uuid"
+            isDisabled={true}
           />
         </div>
 
