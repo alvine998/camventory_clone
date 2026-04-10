@@ -249,15 +249,6 @@ export default function Detail({ params, detail, query }: any) {
           <div className="border border-gray-300 p-4 rounded w-full lg:w-[60%] h-fit">
             <div className="border-b border-gray-300 w-full flex items-center justify-between pb-2">
               <h3 className="text-md font-bold">Information Item</h3>
-              <Link href={`/main/items/${params?.id}/edit?type=bulk`}>
-                <Button
-                  variant="custom-color"
-                  className="flex items-center gap-1 border border-orange-500 py-1"
-                >
-                  <PencilIcon className="w-4 h-4 text-orange-500" />
-                  <p className="text-xs text-orange-500">Edit</p>
-                </Button>
-              </Link>
             </div>
 
             <div className="mt-4 grid lg:grid-cols-2 grid-cols-1 gap-x-10 gap-y-4">

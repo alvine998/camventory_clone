@@ -1,6 +1,7 @@
-import { PackageIcon } from "lucide-react";
+import { PackageIcon, PencilIcon } from "lucide-react";
 import React, { useState } from "react";
 import Button from "../Button";
+import Link from "next/link";
 import Badge from "../Badge";
 import Select from "../Select";
 import Image from "next/image";
@@ -92,13 +93,17 @@ export default function Header({ detail, query }: Props) {
                   {generatingBarcode ? "Generating..." : "Generate Barcode"}
                 </p>
               </Button> */}
-              {/* <Button
-                className="flex items-center gap-1 border border-orange-500"
-                variant="custom-color"
-              >
-                <PencilIcon className="w-4 h-4 text-orange-500" />
-                <p className="text-orange-500 text-xs">Edit</p>
-              </Button> */}
+              {query?.type === "bulk" && (
+                <Link href={`/main/items/${detail?.id}/edit?type=bulk`}>
+                  <Button
+                    className="flex items-center gap-1 border border-orange-500"
+                    variant="custom-color"
+                  >
+                    <PencilIcon className="w-4 h-4 text-orange-500" />
+                    <p className="text-orange-500 text-xs">Edit</p>
+                  </Button>
+                </Link>
+              )}
               <Button
                 className="flex items-center gap-1"
                 variant="submit"
