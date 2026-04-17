@@ -347,11 +347,11 @@ export default function Detail({ params, detail, query }: any) {
           <Link href={`/main/items`}>
             <Button variant="white">Cancel</Button>
           </Link>
-          <Link href={`/main/checkout`}>
+          {/* <Link href={`/main/checkout`}>
             <Button variant="submit" type="button">
               Checkout
             </Button>
-          </Link>
+          </Link> */}
         </div>
       </div>
     </div>
