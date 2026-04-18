@@ -20,7 +20,7 @@ export default function PrintPDFModal({
   setOpen,
   reservation,
   isCheckoutFlow = false,
-  // onCheckout,
+  onCheckout,
 }: PrintPDFModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showSignaturePad, setShowSignaturePad] = useState(false);
@@ -231,21 +231,21 @@ export default function PrintPDFModal({
       console.log(documentPath, "document path");
 
       // Step 4: Call checkout API with signature and document paths
-      // const checkoutRes = await axios.post(`/api/reservation/checkout`, {
-      //     id: reservation.id || reservation.book_id,
-      //     user_id: reservation.ref_user?.id,
-      //     items: reservation.details || [],
-      //     signature: signaturePath,
-      //     file_path: documentPath || signaturePath, // Use document path if available, else signature
-      // });
+      const checkoutRes = await axios.post(`/api/reservation/checkout`, {
+          id: reservation.id || reservation.book_id,
+          user_id: reservation.ref_user?.id,
+          items: reservation.details || [],
+          signature: signaturePath,
+          file_path: documentPath || signaturePath, // Use document path if available, else signature
+      });
 
-      // if (checkoutRes.status === 200 || checkoutRes.status === 201) {
-      //     if (onCheckout) {
-      //         onCheckout(signaturePath);
-      //     }
-      // } else {
-      //     throw new Error(`Checkout failed with status ${checkoutRes.status}`);
-      // }
+      if (checkoutRes.status === 200 || checkoutRes.status === 201) {
+          if (onCheckout) {
+              onCheckout(signaturePath);
+          }
+      } else {
+          throw new Error(`Checkout failed with status ${checkoutRes.status}`);
+      }
     } catch (error: any) {
       console.error("Checkout process error:", error);
       const Swal = (await import("sweetalert2")).default;
