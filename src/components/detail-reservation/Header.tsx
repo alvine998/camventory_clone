@@ -24,7 +24,7 @@ interface Props {
   query: any;
 }
 
-export default function HeaderReservation({ detail }: Props) {
+export default function HeaderReservation({ detail, query }: Props) {
   const router = useRouter();
   const { user } = useAuthStore();
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -55,7 +55,8 @@ export default function HeaderReservation({ detail }: Props) {
     } catch (error: any) {
       console.error("Cancel error:", error);
       const apiMessage = error.response?.data?.message;
-      const errorMessage = typeof apiMessage === 'object' ? apiMessage.message : apiMessage;
+      const errorMessage =
+        typeof apiMessage === "object" ? apiMessage.message : apiMessage;
 
       Swal.fire({
         icon: "error",
@@ -69,7 +70,7 @@ export default function HeaderReservation({ detail }: Props) {
       setIsLoading(false);
     }
   };
-  const handleCheckout = async (signaturePath?: string) => {
+  const handleCheckout = async (filePath?: string) => {
     if (!user?.id) {
       Swal.fire({
         icon: "error",
@@ -87,7 +88,8 @@ export default function HeaderReservation({ detail }: Props) {
         items: detail?.details?.map((item: any) => ({
           item_id: item.item_id,
         })),
-        signature: signaturePath || null,
+        signature: filePath || null,
+        file_path: filePath || null,
       };
 
       const res = await axios.post("/api/reservation/checkout", payload);
@@ -109,12 +111,14 @@ export default function HeaderReservation({ detail }: Props) {
     } catch (error: any) {
       console.error("Checkout error:", error);
       const apiMessage = error.response?.data?.message;
-      const errorMessage = typeof apiMessage === "object" ? apiMessage.message : apiMessage;
+      const errorMessage =
+        typeof apiMessage === "object" ? apiMessage.message : apiMessage;
 
       Swal.fire({
         icon: "error",
         title: "Checkout Failed",
-        text: errorMessage || error.message || "An error occurred during checkout.",
+        text:
+          errorMessage || error.message || "An error occurred during checkout.",
       });
     } finally {
       setIsLoading(false);
@@ -147,19 +151,19 @@ export default function HeaderReservation({ detail }: Props) {
     } catch (error: any) {
       console.error("Check in error:", error);
       const apiMessage = error.response?.data?.message;
-      const errorMessage = typeof apiMessage === "object" ? apiMessage.message : apiMessage;
+      const errorMessage =
+        typeof apiMessage === "object" ? apiMessage.message : apiMessage;
 
       Swal.fire({
         icon: "error",
         title: "Check In Failed",
-        text: errorMessage || error.message || "An error occurred during check in.",
+        text:
+          errorMessage || error.message || "An error occurred during check in.",
       });
     } finally {
       setIsLoading(false);
     }
   };
-
-
 
   return (
     <div>
@@ -183,7 +187,9 @@ export default function HeaderReservation({ detail }: Props) {
               <h5>{detail?.book_id ?? "NK0001"}</h5>
               <Badge
                 text={detail?.status || "Booked"}
-                color={getStatusBadgeColor(detail?.status)}
+                color={getStatusBadgeColor(
+                  query?.type === "bulk" ? String(detail?.qty) : detail?.status,
+                )}
               >
                 {detail?.status}
               </Badge>
@@ -218,7 +224,9 @@ export default function HeaderReservation({ detail }: Props) {
               {detail?.status?.toUpperCase() === "BOOKED" ? (
                 <Dropdown
                   label={`Check Out ${detail?.details?.length || 0} items`}
-                  triggerIcon={<ShoppingCartIcon className="w-4 h-4 text-white" />}
+                  triggerIcon={
+                    <ShoppingCartIcon className="w-4 h-4 text-white" />
+                  }
                   isLoading={isLoading}
                   options={[
                     {
@@ -234,7 +242,9 @@ export default function HeaderReservation({ detail }: Props) {
                 <div className="flex gap-2 items-center">
                   <Dropdown
                     label={`Check In ${detail?.details?.length || 0} items`}
-                    triggerIcon={<ShoppingCartIcon className="w-4 h-4 text-white" />}
+                    triggerIcon={
+                      <ShoppingCartIcon className="w-4 h-4 text-white" />
+                    }
                     isLoading={isLoading}
                     options={[
                       {

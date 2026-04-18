@@ -1,5 +1,8 @@
 import Button from "@/components/Button";
-import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
+import {
+  fetchNotificationsServer,
+  fetchUnreadNotificationsServer,
+} from "@/utils/notification";
 import Header from "@/components/detail-item/Header";
 import Tabs, { Tab } from "@/components/Tabs";
 import { CONFIG } from "@/config";
@@ -7,10 +10,7 @@ import { IItems } from "@/types/single_items";
 import { formatEpochDate, toMoney } from "@/utils";
 import axios from "axios";
 import { parse } from "cookie";
-import {
-  PencilIcon,
-  PlusCircleIcon,
-} from "lucide-react";
+import { PencilIcon, PlusCircleIcon } from "lucide-react";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -33,11 +33,14 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     let resultPromise;
     if (query.type === "bulk" && params) {
-      resultPromise = axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
-        headers: {
-          Authorization: `${token}`,
+      resultPromise = axios.get(
+        `${CONFIG.API_URL}/v1/bulk-items/${params.id}`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
         },
-      });
+      );
     } else if (query.type === "single" && params) {
       resultPromise = axios.get(
         `${CONFIG.API_URL}/v1/single-items/${params.id}`,
@@ -45,17 +48,18 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           headers: {
             Authorization: `${token}`,
           },
-        }
+        },
       );
     } else {
       throw new Error(`Invalid query.type: ${query.type}`);
     }
 
-    const [result, notificationsData, unreadNotificationsData] = await Promise.all([
-      resultPromise,
-      fetchNotificationsServer(token),
-      fetchUnreadNotificationsServer(token),
-    ]);
+    const [result, notificationsData, unreadNotificationsData] =
+      await Promise.all([
+        resultPromise,
+        fetchNotificationsServer(token),
+        fetchUnreadNotificationsServer(token),
+      ]);
 
     if (result.status !== 200) {
       throw new Error(`API request failed with status code ${result.status}`);
@@ -69,7 +73,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         query,
         notifications: notificationsData?.data || [],
         unreadNotifications: unreadNotificationsData?.data || [],
-      }
+      },
     };
   } catch (error: any) {
     console.log(error);
@@ -85,7 +89,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       props: {
         table: [],
         notifications: [],
-        unreadNotifications: []
+        unreadNotifications: [],
       },
     };
   }
@@ -126,6 +130,7 @@ export default function Detail({ params, detail, query }: any) {
     { label: "Location", value: itemDetail?.location },
     { label: "Serial Number", value: itemDetail?.serial_number },
     { label: "Completeness", value: itemDetail?.completeness },
+    { label: "Quantity", value: itemDetail?.qty || 0 },
   ];
 
   const singleInformation = [
@@ -207,7 +212,10 @@ export default function Detail({ params, detail, query }: any) {
 
             <div className="mt-4 grid lg:grid-cols-5 grid-cols-1 gap-10 w-full">
               {singleInformation.map((item, index) => (
-                <div key={index} className={`flex gap-2 ${item.label === "Barcode" ? "flex-col items-start" : "items-center"}`}>
+                <div
+                  key={index}
+                  className={`flex gap-2 ${item.label === "Barcode" ? "flex-col items-start" : "items-center"}`}
+                >
                   <p className="text-xs flex-shrink-0">{item.label}</p>
                   {item.label === "Image" ? (
                     <Image
@@ -231,7 +239,9 @@ export default function Detail({ params, detail, query }: any) {
                         />
                       </div>
                     ) : (
-                      <p className="text-xs font-bold text-gray-400">No barcode</p>
+                      <p className="text-xs font-bold text-gray-400">
+                        No barcode
+                      </p>
                     )
                   ) : (
                     <p className="text-xs font-bold">{item.value}</p>
@@ -254,13 +264,18 @@ export default function Detail({ params, detail, query }: any) {
             <div className="mt-4 grid lg:grid-cols-2 grid-cols-1 gap-x-10 gap-y-4">
               <div className="flex flex-col gap-4">
                 {itemInformation.map((item, index) => (
-                  <div key={index} className="flex justify-between items-start w-full">
+                  <div
+                    key={index}
+                    className="flex justify-between items-start w-full"
+                  >
                     <p className="text-xs text-gray-500">{item.label}</p>
                     <div className="text-right flex justify-end w-full">
                       {item.label === "Image" ? (
                         <Image
                           alt="item image"
-                          src={typeof item?.value === "string" ? item.value : ""}
+                          src={
+                            typeof item?.value === "string" ? item.value : ""
+                          }
                           width={40}
                           height={40}
                           className={"w-10 h-10 object-cover rounded"}
@@ -277,7 +292,9 @@ export default function Detail({ params, detail, query }: any) {
                             fontSize={10}
                           />
                         ) : (
-                          <p className="text-xs font-bold text-gray-400">No barcode</p>
+                          <p className="text-xs font-bold text-gray-400">
+                            No barcode
+                          </p>
                         )
                       ) : (
                         <p className="text-xs font-bold">{item.value}</p>
@@ -288,29 +305,39 @@ export default function Detail({ params, detail, query }: any) {
               </div>
               <div className="flex flex-col gap-4">
                 {itemInformation2.map((item, index) => (
-                  <div key={index} className="flex justify-between items-start w-full">
+                  <div
+                    key={index}
+                    className="flex justify-between items-start w-full"
+                  >
                     <p className="text-xs text-gray-500">{item.label}</p>
                     <div className="text-right flex justify-end w-full">
                       {item.label === "Serial Number" && item.value ? (
                         <div className="flex flex-col items-end gap-1">
-                          <Barcode
+                          <p>{item.value}</p>
+                          {/* <Barcode
                             value={item.value}
                             format="CODE128"
                             width={1}
                             height={25}
                             displayValue={true}
                             fontSize={10}
-                          />
+                          /> */}
                         </div>
                       ) : item.label === "Completeness" ? (
                         <div className="flex flex-col items-start text-left">
-                          {String(item.value || "").split(/[,|\n]/).map((point, i) => (
-                            point.trim() && (
-                              <p key={i} className="text-xs font-bold flex items-center gap-1">
-                                <span>•</span> {point.trim()}
-                              </p>
-                            )
-                          ))}
+                          {String(item.value || "")
+                            .split(/[,|\n]/)
+                            .map(
+                              (point, i) =>
+                                point.trim() && (
+                                  <p
+                                    key={i}
+                                    className="text-xs font-bold flex items-center gap-1"
+                                  >
+                                    <span>•</span> {point.trim()}
+                                  </p>
+                                ),
+                            )}
                         </div>
                       ) : (
                         <p className="text-xs font-bold">{item.value}</p>

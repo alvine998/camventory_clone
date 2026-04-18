@@ -70,7 +70,7 @@ export const ColumnBulkItems = [
   },
     {
     name: "QTY",
-    selector: (row: any) => row.qty || "-",
+    selector: (row: any) => row.qty || "0",
     sortable: true,
   },
   {
@@ -81,6 +81,11 @@ export const ColumnBulkItems = [
   {
     name: "Location",
     selector: (row: any) => row.location,
+    sortable: true,
+  },
+  {
+    name: "Status",
+    selector: (row: any) => row.status_bulk,
     sortable: true,
   },
   {

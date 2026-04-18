@@ -1,5 +1,8 @@
 import Button from "@/components/Button";
-import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
+import {
+  fetchNotificationsServer,
+  fetchUnreadNotificationsServer,
+} from "@/utils/notification";
 import Input from "@/components/Input";
 import { useModal } from "@/components/Modal";
 import CustomerDeleteModal from "@/components/modals/customer/delete";
@@ -7,7 +10,7 @@ import { CONFIG } from "@/config";
 import { ColumnBulkItems } from "@/constants/column_items";
 import axios from "axios";
 import { parse } from "cookie";
-import { EyeIcon } from "lucide-react";
+import { EyeIcon, FlagIcon } from "lucide-react";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
@@ -32,7 +35,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     const params = new URLSearchParams({
       page: String(page),
-      limit: String(limit)
+      limit: String(limit),
     });
 
     if (typeof search === "string" && search.trim() !== "") {
@@ -47,18 +50,16 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       params.set("location", location);
     }
 
-    const [table, notificationsData, unreadNotificationsData] = await Promise.all([
-      axios.get(
-        `${CONFIG.API_URL}/v1/bulk-items?${params.toString()}`,
-        {
+    const [table, notificationsData, unreadNotificationsData] =
+      await Promise.all([
+        axios.get(`${CONFIG.API_URL}/v1/bulk-items?${params.toString()}`, {
           headers: {
             Authorization: `${token}`,
           },
-        }
-      ),
-      fetchNotificationsServer(token),
-      fetchUnreadNotificationsServer(token),
-    ]);
+        }),
+        fetchNotificationsServer(token),
+        fetchUnreadNotificationsServer(token),
+      ]);
 
     if (table?.status === 401) {
       return {
@@ -161,6 +162,21 @@ export default function AdministratorPage({ table }: any) {
         </div>
       </div>
     ),
+    status_bulk: (
+      <div>
+        {item.qty < 1 ? (
+          <div className="flex justify-center items-center gap-2">
+            <FlagIcon className="text-red-500 fill-current" />
+            <p className="text-red-500 font-bold text-md">Not Available</p>
+          </div>
+        ) : (
+          <div className="flex justify-center items-center gap-2">
+            <FlagIcon className="text-green-500 fill-current" />
+            <p className="text-green-500 font-bold text-md">Available</p>
+          </div>
+        )}
+      </div>
+    ),
     action: (
       <div key={index} className="flex gap-2">
         <Button
@@ -249,14 +265,14 @@ export default function AdministratorPage({ table }: any) {
           </select>
           {(filter.search ||
             (filter.location && filter.location !== "all")) && (
-              <button
-                type="button"
-                className="px-4 py-2 text-red-500 hover:text-red-600 font-medium transition-colors duration-200"
-                onClick={handleResetFilter}
-              >
-                Reset Filters
-              </button>
-            )}
+            <button
+              type="button"
+              className="px-4 py-2 text-red-500 hover:text-red-600 font-medium transition-colors duration-200"
+              onClick={handleResetFilter}
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
         <Button
           variant="custom-color"
@@ -276,10 +292,11 @@ export default function AdministratorPage({ table }: any) {
             return (
               <button
                 key={tab.href}
-                className={`px-4 py-2 font-medium text-sm ${isActive
-                  ? "border-b-2 border-orange-500 text-orange-600"
-                  : "text-gray-500 hover:text-gray-700"
-                  }`}
+                className={`px-4 py-2 font-medium text-sm ${
+                  isActive
+                    ? "border-b-2 border-orange-500 text-orange-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
                 onClick={() => router.push(tab.href)}
               >
                 {tab.label}

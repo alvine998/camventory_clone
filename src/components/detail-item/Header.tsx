@@ -17,7 +17,7 @@ interface Props {
 
 export default function Header({ detail, query }: Props) {
   const router = useRouter();
-  console.log(detail, "detail")
+  console.log(detail, "detail");
   const [notesModalOpen, setNotesModalOpen] = useState<boolean>(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const conditions = [
@@ -68,9 +68,13 @@ export default function Header({ detail, query }: Props) {
       <div className="mt-4 border rounded border-gray-500 p-4">
         <div>
           <div className="flex justify-between gap-4">
-            <div className="flex gap-5 items-center">
+            <div className="flex gap-5 items-center w-1/2 min-w-0">
               <h5>{detail?.name ?? "-"}</h5>
-              <Badge text={detail?.status_booking} />
+              {query?.type === "bulk" && detail?.qty ? (
+                <Badge text={detail?.qty < 1 ? "Not Available" : "Available"} />
+              ) : (
+                <Badge text={detail?.status_booking} />
+              )}
             </div>
             <div className="flex gap-2 items-center">
               {!detail?.qty && (
@@ -138,25 +142,25 @@ export default function Header({ detail, query }: Props) {
                     className={"w-auto h-auto flex-shrink-0"}
                   />
                   <p className="text-xs text-gray-500 break-words break-all">
-                    No barcode
+                    -
                   </p>
                 </div>
               )}
             </div>
-            {
-              query?.type === "single" ? (
-                <div className="flex gap-1 items-center flex-shrink-0 mt-2">
-                  <Image
-                    alt="icon"
-                    src={"/icons/box_gray.svg"}
-                    width={20}
-                    height={20}
-                    className={"w-auto h-auto"}
-                  />
-                  <p className="text-xs text-gray-500">{query.type}</p>
-                </div>
-              ) : ""
-            }
+            {query?.type === "single" ? (
+              <div className="flex gap-1 items-center flex-shrink-0 mt-2">
+                <Image
+                  alt="icon"
+                  src={"/icons/box_gray.svg"}
+                  width={20}
+                  height={20}
+                  className={"w-auto h-auto"}
+                />
+                <p className="text-xs text-gray-500">{query.type}</p>
+              </div>
+            ) : (
+              ""
+            )}
           </div>
         </div>
       </div>

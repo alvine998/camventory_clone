@@ -96,14 +96,28 @@ export default async function handler(
       payload: response.data,
     });
   } catch (uploadError: any) {
-    console.error("Upload error:", uploadError);
+    console.error("Upload error details:", {
+      status: uploadError?.response?.status,
+      statusText: uploadError?.response?.statusText,
+      data: uploadError?.response?.data,
+      message: uploadError?.message,
+    });
 
     const status = uploadError?.response?.status ?? 500;
+    const backendError = uploadError?.response?.data;
     const message =
-      uploadError?.response?.data?.message ||
+      backendError?.message ||
+      backendError?.error?.message ||
+      JSON.stringify(backendError) ||
       uploadError?.message ||
       "Upload error";
 
-    return res.status(status).json({ message });
+    return res.status(status).json({ 
+      message,
+      debug: {
+        backendStatus: uploadError?.response?.status,
+        backendData: uploadError?.response?.data,
+      }
+    });
   }
 }
