@@ -5,19 +5,19 @@ import Link from "next/link";
 import Badge from "../Badge";
 import Select from "../Select";
 import Image from "next/image";
-import { IItems } from "@/types/single_items";
 import { useRouter } from "next/router";
 import NotesModal from "../modals/items/NotesModal";
 import Barcode from "react-barcode";
+import { IBulkItems } from "@/types/bulk_items";
+import { getStatusBadgeColor } from "@/utils";
 
 interface Props {
-  detail: IItems;
+  detail: IBulkItems;
   query: any;
 }
 
 export default function Header({ detail, query }: Props) {
   const router = useRouter();
-  console.log(detail, "detail");
   const [notesModalOpen, setNotesModalOpen] = useState<boolean>(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const conditions = [
@@ -70,8 +70,17 @@ export default function Header({ detail, query }: Props) {
           <div className="flex justify-between gap-4">
             <div className="flex gap-5 items-center w-1/2 min-w-0">
               <h5>{detail?.name ?? "-"}</h5>
-              {query?.type === "bulk" && detail?.qty ? (
-                <Badge text={detail?.qty < 1 ? "Not Available" : "Available"} />
+              {query?.type === "bulk" ? (
+                <Badge
+                  color={getStatusBadgeColor(
+                    (detail?.qty ?? 0) < 1 ? "empty" : "available",
+                  )}
+                  text={
+                    (detail?.qty ?? 0) < 1
+                      ? "Not Available"
+                      : "Available"
+                  }
+                />
               ) : (
                 <Badge text={detail?.status_booking} />
               )}
@@ -113,6 +122,7 @@ export default function Header({ detail, query }: Props) {
                 variant="submit"
                 type="button"
                 onClick={handleReserve}
+                disabled={query?.type === "bulk" && (detail?.qty ?? 0) < 1}
               >
                 <PackageIcon className="w-4 h-4 text-white" />
                 <p className="text-white text-xs">Reserve</p>

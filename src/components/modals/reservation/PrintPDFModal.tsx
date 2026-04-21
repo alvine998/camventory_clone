@@ -236,7 +236,7 @@ export default function PrintPDFModal({
           user_id: reservation.ref_user?.id,
           items: reservation.details || [],
           signature: signaturePath,
-          file_path: documentPath || signaturePath, // Use document path if available, else signature
+          file_path: documentPath || null, // Use document path if available, else null
       });
 
       if (checkoutRes.status === 200 || checkoutRes.status === 201) {
