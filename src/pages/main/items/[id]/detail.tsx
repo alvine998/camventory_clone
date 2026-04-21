@@ -16,6 +16,8 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
 import Barcode from "react-barcode";
+import AddQuantityModal from "@/components/modals/items/AddQuantityModal";
+import { useRouter } from "next/router";
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { req, params, query } = ctx;
   const cookies = parse(req.headers.cookie || "");
@@ -31,10 +33,18 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    let resultPromise;
+    let resultPromise, bulkItems;
     if (query.type === "bulk" && params) {
       resultPromise = axios.get(
         `${CONFIG.API_URL}/v1/bulk-items/${params.id}`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        },
+      );
+      bulkItems = await axios.get(
+        `${CONFIG.API_URL}/v1/bulk-items?page=1&limit=100`,
         {
           headers: {
             Authorization: `${token}`,
@@ -64,7 +74,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     if (result.status !== 200) {
       throw new Error(`API request failed with status code ${result.status}`);
     }
-
     // Optionally validate token...
     return {
       props: {
@@ -73,6 +82,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         query,
         notifications: notificationsData?.data || [],
         unreadNotifications: unreadNotificationsData?.data || [],
+        bulkItems: bulkItems?.data?.data || [],
       },
     };
   } catch (error: any) {
@@ -114,11 +124,14 @@ export const itemTabs = (id: string, query: any): Tab[] => [
     href: `/main/items/${id}/checkouts?type=${query.type}`,
   },
 ];
-export default function Detail({ params, detail, query }: any) {
+export default function Detail({ params, detail, query, bulkItems }: any) {
+  const router = useRouter();
   const itemDetail: IItems = detail?.data;
-  const [qty, setQty] = useState<number>(1);
-  // const [toggle, setToggle] = useState<boolean>(true);
-  console.log(itemDetail, "detail");
+  const [addQuantityModalOpen, setAddQuantityModalOpen] = useState(false);
+
+  const handleAddQuantitySuccess = () => {
+    router.replace(router.asPath);
+  };
   const itemInformation = [
     { label: "Item Name", value: itemDetail?.name },
     { label: "Rate/Day", value: toMoney(itemDetail?.rate_day) },
@@ -356,7 +369,7 @@ export default function Detail({ params, detail, query }: any) {
               <Button
                 variant="custom-color"
                 className="bg-orange-500 text-white flex items-center gap-2 px-4 py-2 rounded-lg"
-                onClick={() => setQty(qty + 1)}
+                onClick={() => setAddQuantityModalOpen(true)}
               >
                 <PlusCircleIcon className="w-5 h-5 text-white" />
                 <span className="font-bold">Add Quantity</span>
@@ -381,6 +394,15 @@ export default function Detail({ params, detail, query }: any) {
           </Link> */}
         </div>
       </div>
+
+      {query?.type === "bulk" && (
+        <AddQuantityModal
+          open={addQuantityModalOpen}
+          setOpen={setAddQuantityModalOpen}
+          onSuccess={handleAddQuantitySuccess}
+          bulkItems={bulkItems}
+        />
+      )}
     </div>
   );
 }

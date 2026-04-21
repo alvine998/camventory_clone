@@ -40,9 +40,6 @@ export default async function handler(
           return reject(err);
         }
 
-        console.log("Upload API - Received fields:", parsedFields);
-        console.log("Upload API - Received files:", parsedFiles);
-
         resolve({ fields: parsedFields, files: parsedFiles });
       });
     }));
@@ -51,7 +48,6 @@ export default async function handler(
     return res.status(500).json({ message: "Error parsing form" });
   }
 
-  console.log("Upload API - Category field:", fields.category);
   const category = Array.isArray(fields.category)
     ? fields.category[0]
     : fields.category || "items";

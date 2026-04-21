@@ -80,8 +80,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    console.log(reportResponse?.data);
-    console.log(`${CONFIG.API_URL}/v1/report/product?page=${page}&limit=${limit}&startDate=${startTimestamp}&endDate=${endTimestamp}&productName=${productName}&sortBy=${sortBy}`);
+   
     return {
       props: {
         reportData: reportResponse.data?.data || null,

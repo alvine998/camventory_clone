@@ -134,13 +134,6 @@ export const downloadReport = async (
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
-    console.log("Download response:", {
-      status: response.status,
-      contentType: response.headers["content-type"],
-      headerHex,
-      size: response.data.byteLength,
-    });
-
     // Check if it's JSON (starts with { and contains "message" or "status")
     if (
       headerHex === "7b226d65" ||

@@ -127,8 +127,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       fetchUnreadNotificationsServer(token),
     ]);
 
-    console.log(response.data, "response");
-
     if (response?.status === 401) {
       return {
         redirect: {

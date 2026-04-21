@@ -165,9 +165,6 @@ export default function TimelinePage({ initialTimelineData, initialMeta, initial
         router.events.on("routeChangeComplete", handleComplete);
         router.events.on("routeChangeError", handleComplete);
 
-        // Usage for SSR hydration check
-        console.log("Timeline notifications:", notifications?.length);
-
         return () => {
             router.events.off("routeChangeStart", handleStart);
             router.events.off("routeChangeComplete", handleComplete);

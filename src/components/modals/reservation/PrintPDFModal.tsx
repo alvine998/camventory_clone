@@ -110,7 +110,6 @@ export default function PrintPDFModal({
         if (uploadRes.status === 200 || uploadRes.status === 201) {
           const uploadPayload = uploadRes.data.payload;
 
-          console.log("Upload response payload:", uploadPayload);
 
           // The backend returns the full response, try to extract the file path
           if (typeof uploadPayload === "string") {

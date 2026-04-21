@@ -199,7 +199,6 @@ export default function Reservations({
   reservation,
   logs,
 }: any) {
-  console.log(reservation, "detail reservations");
   const [showAllLogs, setShowAllLogs] = useState(false);
   const logsData = logs?.data || [];
 

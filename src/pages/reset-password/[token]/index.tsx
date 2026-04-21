@@ -14,11 +14,10 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const payload = {
-        password: (e.target as HTMLFormElement).password.value,
-        confirm_password: (e.target as HTMLFormElement).confirm_password.value,
-      };
-      console.log(payload);
+      // const payload = {
+      //   password: (e.target as HTMLFormElement).password.value,
+      //   confirm_password: (e.target as HTMLFormElement).confirm_password.value,
+      // };
       setLoading(false);
       router.push("/");
     } catch (error: unknown) {
