@@ -6,7 +6,7 @@ import { itemTabs } from "./detail";
 import { GetServerSideProps } from "next";
 import { parse } from "cookie";
 import { Calendar1Icon, MapPin } from "lucide-react";
-import Button from "@/components/Button";
+// import Button from "@/components/Button";
 import moment from "moment";
 import DataTable from "react-data-table-component";
 import { ColumnCheckout } from "@/constants/column_checkout";
@@ -252,8 +252,8 @@ export default function Checkouts({ params, detail, query, logs }: any) {
       </div>
       <div className="mt-4 border-t border-gray-300 w-full flex justify-end items-center">
         <div className="flex gap-4 mt-2">
-          <Button variant="white">Cancel</Button>
-          <Button variant="submit">Checkout</Button>
+          {/* <Button variant="white">Cancel</Button> */}
+          {/* <Button variant="submit">Checkout</Button> */}
         </div>
       </div>
     </div>

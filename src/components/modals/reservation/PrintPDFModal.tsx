@@ -387,21 +387,21 @@ export default function PrintPDFModal({
                     </div>
                     <div className="flex">
                       <span className="w-32 font-bold text-gray-800 text-xs uppercase">
-                        Check-out on
+                        Checked Out On
                       </span>
                       <span className="text-xs text-gray-700 uppercase">
                         {moment
-                          .unix(reservation.taking_goods)
+                          .unix(reservation.start_date)
                           .format("DD MMMM YYYY HH:mm A")}
                       </span>
                     </div>
                     <div className="flex">
                       <span className="w-32 font-bold text-gray-800 text-xs uppercase">
-                        Due back on
+                        Due Back On
                       </span>
                       <span className="text-xs text-gray-700 uppercase">
                         {moment
-                          .unix(reservation.returned_goods)
+                          .unix(reservation.end_date)
                           .format("DD MMMM YYYY HH:mm A")}
                       </span>
                     </div>

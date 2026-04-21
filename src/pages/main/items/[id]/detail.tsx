@@ -371,9 +371,9 @@ export default function Detail({ params, detail, query }: any) {
 
       <div className="mt-4 border-t border-gray-300 w-full flex justify-end items-center">
         <div className="flex gap-4 mt-2">
-          <Link href={`/main/items`}>
+          {/* <Link href={`/main/items`}>
             <Button variant="white">Cancel</Button>
-          </Link>
+          </Link> */}
           {/* <Link href={`/main/checkout`}>
             <Button variant="submit" type="button">
               Checkout
