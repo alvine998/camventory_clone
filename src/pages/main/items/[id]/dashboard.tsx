@@ -34,6 +34,10 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     let logs = null;
     let reservations = null;
 
+    // Calculate date range for dashboard API (current month)
+    const startOfMonth = moment().startOf('month').unix();
+    const endOfMonth = moment().endOf('month').unix();
+
     if (query.type === "bulk" && params) {
       resultPromise = axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
         headers: {
@@ -43,14 +47,14 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
       try {
         const resResponse = await axios.get(
-          `${CONFIG.API_URL}/v1/bulk-items/${params.id}/detail/reservations`,
+          `${CONFIG.API_URL}/v1/bulk-items/${params.id}/detail/dashboard?startDate=${startOfMonth}&endDate=${endOfMonth}`,
           {
             headers: { Authorization: `${token}` },
           }
         );
         reservations = resResponse.data?.data;
       } catch (e) {
-        console.log("Error fetching bulk reservations:", e);
+        console.log("Error fetching bulk dashboard:", e);
       }
     } else if (query.type === "single" && params) {
       resultPromise = axios.get(
@@ -64,14 +68,14 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
       try {
         const resResponse = await axios.get(
-          `${CONFIG.API_URL}/v1/single-items/${params.id}/detail/reservations`,
+          `${CONFIG.API_URL}/v1/single-items/${params.id}/detail/dashboard?startDate=${startOfMonth}&endDate=${endOfMonth}`,
           {
             headers: { Authorization: `${token}` },
           }
         );
         reservations = resResponse.data?.data;
       } catch (e) {
-        console.log("Error fetching single reservations:", e);
+        console.log("Error fetching single dashboard:", e);
       }
 
       // Fetch logs for single items
@@ -143,14 +147,16 @@ export default function Dashboard({ params, detail, query, logs, reservations }:
   const logsData = logs?.data || [];
 
   // Map reservations to events
-  const reservationEvents = (reservations?.data || []).map((res: any) => ({
+  const reservationEvents = (reservations || []).map((res: any) => ({
     title: res.customer_name || "Reserved",
     start: moment(res.start_date).format("YYYY-MM-DD"),
     end: moment(res.end_date).add(1, 'days').format("YYYY-MM-DD"), // Add 1 day for end date inclusive in FullCalendar
     color: "#f97316", // Tailwind orange-500
     allDay: true,
     extendedProps: {
-      type: 'reservation'
+      type: 'reservation',
+      bookId: res.book_id,
+      status: res.status
     }
   }));
 
@@ -182,21 +188,30 @@ export default function Dashboard({ params, detail, query, logs, reservations }:
         <Tabs tabs={itemTabs(params?.id, query)} />
       </div>
 
-      <div className="flex md:flex-row flex-col gap-8 mt-5">
-        <div className="max-w-full w-full h-[400px] overflow-auto">
-          <FullCalendar
-            plugins={[dayGridPlugin]}
-            initialView="dayGridMonth"
-            events={allEvents}
-            eventClick={handleEventClick}
-            headerToolbar={{
-              left: "prev,next today",
-              center: "title",
-              right: "dayGridMonth,dayGridWeek",
-            }}
-          />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-5">
+        {/* Calendar Section */}
+        <div className="lg:col-span-2">
+          <div className="border border-gray-300 rounded p-4 bg-white">
+            <div className="h-[600px] overflow-auto">
+              <FullCalendar
+                plugins={[dayGridPlugin]}
+                initialView="dayGridMonth"
+                events={allEvents}
+                eventClick={handleEventClick}
+                headerToolbar={{
+                  left: "prev,next today",
+                  center: "title",
+                  right: "dayGridMonth",
+                }}
+                height="auto"
+                contentHeight="auto"
+              />
+            </div>
+          </div>
         </div>
-        <div className="w-full">
+
+        {/* Extra Information Section */}
+        <div className="lg:col-span-1">
           <div className="border border-gray-300 rounded p-4">
             <h1 className="text-lg font-bold">Extra Information</h1>
             <div className="mt-2 border-t border-gray-300">
@@ -264,9 +279,9 @@ export default function Dashboard({ params, detail, query, logs, reservations }:
                   )}
                 </div>
               ) : (
-                <div className="p-2 mt-2 border rounded-full w-full border-gray-300 flex items-center">
-                  <MapPin className="w-5 h-5" />
-                  <p className="text-sm ml-2">Cipadung</p>
+                <div className="p-2 mt-2 border rounded w-full border-gray-300 flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-orange-500" />
+                  <p className="text-sm font-medium">Cipadung</p>
                 </div>
               )}
             </div>
