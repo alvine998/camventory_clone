@@ -208,7 +208,9 @@ export default function HeaderReservation({ detail, query }: Props) {
                   <p className="text-xs text-orange-500">Edit</p>
                 </Button>
               )}
-              {detail?.status?.toUpperCase() === "BOOKED" && (
+              {(detail?.status?.toUpperCase() === "BOOKED" ||
+                detail?.status?.toUpperCase() === "OVERDUE_BOOKED" ||
+                detail?.status?.toUpperCase() === "OVERDUE_CHECKOUT") && (
                 <Button
                   variant="custom-color"
                   className="flex items-center gap-1 border border-orange-500"
