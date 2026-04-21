@@ -68,7 +68,7 @@ export const ColumnBulkItems = [
   },
   {
     name: "Brand",
-    selector: (row: any) => row.brand?.name || "-",
+    selector: (row: any) => row.brand || "-",
     sortable: true,
   },
     {

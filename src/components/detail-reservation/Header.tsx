@@ -70,7 +70,7 @@ export default function HeaderReservation({ detail, query }: Props) {
       setIsLoading(false);
     }
   };
-  const handleCheckout = async (filePath?: string) => {
+  const handleCheckout = async (filePath?: string, signaturePath?: string) => {
     if (!user?.id) {
       Swal.fire({
         icon: "error",
@@ -88,26 +88,27 @@ export default function HeaderReservation({ detail, query }: Props) {
         items: detail?.details?.map((item: any) => ({
           item_id: item.item_id,
         })),
-        signature: filePath || null,
+        signature: signaturePath || null,
         file_path: filePath || null,
       };
+      console.log(payload, "pays");
 
-      const res = await axios.post("/api/reservation/checkout", payload);
+      // const res = await axios.post("/api/reservation/checkout", payload);
 
-      if (res.status === 200 || res.status === 201) {
-        Swal.fire({
-          icon: "success",
-          title: "Checkout Successful",
-          text: "The checkout process has been completed successfully.",
-          timer: 1500,
-          showConfirmButton: false,
-        });
+      // if (res.status === 200 || res.status === 201) {
+      //   Swal.fire({
+      //     icon: "success",
+      //     title: "Checkout Successful",
+      //     text: "The checkout process has been completed successfully.",
+      //     timer: 1500,
+      //     showConfirmButton: false,
+      //   });
 
-        setShowPrintModal(false);
-        setIsCheckoutFlow(false);
-        // Reload page to reflect new status
-        router.push(`/main/reservation/${detail?.id}/detail`);
-      }
+      //   setShowPrintModal(false);
+      //   setIsCheckoutFlow(false);
+      //   // Reload page to reflect new status
+      //   router.push(`/main/reservation/${detail?.id}/detail`);
+      // }
     } catch (error: any) {
       console.error("Checkout error:", error);
       const apiMessage = error.response?.data?.message;
@@ -223,7 +224,8 @@ export default function HeaderReservation({ detail, query }: Props) {
                 </Button>
               )}
 
-              {detail?.status?.toUpperCase() === "BOOKED" ? (
+              {detail?.status?.toUpperCase() === "BOOKED" ||
+              detail?.status?.toUpperCase() === "OVERDUE_BOOKED" ? (
                 <Dropdown
                   label={`Check Out ${detail?.details?.length || 0} items`}
                   triggerIcon={

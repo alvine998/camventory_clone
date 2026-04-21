@@ -6,6 +6,7 @@ import moment from "moment";
 import Image from "next/image";
 import { IReservation } from "@/types/reservation";
 import SignatureCanvas from "react-signature-canvas";
+import { useRouter } from "next/navigation";
 
 interface PrintPDFModalProps {
   open: boolean;
@@ -20,13 +21,13 @@ export default function PrintPDFModal({
   setOpen,
   reservation,
   isCheckoutFlow = false,
-  onCheckout,
 }: PrintPDFModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showSignaturePad, setShowSignaturePad] = useState(false);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const sigCanvas = useRef<SignatureCanvas>(null);
   const printRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const existingSignaturePath = reservation?.ref_customer?.signature;
   const existingSignatureUrl = existingSignaturePath
@@ -110,7 +111,6 @@ export default function PrintPDFModal({
         if (uploadRes.status === 200 || uploadRes.status === 201) {
           const uploadPayload = uploadRes.data.payload;
 
-
           // The backend returns the full response, try to extract the file path
           if (typeof uploadPayload === "string") {
             signaturePath = uploadPayload;
@@ -126,6 +126,8 @@ export default function PrintPDFModal({
             signaturePath = uploadPayload.filename;
           } else if (uploadPayload?.id) {
             signaturePath = uploadPayload.id;
+          } else if (uploadPayload?.message) {
+            signaturePath = uploadPayload.message;
           } else {
             // Fallback: check all string properties
             for (const value of Object.values(uploadPayload || {})) {
@@ -193,6 +195,8 @@ export default function PrintPDFModal({
         // Extract path from response
         if (typeof pdfPayload === "string") {
           documentPath = pdfPayload;
+        } else if (pdfPayload?.message) {
+          documentPath = pdfPayload.message;
         } else if (pdfPayload?.path) {
           documentPath = pdfPayload.path;
         } else if (pdfPayload?.url) {
@@ -212,6 +216,8 @@ export default function PrintPDFModal({
           const pdfPayload = fallbackRes.data.payload;
           if (typeof pdfPayload === "string") {
             documentPath = pdfPayload;
+          } else if (pdfPayload?.message) {
+            documentPath = pdfPayload.message;
           } else if (pdfPayload?.path) {
             documentPath = pdfPayload.path;
           } else if (pdfPayload?.url) {
@@ -226,24 +232,24 @@ export default function PrintPDFModal({
         }
       }
 
-      console.log(signaturePath, "signature path");
-      console.log(documentPath, "document path");
-
       // Step 4: Call checkout API with signature and document paths
       const checkoutRes = await axios.post(`/api/reservation/checkout`, {
-          id: reservation.id || reservation.book_id,
-          user_id: reservation.ref_user?.id,
-          items: reservation.details || [],
-          signature: signaturePath,
-          file_path: documentPath || null, // Use document path if available, else null
+        id: reservation.id || reservation.book_id,
+        user_id: reservation.ref_user?.id,
+        items: reservation.details || [],
+        signature: signaturePath,
+        file_path: documentPath || null, // Use document path if available, else null
       });
 
       if (checkoutRes.status === 200 || checkoutRes.status === 201) {
-          if (onCheckout) {
-              onCheckout(signaturePath);
-          }
-      } else {
-          throw new Error(`Checkout failed with status ${checkoutRes.status}`);
+        const Swal = (await import("sweetalert2")).default;
+        Swal.fire({
+          icon: "success",
+          title: "Checkout Successful",
+          text: "The checkout process has been completed successfully.",
+        });
+        setOpen(false);
+        router.push("/main/reservation/"+reservation.id+"/detail");
       }
     } catch (error: any) {
       console.error("Checkout process error:", error);
@@ -448,6 +454,9 @@ export default function PrintPDFModal({
                         Serial Number
                       </th>
                       <th className="text-left py-3 px-4 font-bold text-gray-800 uppercase">
+                        Qty
+                      </th>
+                      <th className="text-left py-3 px-4 font-bold text-gray-800 uppercase">
                         Equipment
                       </th>
                     </tr>
@@ -491,6 +500,9 @@ export default function PrintPDFModal({
                           <div className="inline-block px-3 py-1 bg-green-50 border border-green-500 text-green-600 rounded-full text-[10px] font-bold whitespace-nowrap">
                             {item.serial_number || "-"}
                           </div>
+                        </td>
+                        <td className="py-4 px-4 text-gray-700">
+                          {item.qty || "0"}
                         </td>
                         <td className="py-4 px-4 text-gray-700">
                           {item.item_name} Only

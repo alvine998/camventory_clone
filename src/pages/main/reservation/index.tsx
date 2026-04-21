@@ -225,7 +225,7 @@ export default function ReservationPage({ table, customers }: any) {
         </div>
       </div>
     ),
-    rental_duration: `${(item.end_date - item.start_date) / 86400} Hari`,
+    rental_duration: `${Math.ceil((item.end_date - item.start_date) / 86400)} Hari`,
     transaction_date_comp: (
       <div className="text-gray-600">
         {moment(item.created_at * 1000).format("DD/MM/YYYY")}
