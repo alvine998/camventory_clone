@@ -55,3 +55,5 @@ const nextConfig = {
 //   hideSourceMaps: true,
 //   dryRun: process.env.NODE_ENV === "development",
 // });
+
+export default nextConfig;

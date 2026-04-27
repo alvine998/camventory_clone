@@ -13,18 +13,14 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      variant = "primary",
-      className,
-      children,
-      isLoading = false,
-      disabled,
-      ...props
-    },
-    ref
-  ) => {
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
+  variant = "primary",
+  className,
+  children,
+  isLoading = false,
+  disabled,
+  ...props
+}, ref) => {
   const baseStyles =
     "px-4 py-2 rounded-md font-medium focus:outline-none focus:ring-2 transition duration-300";
 
