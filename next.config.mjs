@@ -1,10 +1,9 @@
-import { withSentryConfig } from "@sentry/nextjs";
+// import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
   reactStrictMode: true,
-  instrumentationHook: true,
   images: {
     remotePatterns: [
       {
@@ -47,11 +46,13 @@ const nextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG || "",
-  project: process.env.SENTRY_PROJECT || "",
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-  silent: false,
-  hideSourceMaps: true,
-  dryRun: process.env.NODE_ENV === "development",
-});
+// export default withSentryConfig(nextConfig, {
+//   org: process.env.SENTRY_ORG || "",
+//   project: process.env.SENTRY_PROJECT || "",
+//   authToken: process.env.SENTRY_AUTH_TOKEN,
+//   silent: false,
+//   hideSourceMaps: true,
+//   dryRun: process.env.NODE_ENV === "development",
+// });
+
+export default nextConfig;
