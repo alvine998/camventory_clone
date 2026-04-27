@@ -296,7 +296,7 @@ export default function SalesCustomerPage({
                       type="button"
                       title="View"
                       variant="submit"
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 opacity-80"
                       onClick={() =>
                         router.push(
                           `/main/report/sales-customer/${item.customer_id}`

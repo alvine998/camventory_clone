@@ -51,7 +51,7 @@ export default function AdminDeleteModal({ open, setOpen, data }: Props) {
   };
   return (
     <div>
-      <Modal open={open} setOpen={setOpen}>
+      <Modal open={open} setOpen={setOpen} size="xs">
         <div className=" flex justify-between gap-2">
           <div className="w-full"></div>
           <button type="button" onClick={setOpen}>

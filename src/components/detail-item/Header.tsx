@@ -1,4 +1,4 @@
-import { PackageIcon, PencilIcon } from "lucide-react";
+import { ArrowLeft, PackageIcon, PencilIcon } from "lucide-react";
 import React, { useState } from "react";
 import Button from "../Button";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import NotesModal from "../modals/items/NotesModal";
 import Barcode from "react-barcode";
 import { IBulkItems } from "@/types/bulk_items";
 import { getStatusBadgeColor } from "@/utils";
+import Breadcrumb from "../Breadcrumb";
 
 interface Props {
   detail: IBulkItems;
@@ -64,7 +65,20 @@ export default function Header({ detail, query }: Props) {
   };
   return (
     <div>
-      <h1 className="text-2xl font-bold text-orange-500">Detail Items</h1>
+      <div className="flex flex-col md:flex-row gap-2 items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Link href="/main/items">
+            <ArrowLeft className="w-5 h-5 text-orange-500" />
+          </Link>
+          <h1 className="text-2xl font-bold text-orange-500">Detail Items</h1>
+        </div>
+        <Breadcrumb
+          items={[
+            { label: "Items", href: "/main/items" },
+            { label: detail?.name || "-", href: "#" },
+          ]}
+        />
+      </div>
       <div className="mt-4 border rounded border-gray-500 p-4">
         <div>
           <div className="flex justify-between gap-4">
@@ -75,11 +89,7 @@ export default function Header({ detail, query }: Props) {
                   color={getStatusBadgeColor(
                     (detail?.qty ?? 0) < 1 ? "empty" : "available",
                   )}
-                  text={
-                    (detail?.qty ?? 0) < 1
-                      ? "Not Available"
-                      : "Available"
-                  }
+                  text={(detail?.qty ?? 0) < 1 ? "Not Available" : "Available"}
                 />
               ) : (
                 <Badge text={detail?.status_booking} />
