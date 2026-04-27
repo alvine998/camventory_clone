@@ -209,7 +209,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
         image_path: urlImage?.data?.payload?.message || null,
         rate_day: Number(value?.replaceAll(".", "")),
         purchase_price: Number(price?.replaceAll(".", "")),
-        qty: Number(formData?.qty) || null,
+        qty: Number(formData?.qty) || 0,
         purchase_date: formData?.purchase_date
           ? Math.floor(
             new Date(formData?.purchase_date.toString()).getTime() / 1000

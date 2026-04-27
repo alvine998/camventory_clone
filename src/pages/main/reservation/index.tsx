@@ -12,7 +12,11 @@ import React, { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
 import { ColumnReservation } from "@/constants/column_reservation";
 import moment from "moment";
-import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
+import {
+  fetchNotificationsServer,
+  fetchUnreadNotificationsServer,
+} from "@/utils/notification";
+import Input from "@/components/Input";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -53,7 +57,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       limit: String(limit),
     });
 
-    if (typeof search === "string" && search.trim() !== "") {
+    if (typeof search === "string" && search.trim() !== "" && search.length > 3) {
       params.set("search", search);
     }
 
@@ -143,17 +147,18 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         headers: {
           Authorization: `${token}`,
         },
-      }
+      },
     );
 
     const customers = await axios.get(
-      `${CONFIG.API_URL}/v1/customers?page=1&limit=10${customer ? `&search=${customer}` : ""
+      `${CONFIG.API_URL}/v1/customers?page=1&limit=10${
+        customer ? `&search=${customer}` : ""
       }`,
       {
         headers: {
           Authorization: `${token}`,
         },
-      }
+      },
     );
 
     if (table?.status === 401) {
@@ -210,12 +215,13 @@ export default function ReservationPage({ table, customers }: any) {
           {item.ref_customer?.name || "-"}
         </span>
         <div
-          className={`text-[10px] px-2 py-0.5 rounded-full border w-fit font-medium ${item.ref_customer?.status?.toLowerCase() === "member"
-            ? "bg-yellow-50 text-yellow-600 border-yellow-200"
-            : item.ref_customer?.status?.toLowerCase() === "blacklist"
-              ? "bg-red-50 text-red-600 border-red-200"
-              : "bg-blue-50 text-blue-600 border-blue-200"
-            }`}
+          className={`text-[10px] px-2 py-0.5 rounded-full border w-fit font-medium ${
+            item.ref_customer?.status?.toLowerCase() === "member"
+              ? "bg-yellow-50 text-yellow-600 border-yellow-200"
+              : item.ref_customer?.status?.toLowerCase() === "blacklist"
+                ? "bg-red-50 text-red-600 border-red-200"
+                : "bg-blue-50 text-blue-600 border-blue-200"
+          }`}
         >
           {item.ref_customer?.status?.toLowerCase() === "member"
             ? "Loyal Member"
@@ -254,35 +260,44 @@ export default function ReservationPage({ table, customers }: any) {
     taking_goods_comp: (
       <div className="py-2">
         <h5 className="font-bold text-gray-800">
-          {item.taking_goods ? moment(item.taking_goods * 1000).format("DD MMM") : "-"}
+          {item.taking_goods
+            ? moment(item.taking_goods * 1000).format("DD MMM")
+            : "-"}
         </h5>
         <p className="text-gray-400 text-xs">
-          {item.taking_goods ? moment(item.taking_goods * 1000).format("ddd hh:mm A") : "-"}
+          {item.taking_goods
+            ? moment(item.taking_goods * 1000).format("ddd hh:mm A")
+            : "-"}
         </p>
       </div>
     ),
     returned_items_comp: (
       <div className="py-2">
         <h5 className="font-bold text-gray-800">
-          {item.returned_goods ? moment(item.returned_goods * 1000).format("DD MMM") : "-"}
+          {item.returned_goods
+            ? moment(item.returned_goods * 1000).format("DD MMM")
+            : "-"}
         </h5>
         <p className="text-gray-400 text-xs">
-          {item.returned_goods ? moment(item.returned_goods * 1000).format("ddd hh:mm A") : "-"}
+          {item.returned_goods
+            ? moment(item.returned_goods * 1000).format("ddd hh:mm A")
+            : "-"}
         </p>
       </div>
     ),
     status_comp: (
       <div
-        className={`px-3 py-1 rounded-full border text-[11px] font-bold w-fit uppercase ${item.status?.toLowerCase() === "booked"
-          ? "bg-yellow-50 text-yellow-500 border-yellow-500"
-          : item.status?.toLowerCase() === "cancel" ||
-            item.status?.toLowerCase() === "cancelled"
-            ? "bg-red-50 text-red-500 border-red-500"
-            : item.status?.toLowerCase() === "checkout" ||
-              item.status?.toLowerCase() === "completed"
-              ? "bg-blue-50 text-blue-500 border-blue-500"
-              : "bg-purple-50 text-purple-500 border-purple-500" // Check In or others
-          }`}
+        className={`px-3 py-1 rounded-full border text-[11px] font-bold w-fit uppercase ${
+          item.status?.toLowerCase() === "booked"
+            ? "bg-yellow-50 text-yellow-500 border-yellow-500"
+            : item.status?.toLowerCase() === "cancel" ||
+                item.status?.toLowerCase() === "cancelled"
+              ? "bg-red-50 text-red-500 border-red-500"
+              : item.status?.toLowerCase() === "checkout" ||
+                  item.status?.toLowerCase() === "completed"
+                ? "bg-blue-50 text-blue-500 border-blue-500"
+                : "bg-purple-50 text-purple-500 border-purple-500" // Check In or others
+        }`}
       >
         {item.status}
       </div>
@@ -361,7 +376,7 @@ export default function ReservationPage({ table, customers }: any) {
       const startMoment = moment(
         appliedFilters.startDate,
         "YYYY-MM-DD",
-        true
+        true,
       ).startOf("day"); // Sets to 00:00:00
       if (startMoment.isValid()) {
         const startTimestamp = startMoment.unix();
@@ -375,7 +390,7 @@ export default function ReservationPage({ table, customers }: any) {
       const endMoment = moment(
         appliedFilters.endDate,
         "YYYY-MM-DD",
-        true
+        true,
       ).endOf("day"); // Sets to 23:59:59
       if (endMoment.isValid()) {
         const endTimestamp = endMoment.unix();
@@ -395,15 +410,15 @@ export default function ReservationPage({ table, customers }: any) {
       </div>
       <div className="flex flex-col md:flex-row gap-4 mt-4">
         <div className="flex-1 flex flex-col md:flex-row gap-2 flex-wrap">
-          <Button
-            variant="white"
-            type="button"
-            className="flex items-center gap-2"
-            onClick={() => setModal({ open: true, key: "filter" })}
-          >
-            <Filter className="w-4 h-4" />
-            Filter
-          </Button>
+          {/* Search filter */}
+          <div className="flex">
+            <Input
+              className="w-full"
+              placeholder="Search Reservation"
+              value={filter.search}
+              onChange={(e) => setFilter({ ...filter, search: e.target.value })}
+            />
+          </div>
           {/* <div className="w-48">
             <Select
               options={[
@@ -457,7 +472,16 @@ export default function ReservationPage({ table, customers }: any) {
             />
           </div> */}
         </div>
-        <div className="md:w-auto w-full">
+        <div className="md:w-auto w-full flex flex-col md:flex-row gap-2">
+          <Button
+            variant="white"
+            type="button"
+            className="flex items-center gap-2"
+            onClick={() => setModal({ open: true, key: "filter" })}
+          >
+            <Filter className="w-4 h-4" />
+            Filter
+          </Button>
           <Button
             variant="custom-color"
             className="bg-orange-500 text-white w-full md:w-auto"
@@ -537,11 +561,11 @@ export default function ReservationPage({ table, customers }: any) {
             customer:
               typeof filter.customer_id === "string" && filter.customer_id
                 ? {
-                  value: filter.customer_id,
-                  label:
-                    customers.find((c: any) => c.id === filter.customer_id)
-                      ?.name || filter.customer_id,
-                }
+                    value: filter.customer_id,
+                    label:
+                      customers.find((c: any) => c.id === filter.customer_id)
+                        ?.name || filter.customer_id,
+                  }
                 : null,
             status:
               typeof filter.status === "string" && filter.status !== "all"
@@ -554,32 +578,32 @@ export default function ReservationPage({ table, customers }: any) {
             startDate:
               typeof filter.startDate === "string" && filter.startDate
                 ? (() => {
-                  const timestamp = Number(filter.startDate);
-                  if (
-                    !isNaN(timestamp) &&
-                    timestamp > 0 &&
-                    moment.unix(timestamp).isValid()
-                  ) {
-                    // Date input expects YYYY-MM-DD format
-                    return moment.unix(timestamp).format("YYYY-MM-DD");
-                  }
-                  return "";
-                })()
+                    const timestamp = Number(filter.startDate);
+                    if (
+                      !isNaN(timestamp) &&
+                      timestamp > 0 &&
+                      moment.unix(timestamp).isValid()
+                    ) {
+                      // Date input expects YYYY-MM-DD format
+                      return moment.unix(timestamp).format("YYYY-MM-DD");
+                    }
+                    return "";
+                  })()
                 : "",
             endDate:
               typeof filter.endDate === "string" && filter.endDate
                 ? (() => {
-                  const timestamp = Number(filter.endDate);
-                  if (
-                    !isNaN(timestamp) &&
-                    timestamp > 0 &&
-                    moment.unix(timestamp).isValid()
-                  ) {
-                    // Date input expects YYYY-MM-DD format
-                    return moment.unix(timestamp).format("YYYY-MM-DD");
-                  }
-                  return "";
-                })()
+                    const timestamp = Number(filter.endDate);
+                    if (
+                      !isNaN(timestamp) &&
+                      timestamp > 0 &&
+                      moment.unix(timestamp).isValid()
+                    ) {
+                      // Date input expects YYYY-MM-DD format
+                      return moment.unix(timestamp).format("YYYY-MM-DD");
+                    }
+                    return "";
+                  })()
                 : "",
           }}
         />
