@@ -1,7 +1,10 @@
+import { withSentryConfig } from "@sentry/nextjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
   reactStrictMode: true,
+  instrumentationHook: true,
   images: {
     remotePatterns: [
       {
@@ -15,6 +18,10 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "api-cdn.softmate.my.id",
+      },
+       {
+        protocol: "https",
+        hostname: "cdn-stg.nusabooking.com",
       },
     ],
   },
@@ -32,8 +39,19 @@ const nextConfig = {
         source: "/api-proxy/:path*",
         destination: "https://api-dev-inventory.softmate.my.id/:path*",
       },
+      {
+        source: "/api-proxy/:path*",
+        destination: "https://api-stg-inventory.softmate.my.id/:path*",
+      },
     ];
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG || "",
+  project: process.env.SENTRY_PROJECT || "",
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: false,
+  hideSourceMaps: true,
+  dryRun: process.env.NODE_ENV === "development",
+});

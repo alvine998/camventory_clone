@@ -1,12 +1,20 @@
 import Button from "@/components/Button";
-import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
+import {
+  fetchNotificationsServer,
+  fetchUnreadNotificationsServer,
+} from "@/utils/notification";
 import AddEquipmentView from "@/components/reservation/AddEquipmentView";
 import Select from "@/components/Select";
 import DateTimePickerModal from "@/components/DateTimePickerModal";
 import { CONFIG } from "@/config";
 import axios from "axios";
 import { parse } from "cookie";
-import { ArrowLeftIcon, PlusSquareIcon, Trash2Icon, CalendarDays } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  PlusSquareIcon,
+  Trash2Icon,
+  CalendarDays,
+} from "lucide-react";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
@@ -14,6 +22,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 import moment from "moment";
 import { useAuthStore } from "@/stores/useAuthStore";
+import Breadcrumb from "@/components/Breadcrumb";
 
 // ✅ Types
 interface Category {
@@ -73,18 +82,20 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         headers: { Authorization: token },
       }),
       axios.get(
-        `${CONFIG.API_URL}/v1/bulk-items?isAvailable=true&page=${page}&limit=${limit}${search ? `&search=${search}` : ""
+        `${CONFIG.API_URL}/v1/bulk-items?isAvailable=true&page=${page}&limit=${limit}${
+          search ? `&search=${search}` : ""
         }`,
         {
           headers: { Authorization: token },
-        }
+        },
       ),
       axios.get(
-        `${CONFIG.API_URL}/v1/single-items?statusItem=GOOD&statusBooking=AVAILABLE&page=${page}&limit=${limit}${search ? `&search=${search}` : ""
+        `${CONFIG.API_URL}/v1/single-items?statusItem=GOOD&statusBooking=AVAILABLE&page=${page}&limit=${limit}${
+          search ? `&search=${search}` : ""
         }`,
         {
           headers: { Authorization: token },
-        }
+        },
       ),
       axios.get(`${CONFIG.API_URL}/accounts/v1/users/all?page=1&limit=100`, {
         headers: {
@@ -224,7 +235,7 @@ export default function CreateReservationPage({
           uuid: item.id,
           qty: item?.added || 1,
           type: item?.category ? "single" : "bulk",
-        })) || []
+        })) || [],
       ),
     };
 
@@ -250,12 +261,13 @@ export default function CreateReservationPage({
 
         // Check for message in different possible locations
         if (responseData?.message) {
-          errorMessage = typeof responseData.message === 'string'
-            ? responseData.message
-            : responseData.message?.message || errorMessage;
+          errorMessage =
+            typeof responseData.message === "string"
+              ? responseData.message
+              : responseData.message?.message || errorMessage;
         } else if (responseData?.error?.message) {
           errorMessage = responseData.error.message;
-        } else if (typeof responseData === 'string') {
+        } else if (typeof responseData === "string") {
           errorMessage = responseData;
         }
 
@@ -267,26 +279,30 @@ export default function CreateReservationPage({
           errorMessage = "Your session has expired. Please log in again.";
         } else if (error.response.status === 403) {
           errorTitle = "Permission Denied";
-          errorMessage = "You don't have permission to create this reservation.";
+          errorMessage =
+            "You don't have permission to create this reservation.";
         } else if (error.response.status === 409) {
           errorTitle = "Conflict Detected";
         } else if (error.response.status === 422) {
           errorTitle = "Validation Error";
         } else if (error.response.status >= 500) {
           errorTitle = "Server Error";
-          errorMessage = "The server encountered an error. Please try again later.";
+          errorMessage =
+            "The server encountered an error. Please try again later.";
         }
       } else if (error.request) {
         // Request was made but no response received
         errorTitle = "Network Error";
-        errorMessage = "Unable to connect to the server. Please check your internet connection.";
+        errorMessage =
+          "Unable to connect to the server. Please check your internet connection.";
       } else {
         // Error in request setup
         errorMessage = error.message || errorMessage;
       }
 
       // Format error message for display
-      const isMultiLine = errorMessage.includes('\n') || errorMessage.includes('Date conflict');
+      const isMultiLine =
+        errorMessage.includes("\n") || errorMessage.includes("Date conflict");
 
       Swal.fire({
         icon: "error",
@@ -303,12 +319,16 @@ export default function CreateReservationPage({
     }
   };
 
-
   // Handle item from detail page (when navigating from Reserve button)
   useEffect(() => {
     const { itemId, itemType } = router.query;
 
-    if (!itemId || !itemType || typeof itemId !== "string" || typeof itemType !== "string") {
+    if (
+      !itemId ||
+      !itemType ||
+      typeof itemId !== "string" ||
+      typeof itemType !== "string"
+    ) {
       processedItemIdRef.current = null;
       return;
     }
@@ -332,7 +352,10 @@ export default function CreateReservationPage({
         if (itemType === "single") {
           return [...currentItems, { ...itemData, added: 1 }];
         } else {
-          return [...currentItems, { ...itemData, qty: 1, isBulk: true, added: 1 }];
+          return [
+            ...currentItems,
+            { ...itemData, qty: 1, isBulk: true, added: 1 },
+          ];
         }
       });
 
@@ -347,7 +370,7 @@ export default function CreateReservationPage({
           query: restQuery,
         },
         undefined,
-        { shallow: true }
+        { shallow: true },
       );
     };
 
@@ -371,9 +394,10 @@ export default function CreateReservationPage({
             return;
           }
 
-          const endpoint = itemType === "single"
-            ? `${CONFIG.API_URL}/v1/single-items/${itemId}`
-            : `${CONFIG.API_URL}/v1/bulk-items/${itemId}`;
+          const endpoint =
+            itemType === "single"
+              ? `${CONFIG.API_URL}/v1/single-items/${itemId}`
+              : `${CONFIG.API_URL}/v1/bulk-items/${itemId}`;
 
           const response = await axios.get(endpoint, {
             headers: { Authorization: token },
@@ -407,7 +431,7 @@ export default function CreateReservationPage({
               query: restQuery,
             },
             undefined,
-            { shallow: true }
+            { shallow: true },
           );
         }
       };
@@ -433,13 +457,24 @@ export default function CreateReservationPage({
 
   return (
     <div>
-      <div className="flex flex-row gap-2 items-center">
-        <button onClick={() => router.push(`/main/reservation`)} type="button">
-          <ArrowLeftIcon className="w-6 h-6 text-orange-500" />
-        </button>
-        <h1 className="text-2xl font-bold text-orange-500">
-          Add Reservation Data
-        </h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-row gap-2 items-center">
+          <button
+            onClick={() => router.push(`/main/reservation`)}
+            type="button"
+          >
+            <ArrowLeftIcon className="w-6 h-6 text-orange-500" />
+          </button>
+          <h1 className="text-2xl font-bold text-orange-500">
+            Add Reservation Data
+          </h1>
+        </div>
+        <Breadcrumb
+          items={[
+            { label: "Dashboard", href: "/main/reservation" },
+            { label: "Add Reservation Data", href: "/main/reservation/create" },
+          ]}
+        />
       </div>
 
       <form onSubmit={onSubmit} className="mt-6 mb-20">
@@ -453,14 +488,19 @@ export default function CreateReservationPage({
             value={
               reservationData.customer_uuid
                 ? {
-                  label:
-                    customers.find((c) => c.id === reservationData.customer_uuid)?.name || "",
-                  value: reservationData.customer_uuid,
-                }
+                    label:
+                      customers.find(
+                        (c) => c.id === reservationData.customer_uuid,
+                      )?.name || "",
+                    value: reservationData.customer_uuid,
+                  }
                 : null
             }
             onChange={(selected: any) =>
-              setReservationData((prev) => ({ ...prev, customer_uuid: selected?.value || "" }))
+              setReservationData((prev) => ({
+                ...prev,
+                customer_uuid: selected?.value || "",
+              }))
             }
             placeholder="Customer"
             label="Customer"
@@ -476,14 +516,18 @@ export default function CreateReservationPage({
             value={
               reservationData.user_uuid
                 ? {
-                  label:
-                    users.find((u) => u.id === reservationData.user_uuid)?.name || "",
-                  value: reservationData.user_uuid,
-                }
+                    label:
+                      users.find((u) => u.id === reservationData.user_uuid)
+                        ?.name || "",
+                    value: reservationData.user_uuid,
+                  }
                 : null
             }
             onChange={(selected: any) =>
-              setReservationData((prev) => ({ ...prev, user_uuid: selected?.value || "" }))
+              setReservationData((prev) => ({
+                ...prev,
+                user_uuid: selected?.value || "",
+              }))
             }
             placeholder="User/Employee"
             label="User/Employee"
@@ -505,12 +549,20 @@ export default function CreateReservationPage({
                 onClick={() => setShowFromPicker(true)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 flex items-center justify-between text-left h-[42px] bg-white hover:border-orange-400 transition-colors"
               >
-                <span className={`text-sm ${fromDate ? "text-gray-900" : "text-gray-400"}`}>
-                  {fromDate ? moment(fromDate).format("DD MMM YYYY, hh:mm A") : "Select Pickup Date"}
+                <span
+                  className={`text-sm ${fromDate ? "text-gray-900" : "text-gray-400"}`}
+                >
+                  {fromDate
+                    ? moment(fromDate).format("DD MMM YYYY, hh:mm A")
+                    : "Select Pickup Date"}
                 </span>
                 <CalendarDays className="w-4 h-4 text-gray-400" />
               </button>
-              <input type="hidden" name="from" value={fromDate ? fromDate.toISOString() : ""} />
+              <input
+                type="hidden"
+                name="from"
+                value={fromDate ? fromDate.toISOString() : ""}
+              />
             </div>
 
             {/* To Input */}
@@ -521,12 +573,20 @@ export default function CreateReservationPage({
                 onClick={() => setShowToPicker(true)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 flex items-center justify-between text-left h-[42px] bg-white hover:border-orange-400 transition-colors"
               >
-                <span className={`text-sm ${toDate ? "text-gray-900" : "text-gray-400"}`}>
-                  {toDate ? moment(toDate).format("DD MMM YYYY, hh:mm A") : "Select Return Date"}
+                <span
+                  className={`text-sm ${toDate ? "text-gray-900" : "text-gray-400"}`}
+                >
+                  {toDate
+                    ? moment(toDate).format("DD MMM YYYY, hh:mm A")
+                    : "Select Return Date"}
                 </span>
                 <CalendarDays className="w-4 h-4 text-gray-400" />
               </button>
-              <input type="hidden" name="to" value={toDate ? toDate.toISOString() : ""} />
+              <input
+                type="hidden"
+                name="to"
+                value={toDate ? toDate.toISOString() : ""}
+              />
             </div>
           </div>
           <Select
@@ -535,11 +595,17 @@ export default function CreateReservationPage({
               { label: "Cipadung", value: "cipadung" },
             ]}
             value={{
-              label: reservationData.location === "dipatiukur" ? "Dipatiukur" : "Cipadung",
+              label:
+                reservationData.location === "dipatiukur"
+                  ? "Dipatiukur"
+                  : "Cipadung",
               value: reservationData.location,
             }}
             onChange={(selected: any) =>
-              setReservationData((prev) => ({ ...prev, location: selected?.value || "" }))
+              setReservationData((prev) => ({
+                ...prev,
+                location: selected?.value || "",
+              }))
             }
             placeholder="Pickup Location"
             label="Pickup Location"

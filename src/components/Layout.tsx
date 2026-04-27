@@ -46,7 +46,7 @@ export default function Layout({
   const filteredNavigations = pathname?.includes("/office") ? currentNavigations : filterNavigations(currentNavigations);
 
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={200}>
       <div>
         <Head>
           <title>Camventory</title>

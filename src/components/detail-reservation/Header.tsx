@@ -18,6 +18,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { getStatusBadgeColor } from "@/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
+import Breadcrumb from "../Breadcrumb";
 
 interface Props {
   detail: IReservation;
@@ -168,19 +169,31 @@ export default function HeaderReservation({ detail, query }: Props) {
 
   return (
     <div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            router.push("/main/reservation");
-          }}
-        >
-          <ArrowLeftIcon className="w-7 h-5 text-orange-500" />
-        </button>
-        <h1 className="text-2xl font-bold text-orange-500">
-          Detail Reservation
-        </h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              router.push("/main/reservation");
+            }}
+          >
+            <ArrowLeftIcon className="w-7 h-5 text-orange-500" />
+          </button>
+          <h1 className="text-2xl font-bold text-orange-500">
+            Detail Reservation
+          </h1>
+        </div>
+        <Breadcrumb
+          items={[
+            { label: "Reservation", href: "/main/reservation" },
+            {
+              label: "Detail Reservation",
+              href: `/main/reservation/${detail?.id}/detail`,
+            },
+          ]}
+        />
       </div>
+
       <div className="mt-4 border rounded border-gray-500 p-4">
         <div>
           <div className="flex justify-between gap-4">
