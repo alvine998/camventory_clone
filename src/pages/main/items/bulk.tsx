@@ -6,6 +6,7 @@ import {
 import Input from "@/components/Input";
 import { useModal } from "@/components/Modal";
 import CustomerDeleteModal from "@/components/modals/customer/delete";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { CONFIG } from "@/config";
 import { ColumnBulkItems } from "@/constants/column_items";
 import axios from "axios";
@@ -192,16 +193,21 @@ export default function AdministratorPage({ table }: any) {
     ),
     action: (
       <div key={index} className="flex gap-2">
-        <Button
-          className="bg-orange-200 text-orange-500"
-          variant="custom-color"
-          type="button"
-          onClick={() => {
-            router.push(`/main/items/${item.id}/detail?type=bulk`);
-          }}
-        >
-          <EyeIcon className="w-4 h-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              className="bg-orange-200 text-orange-500"
+              variant="custom-color"
+              type="button"
+              onClick={() => {
+                router.push(`/main/items/${item.id}/detail?type=bulk`);
+              }}
+            >
+              <EyeIcon className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>View</TooltipContent>
+        </Tooltip>
       </div>
     ),
   }));

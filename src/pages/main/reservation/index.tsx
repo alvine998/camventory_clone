@@ -2,6 +2,11 @@ import Button from "@/components/Button";
 import { useModal } from "@/components/Modal";
 import CustomerDeleteModal from "@/components/modals/customer/delete";
 import FilterModal from "@/components/modals/reservation/FilterModal";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { CONFIG } from "@/config";
 import axios from "axios";
 import { parse } from "cookie";
@@ -57,7 +62,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       limit: String(limit),
     });
 
-    if (typeof search === "string" && search.trim() !== "" && search.length > 3) {
+    if (
+      typeof search === "string" &&
+      search.trim() !== "" &&
+      search.length > 3
+    ) {
       params.set("search", search);
     }
 
@@ -307,15 +316,20 @@ export default function ReservationPage({ table, customers }: any) {
     ),
     action: (
       <div key={index} className="flex gap-2">
-        <button
-          className="p-2 bg-white border border-orange-200 rounded-full text-orange-500 hover:bg-orange-50 transition-colors shadow-sm"
-          type="button"
-          onClick={() => {
-            router.push(`/main/reservation/${item.id}/detail`);
-          }}
-        >
-          <EyeIcon className="w-4 h-4" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              className="p-2 bg-white border border-orange-200 rounded-full text-orange-500 hover:bg-orange-50 transition-colors shadow-sm"
+              type="button"
+              onClick={() => {
+                router.push(`/main/reservation/${item.id}/detail`);
+              }}
+            >
+              <EyeIcon className="w-4 h-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>View</TooltipContent>
+        </Tooltip>
       </div>
     ),
   }));
@@ -416,6 +430,7 @@ export default function ReservationPage({ table, customers }: any) {
               className="w-full"
               placeholder="Search Reservation"
               value={filter.search}
+              type="search"
               onChange={(e) => setFilter({ ...filter, search: e.target.value })}
             />
           </div>

@@ -1,12 +1,20 @@
 import Button from "@/components/Button";
-import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
+import {
+  fetchNotificationsServer,
+  fetchUnreadNotificationsServer,
+} from "@/utils/notification";
 import AddEquipmentView from "@/components/reservation/AddEquipmentView";
 import Select from "@/components/Select";
 import { CONFIG } from "@/config";
 import { IReservation } from "@/types/reservation";
 import axios from "axios";
 import { parse } from "cookie";
-import { ArrowLeftIcon, PlusSquareIcon, Trash2Icon, CalendarDays } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  PlusSquareIcon,
+  Trash2Icon,
+  CalendarDays,
+} from "lucide-react";
 import moment from "moment";
 import DateTimePickerModal from "@/components/DateTimePickerModal";
 import { GetServerSideProps } from "next";
@@ -15,6 +23,7 @@ import { useRouter } from "next/router";
 import { useAuthStore } from "@/stores/useAuthStore";
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import Breadcrumb from "@/components/Breadcrumb";
 
 // ✅ Types
 interface Category {
@@ -76,18 +85,20 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         headers: { Authorization: token },
       }),
       axios.get(
-        `${CONFIG.API_URL}/v1/bulk-items?page=${page}&limit=${limit}${search ? `&search=${search}` : ""
+        `${CONFIG.API_URL}/v1/bulk-items?page=${page}&limit=${limit}${
+          search ? `&search=${search}` : ""
         }`,
         {
           headers: { Authorization: token },
-        }
+        },
       ),
       axios.get(
-        `${CONFIG.API_URL}/v1/single-items?page=${page}&limit=${limit}${search ? `&search=${search}` : ""
+        `${CONFIG.API_URL}/v1/single-items?page=${page}&limit=${limit}${
+          search ? `&search=${search}` : ""
         }`,
         {
           headers: { Authorization: token },
-        }
+        },
       ),
       axios.get(`${CONFIG.API_URL}/accounts/v1/users/all?page=1&limit=100`, {
         headers: {
@@ -187,15 +198,13 @@ export default function EditReservationPage({
       start_date: formData.from
         ? Math.floor(formData.from.getTime() / 1000)
         : null,
-      end_date: formData.to
-        ? Math.floor(formData.to.getTime() / 1000)
-        : null,
+      end_date: formData.to ? Math.floor(formData.to.getTime() / 1000) : null,
       items: JSON.stringify(
         items?.map((item: any) => ({
           uuid: item.item_id || item.id,
           qty: item?.qty || item?.added || 1,
           type: item?.item_type || (item?.category ? "single" : "bulk"),
-        })) || []
+        })) || [],
       ),
       customer_uuid: formData.customer_id || detail?.ref_customer?.id || "",
       location:
@@ -228,9 +237,10 @@ export default function EditReservationPage({
       console.error("Update error:", error);
       const errorMessage =
         error.response?.data?.message &&
-          typeof error.response?.data?.message === "string"
+        typeof error.response?.data?.message === "string"
           ? error.response?.data?.message
-          : error.response?.data?.message?.message || "An error occurred while updating the reservation";
+          : error.response?.data?.message?.message ||
+            "An error occurred while updating the reservation";
 
       Swal.fire({
         icon: "error",
@@ -245,7 +255,6 @@ export default function EditReservationPage({
     }
   };
 
-
   const CUSTOMERS = customers.map((item) => ({
     label: item.name,
     value: item.id,
@@ -257,7 +266,7 @@ export default function EditReservationPage({
   }));
 
   if (view === "select") {
-    // Transform detail.details format to Item format if needed, 
+    // Transform detail.details format to Item format if needed,
     // but AddEquipmentView should handle what setItems provides.
     return (
       <AddEquipmentView
@@ -274,16 +283,29 @@ export default function EditReservationPage({
 
   return (
     <div>
-      <div className="flex flex-row gap-2 items-center">
-        <button
-          onClick={() => router.push(`/main/reservation/${detail?.id}/detail`)}
-          type="button"
-        >
-          <ArrowLeftIcon className="w-6 h-6 text-orange-500" />
-        </button>
-        <h1 className="text-2xl font-bold text-orange-500">
-          Edit Reservation Data
-        </h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-row gap-2 items-center">
+          <button
+            onClick={() =>
+              router.push(`/main/reservation/${detail?.id}/detail`)
+            }
+            type="button"
+          >
+            <ArrowLeftIcon className="w-6 h-6 text-orange-500" />
+          </button>
+          <h1 className="text-2xl font-bold text-orange-500">
+            Edit Reservation Data
+          </h1>
+        </div>
+        <Breadcrumb
+          items={[
+            { label: "Reservation", href: "/main/reservation" },
+            {
+              label: "Edit Reservation Data",
+              href: `/main/reservation/${detail?.id}/edit`,
+            },
+          ]}
+        />
       </div>
 
       <form onSubmit={onSubmit} className="mt-6 mb-20">
@@ -294,14 +316,18 @@ export default function EditReservationPage({
             value={
               formData.customer_id
                 ? {
-                  label:
-                    customers.find((c) => c.id === formData.customer_id)?.name || "",
-                  value: formData.customer_id,
-                }
+                    label:
+                      customers.find((c) => c.id === formData.customer_id)
+                        ?.name || "",
+                    value: formData.customer_id,
+                  }
                 : null
             }
             onChange={(selected: any) =>
-              setFormData((prev: any) => ({ ...prev, customer_id: selected?.value || "" }))
+              setFormData((prev: any) => ({
+                ...prev,
+                customer_id: selected?.value || "",
+              }))
             }
             placeholder="Select Customer"
             label="Customer"
@@ -314,14 +340,17 @@ export default function EditReservationPage({
             value={
               formData.user_id
                 ? {
-                  label:
-                    users.find((u) => u.id === formData.user_id)?.name || "",
-                  value: formData.user_id,
-                }
+                    label:
+                      users.find((u) => u.id === formData.user_id)?.name || "",
+                    value: formData.user_id,
+                  }
                 : null
             }
             onChange={(selected: any) =>
-              setFormData((prev: any) => ({ ...prev, user_id: selected?.value || "" }))
+              setFormData((prev: any) => ({
+                ...prev,
+                user_id: selected?.value || "",
+              }))
             }
             placeholder="Select User/Employee"
             label="User/Employee"
@@ -343,8 +372,12 @@ export default function EditReservationPage({
                 onClick={() => setShowFromPicker(true)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 flex items-center justify-between text-left h-[42px] bg-white hover:border-orange-400 transition-colors"
               >
-                <span className={`text-sm ${formData.from ? "text-gray-900" : "text-gray-400"}`}>
-                  {formData.from ? moment(formData.from).format("DD MMM YYYY, hh:mm A") : "Select Pickup Date"}
+                <span
+                  className={`text-sm ${formData.from ? "text-gray-900" : "text-gray-400"}`}
+                >
+                  {formData.from
+                    ? moment(formData.from).format("DD MMM YYYY, hh:mm A")
+                    : "Select Pickup Date"}
                 </span>
                 <CalendarDays className="w-4 h-4 text-gray-400" />
               </button>
@@ -358,8 +391,12 @@ export default function EditReservationPage({
                 onClick={() => setShowToPicker(true)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 flex items-center justify-between text-left h-[42px] bg-white hover:border-orange-400 transition-colors"
               >
-                <span className={`text-sm ${formData.to ? "text-gray-900" : "text-gray-400"}`}>
-                  {formData.to ? moment(formData.to).format("DD MMM YYYY, hh:mm A") : "Select Return Date"}
+                <span
+                  className={`text-sm ${formData.to ? "text-gray-900" : "text-gray-400"}`}
+                >
+                  {formData.to
+                    ? moment(formData.to).format("DD MMM YYYY, hh:mm A")
+                    : "Select Return Date"}
                 </span>
                 <CalendarDays className="w-4 h-4 text-gray-400" />
               </button>
@@ -371,11 +408,17 @@ export default function EditReservationPage({
               { label: "Cipadung", value: "cipadung" },
             ]}
             value={{
-              label: formData.pickup_location === "dipatiukur" ? "Dipatiukur" : "Cipadung",
+              label:
+                formData.pickup_location === "dipatiukur"
+                  ? "Dipatiukur"
+                  : "Cipadung",
               value: formData.pickup_location,
             }}
             onChange={(selected: any) =>
-              setFormData((prev: any) => ({ ...prev, pickup_location: selected?.value || "" }))
+              setFormData((prev: any) => ({
+                ...prev,
+                pickup_location: selected?.value || "",
+              }))
             }
             placeholder="Pickup Location"
             label="Pickup Location"
@@ -393,7 +436,11 @@ export default function EditReservationPage({
             if (formData.to && date > formData.to) {
               const nextDay = new Date(date);
               nextDay.setHours(date.getHours() + 24);
-              setFormData((prev: any) => ({ ...prev, from: date, to: nextDay }));
+              setFormData((prev: any) => ({
+                ...prev,
+                from: date,
+                to: nextDay,
+              }));
             } else {
               setFormData({ ...formData, from: date });
             }
@@ -430,9 +477,14 @@ export default function EditReservationPage({
             {items.length > 0 && (
               <div className="flex flex-col gap-2 mt-4">
                 {items.map((item: any) => {
-                  const imagePath = item.full_path_image || (item.item_image_path ? `${CONFIG.IMAGE_URL}/${item.item_image_path}` : "");
+                  const imagePath =
+                    item.full_path_image ||
+                    (item.item_image_path
+                      ? `${CONFIG.IMAGE_URL}/${item.item_image_path}`
+                      : "");
                   const name = item.name || item.item_name;
-                  const type = item.item_type || (item.category ? "single" : "bulk");
+                  const type =
+                    item.item_type || (item.category ? "single" : "bulk");
                   const qty = item.added || item.qty || 1;
 
                   return (

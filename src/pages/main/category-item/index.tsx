@@ -5,6 +5,7 @@ import { useModal } from "@/components/Modal";
 import CategoryCreateModal from "@/components/modals/category/create";
 import CategoryDeleteModal from "@/components/modals/category/delete";
 import CategoryUpdateModal from "@/components/modals/category/update";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { CONFIG } from "@/config";
 import axios from "axios";
 import { parse } from "cookie";
@@ -183,18 +184,28 @@ export default function CategoryItemPage({ initialData, initialMeta, notificatio
             right: true,
             cell: (row: Category) => (
                 <div className="flex gap-2">
-                    <button
-                        onClick={() => setModal({ open: true, data: row, key: "update" })}
-                        className="p-2 bg-orange-100 text-orange-500 rounded-lg hover:bg-orange-200 transition-colors"
-                    >
-                        <PencilLineIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => setModal({ open: true, data: row, key: "delete" })}
-                        className="p-2 bg-red-100 text-red-500 rounded-lg hover:bg-red-200 transition-colors"
-                    >
-                        <TrashIcon className="w-5 h-5" />
-                    </button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                onClick={() => setModal({ open: true, data: row, key: "update" })}
+                                className="p-2 bg-orange-100 text-orange-500 rounded-lg hover:bg-orange-200 transition-colors"
+                            >
+                                <PencilLineIcon className="w-5 h-5" />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                onClick={() => setModal({ open: true, data: row, key: "delete" })}
+                                className="p-2 bg-red-100 text-red-500 rounded-lg hover:bg-red-200 transition-colors"
+                            >
+                                <TrashIcon className="w-5 h-5" />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Delete</TooltipContent>
+                    </Tooltip>
                 </div>
             ),
         },

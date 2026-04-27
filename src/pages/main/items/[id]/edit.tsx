@@ -1,5 +1,8 @@
 import Button from "@/components/Button";
-import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
+import {
+  fetchNotificationsServer,
+  fetchUnreadNotificationsServer,
+} from "@/utils/notification";
 import ButtonChoose from "@/components/ButtonChoose";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
@@ -14,6 +17,7 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import moment from "moment";
+import Breadcrumb from "@/components/Breadcrumb";
 
 type OptionType = {
   value: string | number;
@@ -35,7 +39,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    const [categories, brands, itemResult, notificationsData, unreadNotificationsData] = await Promise.all([
+    const [
+      categories,
+      brands,
+      itemResult,
+      notificationsData,
+      unreadNotificationsData,
+    ] = await Promise.all([
       axios.get(`${CONFIG.API_URL}/v1/master/categories`, {
         headers: { Authorization: `${token}` },
       }),
@@ -44,12 +54,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       }),
       query.type === "bulk" && params?.id
         ? axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
-          headers: { Authorization: `${token}` },
-        })
-        : query.type === "single" && params?.id
-          ? axios.get(`${CONFIG.API_URL}/v1/single-items/${params.id}`, {
             headers: { Authorization: `${token}` },
           })
+        : query.type === "single" && params?.id
+          ? axios.get(`${CONFIG.API_URL}/v1/single-items/${params.id}`, {
+              headers: { Authorization: `${token}` },
+            })
           : Promise.resolve({ data: { data: null } }),
       fetchNotificationsServer(token),
       fetchUnreadNotificationsServer(token),
@@ -107,54 +117,56 @@ export default function EditItemPage({
 
   const initialBrand: OptionType | null = itemData?.brandID
     ? {
-      value: itemData.brandID,
-      label: itemData?.name?.split(" ")[0] || "",
-    }
+        value: itemData.brandID,
+        label: itemData?.name?.split(" ")[0] || "",
+      }
     : null;
 
   const initialCategory: OptionType | null =
     type === "individual" && itemData?.categoryID
       ? {
-        value: itemData.categoryID,
-        label: categories?.find((item: any) => item.id === itemData.categoryID)?.name || "",
-      }
+          value: itemData.categoryID,
+          label:
+            categories?.find((item: any) => item.id === itemData.categoryID)
+              ?.name || "",
+        }
       : null;
 
   const initialLocation: OptionType | null = itemData?.location
     ? {
-      value: itemData.location,
-      label:
-        itemData.location.charAt(0).toUpperCase() +
-        itemData.location.slice(1),
-    }
+        value: itemData.location,
+        label:
+          itemData.location.charAt(0).toUpperCase() +
+          itemData.location.slice(1),
+      }
     : null;
 
   const [selectedBrand, setSelectedBrand] = useState<OptionType | null>(
-    initialBrand
+    initialBrand,
   );
   const [model, setModel] = useState<string>(itemData?.model || "");
-  const [selectedCategory, setSelectedCategory] =
-    useState<OptionType | null>(initialCategory);
-  const [selectedLocation, setSelectedLocation] =
-    useState<OptionType | null>(initialLocation);
+  const [selectedCategory, setSelectedCategory] = useState<OptionType | null>(
+    initialCategory,
+  );
+  const [selectedLocation, setSelectedLocation] = useState<OptionType | null>(
+    initialLocation,
+  );
   const [images, setImages] = useState<string[]>(
-    itemData?.full_path_image ? [itemData.full_path_image] : []
+    itemData?.full_path_image ? [itemData.full_path_image] : [],
   );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageRemoved, setImageRemoved] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [value, setValue] = useState(
-    itemData?.rate_day
-      ? Number(itemData.rate_day).toLocaleString("id-ID")
-      : ""
+    itemData?.rate_day ? Number(itemData.rate_day).toLocaleString("id-ID") : "",
   );
   const [price, setPrice] = useState(
     itemData?.purchase_price
       ? Number(itemData.purchase_price).toLocaleString("id-ID")
-      : ""
+      : "",
   );
   const [qty, setQty] = useState<string>(
-    type === "bulk" && itemData?.qty ? String(itemData.qty) : ""
+    type === "bulk" && itemData?.qty ? String(itemData.qty) : "",
   );
 
   useEffect(() => {
@@ -191,7 +203,7 @@ export default function EditItemPage({
 
     const selectedFiles = Array.from(files);
     const previewImages = selectedFiles.map((file) =>
-      URL.createObjectURL(file)
+      URL.createObjectURL(file),
     );
 
     setImages((prev) => {
@@ -202,7 +214,7 @@ export default function EditItemPage({
       });
 
       const persisted = prev.filter(
-        (url) => typeof url === "string" && !url.startsWith("blob:")
+        (url) => typeof url === "string" && !url.startsWith("blob:"),
       );
       return [...persisted, ...previewImages];
     });
@@ -331,8 +343,8 @@ export default function EditItemPage({
         qty: type === "bulk" ? Number(qty) : undefined,
         purchase_date: formData?.purchase_date
           ? Math.floor(
-            new Date(formData?.purchase_date.toString()).getTime() / 1000
-          )
+              new Date(formData?.purchase_date.toString()).getTime() / 1000,
+            )
           : itemData?.purchase_date
             ? moment(itemData.purchase_date).unix()
             : null,
@@ -340,8 +352,8 @@ export default function EditItemPage({
           type === "individual"
             ? formData?.warranty_date
               ? Math.floor(
-                new Date(formData?.warranty_date.toString()).getTime() / 1000
-              )
+                  new Date(formData?.warranty_date.toString()).getTime() / 1000,
+                )
               : itemData?.warranty_date
                 ? moment(itemData.warranty_date).unix()
                 : null
@@ -375,7 +387,7 @@ export default function EditItemPage({
       });
       setLoading(false);
       router.push(
-        `/main/items/${id}/detail?type=${type === "bulk" ? "bulk" : "single"}`
+        `/main/items/${id}/detail?type=${type === "bulk" ? "bulk" : "single"}`,
       );
     } catch (error: any) {
       console.error("Item update error:", error);
@@ -419,7 +431,8 @@ export default function EditItemPage({
           errorTitle = "Validation Error";
         } else if (error.response.status >= 500) {
           errorTitle = "Server Error";
-          errorMessage = "The server encountered an error. Please try again later.";
+          errorMessage =
+            "The server encountered an error. Please try again later.";
         }
       } else if (error.request) {
         errorTitle = "Network Error";
@@ -449,19 +462,28 @@ export default function EditItemPage({
 
   return (
     <div>
-      <div className="flex flex-row gap-2 items-center">
-        <button
-          onClick={() =>
-            router.push(
-              `/main/items/${id}/detail?type=${type === "bulk" ? "bulk" : "single"}`
-            )
-          }
-          type="button"
-        >
-          <ArrowLeftIcon className="w-6 h-6 text-orange-500" />
-        </button>
-        <h1 className="text-2xl font-bold text-orange-500">Edit Item</h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-row gap-2 items-center">
+          <button
+            onClick={() =>
+              router.push(
+                `/main/items/${id}/detail?type=${type === "bulk" ? "bulk" : "single"}`,
+              )
+            }
+            type="button"
+          >
+            <ArrowLeftIcon className="w-6 h-6 text-orange-500" />
+          </button>
+          <h1 className="text-2xl font-bold text-orange-500">Edit Item</h1>
+        </div>
+        <Breadcrumb
+          items={[
+            { label: "Items", href: "/main/items" },
+            { label: "Edit Item", href: `/main/items/${id}/edit` },
+          ]}
+        />
       </div>
+
       <div className="">
         <div>
           <h5 className="text-orange-500 mt-4">
@@ -530,12 +552,11 @@ export default function EditItemPage({
                   fullWidth
                   readOnly
                   required
-                  value={
-                    `${selectedBrand?.label || itemData?.name || "Item Name"} ${model || ""
-                      }`
-                      .trim()
-                      .replace(/\s+/g, " ")
-                  }
+                  value={`${selectedBrand?.label || itemData?.name || "Item Name"} ${
+                    model || ""
+                  }`
+                    .trim()
+                    .replace(/\s+/g, " ")}
                 />
                 <Select
                   options={[
@@ -595,7 +616,10 @@ export default function EditItemPage({
                   name="purchase_date"
                   fullWidth
                   type="date"
-                  defaultValue={formatEpochDate(itemData?.purchase_date, "YYYY-MM-DD")}
+                  defaultValue={formatEpochDate(
+                    itemData?.purchase_date,
+                    "YYYY-MM-DD",
+                  )}
                 />
               </div>
               {type !== "bulk" && (
@@ -613,7 +637,10 @@ export default function EditItemPage({
                     name="warranty_date"
                     fullWidth
                     type="date"
-                    defaultValue={formatEpochDate(itemData?.warranty_date, "YYYY-MM-DD")}
+                    defaultValue={formatEpochDate(
+                      itemData?.warranty_date,
+                      "YYYY-MM-DD",
+                    )}
                   />
                 </div>
               )}
@@ -670,9 +697,7 @@ export default function EditItemPage({
                     <button
                       type="button"
                       className="absolute top-1 right-1 bg-red-500 rounded-full p-1"
-                      onClick={() =>
-                        handleRemoveImage(i)
-                      }
+                      onClick={() => handleRemoveImage(i)}
                     >
                       <XIcon className="w-4 h-4" color="white" />
                     </button>
@@ -692,7 +717,7 @@ export default function EditItemPage({
                   type="button"
                   onClick={() => {
                     router.push(
-                      `/main/items/${id}/detail?type=${type === "bulk" ? "bulk" : "single"}`
+                      `/main/items/${id}/detail?type=${type === "bulk" ? "bulk" : "single"}`,
                     );
                   }}
                 >

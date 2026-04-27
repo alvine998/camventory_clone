@@ -4,6 +4,7 @@ import { useModal } from "@/components/Modal";
 import AdminCreateModal from "@/components/modals/administrator/create";
 import AdminDeleteModal from "@/components/modals/administrator/delete";
 import AdminUpdateModal from "@/components/modals/administrator/update";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { CONFIG } from "@/config";
 import { ColumnAdministrator } from "@/constants/column_administrator";
 import axios from "axios";
@@ -118,34 +119,44 @@ export default function AdministratorPage({ table }: any) {
     ),
     action: (
       <div key={index} className="flex gap-2">
-        <Button
-          className="bg-orange-200 text-orange-500"
-          variant="custom-color"
-          type="button"
-          onClick={() => {
-            setModal({
-              open: true,
-              data: item,
-              key: "update",
-            });
-          }}
-        >
-          <PencilLineIcon className="w-4 h-4" />
-        </Button>
-        <Button
-          className="bg-red-200 text-red-500"
-          variant="custom-color"
-          type="button"
-          onClick={() => {
-            setModal({
-              open: true,
-              data: item,
-              key: "delete",
-            });
-          }}
-        >
-          <TrashIcon className="w-4 h-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              className="bg-orange-200 text-orange-500"
+              variant="custom-color"
+              type="button"
+              onClick={() => {
+                setModal({
+                  open: true,
+                  data: item,
+                  key: "update",
+                });
+              }}
+            >
+              <PencilLineIcon className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Edit</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              className="bg-red-200 text-red-500"
+              variant="custom-color"
+              type="button"
+              onClick={() => {
+                setModal({
+                  open: true,
+                  data: item,
+                  key: "delete",
+                });
+              }}
+            >
+              <TrashIcon className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Delete</TooltipContent>
+        </Tooltip>
       </div>
     ),
   }));

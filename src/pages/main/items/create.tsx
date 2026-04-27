@@ -1,17 +1,22 @@
 import Button from "@/components/Button";
-import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
+import {
+  fetchNotificationsServer,
+  fetchUnreadNotificationsServer,
+} from "@/utils/notification";
 import ButtonChoose from "@/components/ButtonChoose";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
 import { CONFIG } from "@/config";
 import axios from "axios";
 import { parse } from "cookie";
-import { XIcon } from "lucide-react";
+import { ArrowLeft, XIcon } from "lucide-react";
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Swal from "sweetalert2";
+import Link from "next/link";
+import Breadcrumb from "@/components/Breadcrumb";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -37,23 +42,21 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     if (typeof search === "string" && search.trim() !== "") {
       params.set("search", search);
     }
-    const [categories, brands, notificationsData, unreadNotificationsData] = await Promise.all([
-      axios.get(
-        `${CONFIG.API_URL}/v1/master/categories`,
-        {
+    const [categories, brands, notificationsData, unreadNotificationsData] =
+      await Promise.all([
+        axios.get(`${CONFIG.API_URL}/v1/master/categories`, {
           headers: {
             Authorization: `${token}`,
           },
-        }
-      ),
-      axios.get(`${CONFIG.API_URL}/v1/master/brands`, {
-        headers: {
-          Authorization: `${token}`,
-        },
-      }),
-      fetchNotificationsServer(token),
-      fetchUnreadNotificationsServer(token),
-    ]);
+        }),
+        axios.get(`${CONFIG.API_URL}/v1/master/brands`, {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }),
+        fetchNotificationsServer(token),
+        fetchUnreadNotificationsServer(token),
+      ]);
 
     // Optionally validate token...
     return {
@@ -141,11 +144,6 @@ export default function AdministratorPage({ brands, categories }: Props) {
     setImages(arrImage);
   };
 
-  useEffect(() => {
-    const queryFilter = new URLSearchParams(filter).toString();
-    router.push(`?${queryFilter}`);
-  }, [filter, router]);
-
   const onSubmit = async (e: any) => {
     e.preventDefault();
     setLoading(true);
@@ -212,13 +210,13 @@ export default function AdministratorPage({ brands, categories }: Props) {
         qty: Number(formData?.qty) || 0,
         purchase_date: formData?.purchase_date
           ? Math.floor(
-            new Date(formData?.purchase_date.toString()).getTime() / 1000
-          )
+              new Date(formData?.purchase_date.toString()).getTime() / 1000,
+            )
           : null,
         warranty_date: formData?.warranty_date
           ? Math.floor(
-            new Date(formData?.warranty_date.toString()).getTime() / 1000
-          )
+              new Date(formData?.warranty_date.toString()).getTime() / 1000,
+            )
           : null,
       };
 
@@ -231,8 +229,9 @@ export default function AdministratorPage({ brands, categories }: Props) {
       Swal.fire({
         icon: "success",
         title: "Item Created Successfully",
-        text: `The ${type === "bulk" ? "bulk" : "single"
-          } item has been created successfully.`,
+        text: `The ${
+          type === "bulk" ? "bulk" : "single"
+        } item has been created successfully.`,
         showConfirmButton: false,
         timer: 1500,
       });
@@ -318,7 +317,21 @@ export default function AdministratorPage({ brands, categories }: Props) {
   return (
     <div>
       <div className="">
-        <h1 className="text-2xl font-bold text-orange-500">Add Items</h1>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Link href={"/main/items"} className="text-orange-500">
+              <ArrowLeft className="w-5 h-5 inline" />
+            </Link>
+            <h1 className="text-2xl font-bold text-orange-500">Add Items</h1>
+          </div>
+          <Breadcrumb
+            items={[
+              { label: "Items", href: "/main/items" },
+              { label: "Add Item", href: "/main/items/create" },
+            ]}
+          />
+        </div>
+
         <div>
           <h5 className="text-orange-500">
             How would you like this item added?
@@ -380,8 +393,9 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   fullWidth
                   readOnly
                   required
-                  value={`${filter?.brand?.label || "Item Name"} ${filter?.model || ""
-                    }`}
+                  value={`${filter?.brand?.label || "Item Name"} ${
+                    filter?.model || ""
+                  }`}
                 />
                 <Select
                   options={[
@@ -399,7 +413,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                   fullWidth
                   required
                   name="location"
-                // onChange={(e) => setFilter({ brand: e })}
+                  // onChange={(e) => setFilter({ brand: e })}
                 />
               </div>
               <div className="flex md:flex-row flex-col gap-4 mt-4 w-full">
@@ -486,7 +500,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                     fullWidth
                     required
                     name="categoryID"
-                  // onChange={(e) => setFilter({ brand: e })}
+                    // onChange={(e) => setFilter({ brand: e })}
                   />
                 )}
               </div>
@@ -509,7 +523,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                       className="absolute top-1 right-1 bg-red-500 rounded-full p-1"
                       onClick={() =>
                         setImages(
-                          images.filter((_: any, index: number) => index !== i)
+                          images.filter((_: any, index: number) => index !== i),
                         )
                       }
                     >
@@ -535,7 +549,7 @@ export default function AdministratorPage({ brands, categories }: Props) {
                 >
                   Cancel
                 </Button>
-                <Button disabled={loading} variant="primary" type="submit">
+                <Button disabled={loading} variant="submit" type="submit">
                   {loading ? "Loading..." : "Add Item"}
                 </Button>
               </div>

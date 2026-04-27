@@ -8,6 +8,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   showPassword?: boolean;
   setShowPassword?: (show: boolean) => void;
   fullWidth?: boolean;
+  readonly?: boolean;
   rows?: number;
 }
 
@@ -21,9 +22,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       setShowPassword,
       className,
       fullWidth = false,
+      readOnly = false,
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <div className={"flex flex-col" + (fullWidth ? " w-full" : "")}>
@@ -36,8 +38,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {props.type == "password" ? (
           <>
             <div
-              className={`border flex flex-row justify-between items-center rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 ${className} ${error ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`border flex flex-row justify-between items-center rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 ${className} ${
+                error ? "border-red-500" : "border-gray-300"
+              }`}
             >
               <input
                 ref={ref}
@@ -80,8 +83,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         ) : props.type == "search" ? (
           <>
             <div
-              className={`border flex flex-row items-center rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 ${className} ${error ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`border flex flex-row items-center rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 ${className} ${
+                error ? "border-red-500" : "border-gray-300"
+              }`}
             >
               <Image
                 alt="eye"
@@ -105,8 +109,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <>
             <textarea
               ref={ref as any}
-              className={`border text-xs rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className} ${error ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`border text-xs rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className} ${
+                error ? "border-red-500" : "border-gray-300"
+              }`}
               required={required}
               {...(props as any)}
               rows={props.rows || 3}
@@ -117,8 +122,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <>
             <input
               ref={ref}
-              className={`border text-xs rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className} ${error ? "border-red-500" : "border-gray-300"
-                }`}
+              className={`border text-xs rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${readOnly ? "cursor-not-allowed bg-gray-200" : ""} ${className} ${
+                error ? "border-red-500" : "border-gray-300"
+              }`}
               required={required}
               {...props}
             />
@@ -127,7 +133,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 Input.displayName = "Input"; // Required for forwardRef components

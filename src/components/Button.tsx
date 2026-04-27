@@ -1,4 +1,4 @@
-import React, { ButtonHTMLAttributes } from "react";
+import React, { ButtonHTMLAttributes, forwardRef } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?:
@@ -13,14 +13,18 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
 }
 
-const Button: React.FC<ButtonProps> = ({
-  variant = "primary",
-  className,
-  children,
-  isLoading = false,
-  disabled,
-  ...props
-}) => {
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      variant = "primary",
+      className,
+      children,
+      isLoading = false,
+      disabled,
+      ...props
+    },
+    ref
+  ) => {
   const baseStyles =
     "px-4 py-2 rounded-md font-medium focus:outline-none focus:ring-2 transition duration-300";
 
@@ -46,6 +50,7 @@ const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
+      ref={ref}
       className={`${baseStyles} ${variantStyles[variant]} ${className} ${(disabled || isLoading) ? "opacity-50 cursor-not-allowed" : ""
         }`}
       disabled={disabled || isLoading}
@@ -59,6 +64,8 @@ const Button: React.FC<ButtonProps> = ({
       </div>
     </button>
   );
-};
+});
+
+Button.displayName = "Button";
 
 export default Button;
