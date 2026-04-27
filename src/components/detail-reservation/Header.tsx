@@ -237,8 +237,7 @@ export default function HeaderReservation({ detail, query }: Props) {
                 </Button>
               )}
 
-              {detail?.status?.toUpperCase() === "BOOKED" ||
-              detail?.status?.toUpperCase() === "OVERDUE_BOOKED" ? (
+              {detail?.status?.toUpperCase() === "BOOKED" ? (
                 <Dropdown
                   label={`Check Out ${detail?.details?.length || 0} items`}
                   triggerIcon={
