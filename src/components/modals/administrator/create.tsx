@@ -104,7 +104,7 @@ export default function AdminCreateModal({ open, setOpen }: Props) {
           <div className="flex gap-2 md:flex-row flex-col">
             <Select
               options={[
-                { value: "all", label: "All" },
+                { value: "", label: "Choose Location" },
                 { value: "cipadung", label: "Cipadung" },
                 { value: "dipatiukur", label: "Dipatiukur" },
               ]}

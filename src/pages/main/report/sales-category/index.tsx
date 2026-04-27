@@ -80,9 +80,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       fetchUnreadNotificationsServer(token),
     ]);
 
-    console.log(reportResponse?.data);
-    console.log(`${CONFIG.API_URL}/v1/report/category?${params.toString()}`);
-
     if (reportResponse?.status === 401 || categories?.status === 401) {
       return {
         redirect: {

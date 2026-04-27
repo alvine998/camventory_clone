@@ -15,7 +15,10 @@ import DataTable from "react-data-table-component";
 import FlagIcon from "../../../../public/icons/flag.svg";
 import Badge from "@/components/Badge";
 import { getStatusBadgeColor } from "@/utils";
-import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
+import {
+  fetchNotificationsServer,
+  fetchUnreadNotificationsServer,
+} from "@/utils/notification";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -59,7 +62,10 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     if (typeof statusItem === "string" && statusItem.trim() !== "") {
       params.set("statusItem", statusItem);
-    } else if (typeof query.statusItem === "string" && query.statusItem.trim() !== "") {
+    } else if (
+      typeof query.statusItem === "string" &&
+      query.statusItem.trim() !== ""
+    ) {
       params.set("statusItem", query.statusItem);
     }
 
@@ -69,7 +75,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         headers: {
           Authorization: `${token}`,
         },
-      }
+      },
     );
 
     if (table?.status === 401) {
@@ -99,7 +105,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
     return {
-      props: { table: { data: [] }, notifications: [], unreadNotifications: [] },
+      props: {
+        table: { data: [] },
+        notifications: [],
+        unreadNotifications: [],
+      },
     };
   }
 };
@@ -118,12 +128,17 @@ export default function AdministratorPage({ table }: any) {
     statusItem?: string;
   }>(() => {
     // Try to get from router.query first, then fallback to window.location.search
-    let search = typeof router.query.search === "string" ? router.query.search : "";
-    let location = typeof router.query.location === "string" ? router.query.location : "all";
+    let search =
+      typeof router.query.search === "string" ? router.query.search : "";
+    let location =
+      typeof router.query.location === "string" ? router.query.location : "all";
     let bulk = typeof router.query.bulk === "string" ? router.query.bulk : "";
     let page = router.query.page ? Number(router.query.page) : 1;
     let limit = router.query.limit ? Number(router.query.limit) : 10;
-    let statusItem = typeof router.query.statusItem === "string" ? router.query.statusItem : "";
+    let statusItem =
+      typeof router.query.statusItem === "string"
+        ? router.query.statusItem
+        : "";
 
     // Fallback to window.location if router.query is empty (client-side only)
     if (typeof window !== "undefined") {
@@ -132,8 +147,11 @@ export default function AdministratorPage({ table }: any) {
       if (location === "all") location = params.get("location") || "all";
       if (!bulk) bulk = params.get("bulk") || "";
       if (page === 1 && params.has("page")) page = Number(params.get("page"));
-      if (limit === 10 && params.has("limit")) limit = Number(params.get("limit"));
-      if (!statusItem) statusItem = params.get("statusItem") || params.get("status_items") || "";
+      if (limit === 10 && params.has("limit"))
+        limit = Number(params.get("limit"));
+      if (!statusItem)
+        statusItem =
+          params.get("statusItem") || params.get("status_items") || "";
     }
 
     return {
@@ -142,7 +160,7 @@ export default function AdministratorPage({ table }: any) {
       bulk,
       page,
       limit,
-      statusItem
+      statusItem,
     };
   });
 
@@ -170,7 +188,6 @@ export default function AdministratorPage({ table }: any) {
     });
   }, [filter.limit, router]);
 
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       setShow(true);
@@ -181,20 +198,19 @@ export default function AdministratorPage({ table }: any) {
     number: index + 1,
     item_name: (
       <div className="flex gap-2 items-center">
-        {
-          item.full_path_image ? (
-            <Image
-              src={item.full_path_image}
-              alt="image"
-              width={50}
-              height={50}
-              className="p-2"
-            />
-          ) :
-            <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded m-1">
-              <Camera className="w-6 h-6 text-gray-500" />
-            </div>
-        }
+        {item.full_path_image ? (
+          <Image
+            src={item.full_path_image}
+            alt="image"
+            width={50}
+            height={50}
+            className="p-2"
+          />
+        ) : (
+          <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded m-1">
+            <Camera className="w-6 h-6 text-gray-500" />
+          </div>
+        )}
         <div>
           <h5 className="text-black">{item.name}</h5>
           <div className="flex gap-2 items-center mt-1">
@@ -356,14 +372,14 @@ export default function AdministratorPage({ table }: any) {
           </select>
           {(filter.search ||
             (filter.location && filter.location !== "all")) && (
-              <button
-                type="button"
-                className="px-4 py-2 text-red-500 hover:text-red-600 font-medium transition-colors duration-200"
-                onClick={handleResetFilter}
-              >
-                Reset Filters
-              </button>
-            )}
+            <button
+              type="button"
+              className="px-4 py-2 text-red-500 hover:text-red-600 font-medium transition-colors duration-200"
+              onClick={handleResetFilter}
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
         <Button
           variant="custom-color"
@@ -381,10 +397,11 @@ export default function AdministratorPage({ table }: any) {
           {itemTabs.map((tab) => (
             <button
               key={tab.href}
-              className={`px-4 py-2 font-medium text-sm ${tab.isActive
-                ? "border-b-2 border-orange-500 text-orange-600"
-                : "text-gray-500 hover:text-gray-700"
-                }`}
+              className={`px-4 py-2 font-medium text-sm ${
+                tab.isActive
+                  ? "border-b-2 border-orange-500 text-orange-600"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
               onClick={() => router.push(tab.href)}
             >
               {tab.label}
@@ -406,7 +423,9 @@ export default function AdministratorPage({ table }: any) {
               onChangePage={(page) =>
                 setFilter((prev: any) => ({ ...prev, page }))
               }
-              onChangeRowsPerPage={(limit, page) => setFilter((prev: any) => ({ ...prev, limit, page }))}
+              onChangeRowsPerPage={(limit, page) =>
+                setFilter((prev: any) => ({ ...prev, limit, page }))
+              }
               noDataComponent="No items found"
               customStyles={{
                 table: {

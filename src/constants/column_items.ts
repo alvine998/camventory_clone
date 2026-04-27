@@ -52,7 +52,7 @@ export const ColumnItems = [
 export const ColumnBulkItems = [
   {
     name: "No",
-    selector: (row: any) => row.id,
+    selector: (row: any) => row.number,
     sortable: true,
     width: "80px",
     minWidth: "80px",
@@ -62,15 +62,18 @@ export const ColumnBulkItems = [
     name: "Item Name",
     selector: (row: any) => row.item_name,
     sortable: true,
+    width: "300px",
+    minWidth: "300px",
+    maxWidth: "300px",
   },
   {
     name: "Brand",
-    selector: (row: any) => row.brand?.name || "-",
+    selector: (row: any) => row.brand || "-",
     sortable: true,
   },
     {
     name: "QTY",
-    selector: (row: any) => row.qty || "-",
+    selector: (row: any) => row.qty || "0",
     sortable: true,
   },
   {
@@ -81,6 +84,11 @@ export const ColumnBulkItems = [
   {
     name: "Location",
     selector: (row: any) => row.location,
+    sortable: true,
+  },
+  {
+    name: "Status",
+    selector: (row: any) => row.status_bulk,
     sortable: true,
   },
   {

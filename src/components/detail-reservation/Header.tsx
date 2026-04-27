@@ -24,7 +24,7 @@ interface Props {
   query: any;
 }
 
-export default function HeaderReservation({ detail }: Props) {
+export default function HeaderReservation({ detail, query }: Props) {
   const router = useRouter();
   const { user } = useAuthStore();
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -55,7 +55,8 @@ export default function HeaderReservation({ detail }: Props) {
     } catch (error: any) {
       console.error("Cancel error:", error);
       const apiMessage = error.response?.data?.message;
-      const errorMessage = typeof apiMessage === 'object' ? apiMessage.message : apiMessage;
+      const errorMessage =
+        typeof apiMessage === "object" ? apiMessage.message : apiMessage;
 
       Swal.fire({
         icon: "error",
@@ -69,7 +70,7 @@ export default function HeaderReservation({ detail }: Props) {
       setIsLoading(false);
     }
   };
-  const handleCheckout = async (signaturePath?: string) => {
+  const handleCheckout = async (filePath?: string, signaturePath?: string) => {
     if (!user?.id) {
       Swal.fire({
         icon: "error",
@@ -88,33 +89,37 @@ export default function HeaderReservation({ detail }: Props) {
           item_id: item.item_id,
         })),
         signature: signaturePath || null,
+        file_path: filePath || null,
       };
+      console.log(payload, "pays");
 
-      const res = await axios.post("/api/reservation/checkout", payload);
+      // const res = await axios.post("/api/reservation/checkout", payload);
 
-      if (res.status === 200 || res.status === 201) {
-        Swal.fire({
-          icon: "success",
-          title: "Checkout Successful",
-          text: "The checkout process has been completed successfully.",
-          timer: 1500,
-          showConfirmButton: false,
-        });
+      // if (res.status === 200 || res.status === 201) {
+      //   Swal.fire({
+      //     icon: "success",
+      //     title: "Checkout Successful",
+      //     text: "The checkout process has been completed successfully.",
+      //     timer: 1500,
+      //     showConfirmButton: false,
+      //   });
 
-        setShowPrintModal(false);
-        setIsCheckoutFlow(false);
-        // Reload page to reflect new status
-        router.push(`/main/reservation/${detail?.id}/detail`);
-      }
+      //   setShowPrintModal(false);
+      //   setIsCheckoutFlow(false);
+      //   // Reload page to reflect new status
+      //   router.push(`/main/reservation/${detail?.id}/detail`);
+      // }
     } catch (error: any) {
       console.error("Checkout error:", error);
       const apiMessage = error.response?.data?.message;
-      const errorMessage = typeof apiMessage === "object" ? apiMessage.message : apiMessage;
+      const errorMessage =
+        typeof apiMessage === "object" ? apiMessage.message : apiMessage;
 
       Swal.fire({
         icon: "error",
         title: "Checkout Failed",
-        text: errorMessage || error.message || "An error occurred during checkout.",
+        text:
+          errorMessage || error.message || "An error occurred during checkout.",
       });
     } finally {
       setIsLoading(false);
@@ -147,19 +152,19 @@ export default function HeaderReservation({ detail }: Props) {
     } catch (error: any) {
       console.error("Check in error:", error);
       const apiMessage = error.response?.data?.message;
-      const errorMessage = typeof apiMessage === "object" ? apiMessage.message : apiMessage;
+      const errorMessage =
+        typeof apiMessage === "object" ? apiMessage.message : apiMessage;
 
       Swal.fire({
         icon: "error",
         title: "Check In Failed",
-        text: errorMessage || error.message || "An error occurred during check in.",
+        text:
+          errorMessage || error.message || "An error occurred during check in.",
       });
     } finally {
       setIsLoading(false);
     }
   };
-
-
 
   return (
     <div>
@@ -183,7 +188,9 @@ export default function HeaderReservation({ detail }: Props) {
               <h5>{detail?.book_id ?? "NK0001"}</h5>
               <Badge
                 text={detail?.status || "Booked"}
-                color={getStatusBadgeColor(detail?.status)}
+                color={getStatusBadgeColor(
+                  query?.type === "bulk" ? String(detail?.qty) : detail?.status,
+                )}
               >
                 {detail?.status}
               </Badge>
@@ -202,7 +209,9 @@ export default function HeaderReservation({ detail }: Props) {
                   <p className="text-xs text-orange-500">Edit</p>
                 </Button>
               )}
-              {detail?.status?.toUpperCase() === "BOOKED" && (
+              {(detail?.status?.toUpperCase() === "BOOKED" ||
+                detail?.status?.toUpperCase() === "OVERDUE_BOOKED" ||
+                detail?.status?.toUpperCase() === "OVERDUE_CHECKOUT") && (
                 <Button
                   variant="custom-color"
                   className="flex items-center gap-1 border border-orange-500"
@@ -215,10 +224,13 @@ export default function HeaderReservation({ detail }: Props) {
                 </Button>
               )}
 
-              {detail?.status?.toUpperCase() === "BOOKED" ? (
+              {detail?.status?.toUpperCase() === "BOOKED" ||
+              detail?.status?.toUpperCase() === "OVERDUE_BOOKED" ? (
                 <Dropdown
                   label={`Check Out ${detail?.details?.length || 0} items`}
-                  triggerIcon={<ShoppingCartIcon className="w-4 h-4 text-white" />}
+                  triggerIcon={
+                    <ShoppingCartIcon className="w-4 h-4 text-white" />
+                  }
                   isLoading={isLoading}
                   options={[
                     {
@@ -234,7 +246,9 @@ export default function HeaderReservation({ detail }: Props) {
                 <div className="flex gap-2 items-center">
                   <Dropdown
                     label={`Check In ${detail?.details?.length || 0} items`}
-                    triggerIcon={<ShoppingCartIcon className="w-4 h-4 text-white" />}
+                    triggerIcon={
+                      <ShoppingCartIcon className="w-4 h-4 text-white" />
+                    }
                     isLoading={isLoading}
                     options={[
                       {

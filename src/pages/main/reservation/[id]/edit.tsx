@@ -12,7 +12,8 @@ import DateTimePickerModal from "@/components/DateTimePickerModal";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import React, { useState } from "react";
+import { useAuthStore } from "@/stores/useAuthStore";
+import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 // ✅ Types
@@ -157,13 +158,21 @@ export default function EditReservationPage({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  const { user } = useAuthStore();
   const [formData, setFormData] = useState<any>({
     customer_id: detail?.ref_customer?.id || "",
-    user_id: detail?.ref_user?.id || "",
+    user_id: user?.id || detail?.ref_user?.id || "",
     pickup_location: detail?.pickup_location || "dipatiukur",
     from: detail?.start_date ? new Date(detail.start_date * 1000) : null,
     to: detail?.end_date ? new Date(detail.end_date * 1000) : null,
   });
+
+  // Ensure user_id is set to the currently logged-in user
+  useEffect(() => {
+    if (user?.id && formData.user_id !== user.id) {
+      setFormData((prev: any) => ({ ...prev, user_id: user.id }));
+    }
+  }, [user, formData.user_id]);
 
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [showToPicker, setShowToPicker] = useState(false);
@@ -319,6 +328,7 @@ export default function EditReservationPage({
             fullWidth
             required
             name="user_id"
+            isDisabled={true}
           />
         </div>
 

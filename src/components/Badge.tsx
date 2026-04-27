@@ -10,9 +10,10 @@ export default function Badge({
   color = "available",
   text,
 }: BadgeProps) {
+  // Test Dev Vercel
   return (
     <div
-      className={`py-1 px-4 rounded-full border text-[11px] font-bold w-full max-w-[100px] flex items-center justify-center ${color === "available"
+      className={`py-1 px-4 rounded-full border text-[11px] font-bold w-full max-w-[150px] flex items-center justify-center ${color === "available"
         ? "bg-green-50 border-green-500 text-green-600"
         : color === "empty"
           ? "bg-red-50 border-red-500 text-red-600"

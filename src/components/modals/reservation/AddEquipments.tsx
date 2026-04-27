@@ -83,7 +83,6 @@ export default function AddEquipmentsModal({
   const handleScanSuccess = (decodedText: string) => {
     // Search in singleItems and bulkItems
     const allItems = [...singleItems, ...bulkItems];
-    console.log("Decoded text:", decodedText);
 
     // Find item by ID or Serial Number (barcode)
     const foundItem = allItems.find(item =>
@@ -339,7 +338,6 @@ export default function AddEquipmentsModal({
                         } else {
                           const result = [...items, { ...item, added: 1 }];
                           setItems(result);
-                          console.log(result);
                         }
                       }}
                     >

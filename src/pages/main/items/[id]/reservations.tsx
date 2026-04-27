@@ -12,7 +12,7 @@ import {
   MapPinIcon,
   UserCircle2Icon,
 } from "lucide-react";
-import Button from "@/components/Button";
+// import Button from "@/components/Button";
 import moment from "moment";
 import axios from "axios";
 import { CONFIG } from "@/config";
@@ -199,7 +199,6 @@ export default function Reservations({
   reservation,
   logs,
 }: any) {
-  console.log(reservation, "detail reservations");
   const [showAllLogs, setShowAllLogs] = useState(false);
   const logsData = logs?.data || [];
 
@@ -311,8 +310,8 @@ export default function Reservations({
       </div>
       <div className="mt-4 border-t border-gray-300 w-full flex justify-end items-center">
         <div className="flex gap-4 mt-2">
-          <Button variant="white">Cancel</Button>
-          <Button variant="submit">Checkout</Button>
+          {/* <Button variant="white">Cancel</Button>
+          <Button variant="submit">Checkout</Button> */}
         </div>
       </div>
     </div>

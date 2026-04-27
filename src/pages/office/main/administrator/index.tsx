@@ -52,7 +52,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         },
       }
     );
-    console.log(table?.data?.data, 'token')
 
     if (table?.status === 401) {
       return {

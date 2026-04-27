@@ -63,7 +63,7 @@ export const ColumnReservation: any[] = [
     selector: (row: any) => row.status_comp,
     sortable: true,
     sortField: "status",
-    width: "150px",
+    width: "200px",
   },
   {
     name: "Pickup Location",

@@ -12,6 +12,7 @@ export interface IReservation {
   created_at: number;
   updated_at: number;
   action?: any;
+  qty?: number;
   ref_customer: RefCustomer;
   ref_user: RefUser;
   details: IDetail[];

@@ -1,16 +1,18 @@
-import { PackageIcon } from "lucide-react";
+import { PackageIcon, PencilIcon } from "lucide-react";
 import React, { useState } from "react";
 import Button from "../Button";
+import Link from "next/link";
 import Badge from "../Badge";
 import Select from "../Select";
 import Image from "next/image";
-import { IItems } from "@/types/single_items";
 import { useRouter } from "next/router";
 import NotesModal from "../modals/items/NotesModal";
 import Barcode from "react-barcode";
+import { IBulkItems } from "@/types/bulk_items";
+import { getStatusBadgeColor } from "@/utils";
 
 interface Props {
-  detail: IItems;
+  detail: IBulkItems;
   query: any;
 }
 
@@ -66,9 +68,22 @@ export default function Header({ detail, query }: Props) {
       <div className="mt-4 border rounded border-gray-500 p-4">
         <div>
           <div className="flex justify-between gap-4">
-            <div className="flex gap-5 items-center">
+            <div className="flex gap-5 items-center w-1/2 min-w-0">
               <h5>{detail?.name ?? "-"}</h5>
-              <Badge text={detail?.status_booking} />
+              {query?.type === "bulk" ? (
+                <Badge
+                  color={getStatusBadgeColor(
+                    (detail?.qty ?? 0) < 1 ? "empty" : "available",
+                  )}
+                  text={
+                    (detail?.qty ?? 0) < 1
+                      ? "Not Available"
+                      : "Available"
+                  }
+                />
+              ) : (
+                <Badge text={detail?.status_booking} />
+              )}
             </div>
             <div className="flex gap-2 items-center">
               {!detail?.qty && (
@@ -91,18 +106,23 @@ export default function Header({ detail, query }: Props) {
                   {generatingBarcode ? "Generating..." : "Generate Barcode"}
                 </p>
               </Button> */}
-              {/* <Button
-                className="flex items-center gap-1 border border-orange-500"
-                variant="custom-color"
-              >
-                <PencilIcon className="w-4 h-4 text-orange-500" />
-                <p className="text-orange-500 text-xs">Edit</p>
-              </Button> */}
+              {query?.type === "bulk" && (
+                <Link href={`/main/items/${detail?.id}/edit?type=bulk`}>
+                  <Button
+                    className="flex items-center gap-1 border border-orange-500"
+                    variant="custom-color"
+                  >
+                    <PencilIcon className="w-4 h-4 text-orange-500" />
+                    <p className="text-orange-500 text-xs">Edit</p>
+                  </Button>
+                </Link>
+              )}
               <Button
                 className="flex items-center gap-1"
                 variant="submit"
                 type="button"
                 onClick={handleReserve}
+                disabled={query?.type === "bulk" && (detail?.qty ?? 0) < 1}
               >
                 <PackageIcon className="w-4 h-4 text-white" />
                 <p className="text-white text-xs">Reserve</p>
@@ -132,21 +152,25 @@ export default function Header({ detail, query }: Props) {
                     className={"w-auto h-auto flex-shrink-0"}
                   />
                   <p className="text-xs text-gray-500 break-words break-all">
-                    No barcode
+                    -
                   </p>
                 </div>
               )}
             </div>
-            <div className="flex gap-1 items-center flex-shrink-0 mt-2">
-              <Image
-                alt="icon"
-                src={"/icons/box_gray.svg"}
-                width={20}
-                height={20}
-                className={"w-auto h-auto"}
-              />
-              <p className="text-xs text-gray-500">{query.type}</p>
-            </div>
+            {query?.type === "single" ? (
+              <div className="flex gap-1 items-center flex-shrink-0 mt-2">
+                <Image
+                  alt="icon"
+                  src={"/icons/box_gray.svg"}
+                  width={20}
+                  height={20}
+                  className={"w-auto h-auto"}
+                />
+                <p className="text-xs text-gray-500">{query.type}</p>
+              </div>
+            ) : (
+              ""
+            )}
           </div>
         </div>
       </div>

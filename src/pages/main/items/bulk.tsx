@@ -1,5 +1,8 @@
 import Button from "@/components/Button";
-import { fetchNotificationsServer, fetchUnreadNotificationsServer } from "@/utils/notification";
+import {
+  fetchNotificationsServer,
+  fetchUnreadNotificationsServer,
+} from "@/utils/notification";
 import Input from "@/components/Input";
 import { useModal } from "@/components/Modal";
 import CustomerDeleteModal from "@/components/modals/customer/delete";
@@ -7,12 +10,14 @@ import { CONFIG } from "@/config";
 import { ColumnBulkItems } from "@/constants/column_items";
 import axios from "axios";
 import { parse } from "cookie";
-import { EyeIcon } from "lucide-react";
+import { EyeIcon, FlagIcon, Camera } from "lucide-react";
 import { GetServerSideProps } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import React, { useCallback, useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
+import Badge from "@/components/Badge";
+import { getStatusBadgeColor } from "@/utils";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query, req } = ctx;
@@ -32,7 +37,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     const params = new URLSearchParams({
       page: String(page),
-      limit: String(limit)
+      limit: String(limit),
     });
 
     if (typeof search === "string" && search.trim() !== "") {
@@ -47,18 +52,16 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       params.set("location", location);
     }
 
-    const [table, notificationsData, unreadNotificationsData] = await Promise.all([
-      axios.get(
-        `${CONFIG.API_URL}/v1/bulk-items?${params.toString()}`,
-        {
+    const [table, notificationsData, unreadNotificationsData] =
+      await Promise.all([
+        axios.get(`${CONFIG.API_URL}/v1/bulk-items?${params.toString()}`, {
           headers: {
             Authorization: `${token}`,
           },
-        }
-      ),
-      fetchNotificationsServer(token),
-      fetchUnreadNotificationsServer(token),
-    ]);
+        }),
+        fetchNotificationsServer(token),
+        fetchUnreadNotificationsServer(token),
+      ]);
 
     if (table?.status === 401) {
       return {
@@ -142,23 +145,49 @@ export default function AdministratorPage({ table }: any) {
   }, []);
   const data = [...table?.data].map((item, index) => ({
     ...item,
+    number: index + 1,
     item_name: (
       <div className="flex gap-2 items-center">
-        <Image
-          src={item.full_path_image}
-          alt="image"
-          width={50}
-          height={50}
-          className="p-2"
-        />
+        {item.full_path_image ? (
+          <Image
+            src={item.full_path_image}
+            alt="image"
+            width={50}
+            height={50}
+            className="p-2"
+          />
+        ) : (
+          <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded m-1">
+            <Camera className="w-6 h-6 text-gray-500" />
+          </div>
+        )}
         <div>
           <h5 className="text-black">{item.name}</h5>
-          <div>
-            <p>Available</p>
-            <p>QRCode</p>
-            <p>{item.code}</p>
+          <div className="flex gap-2 items-center mt-1">
+            <Badge
+              color={getStatusBadgeColor(item.qty > 0 ? "available" : "empty")}
+              text={item.qty > 0 ? "AVAILABLE" : "NOT AVAILABLE"}
+            >
+              {item.qty > 0 ? "AVAILABLE" : "NOT AVAILABLE"}
+            </Badge>
+            <p className="text-sm text-gray-600">{item.code}</p>
           </div>
         </div>
+      </div>
+    ),
+    status_bulk: (
+      <div>
+        {item.qty < 1 ? (
+          <div className="flex justify-center items-center gap-2">
+            <FlagIcon className="text-red-500 fill-current w-5 h-5" />
+            <p className="text-red-500 font-semibold">Not Available</p>
+          </div>
+        ) : (
+          <div className="flex justify-center items-center gap-2">
+            <FlagIcon className="text-green-500 fill-current w-5 h-5" />
+            <p className="text-green-500 font-semibold">Available</p>
+          </div>
+        )}
       </div>
     ),
     action: (
@@ -249,14 +278,14 @@ export default function AdministratorPage({ table }: any) {
           </select>
           {(filter.search ||
             (filter.location && filter.location !== "all")) && (
-              <button
-                type="button"
-                className="px-4 py-2 text-red-500 hover:text-red-600 font-medium transition-colors duration-200"
-                onClick={handleResetFilter}
-              >
-                Reset Filters
-              </button>
-            )}
+            <button
+              type="button"
+              className="px-4 py-2 text-red-500 hover:text-red-600 font-medium transition-colors duration-200"
+              onClick={handleResetFilter}
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
         <Button
           variant="custom-color"
@@ -276,10 +305,11 @@ export default function AdministratorPage({ table }: any) {
             return (
               <button
                 key={tab.href}
-                className={`px-4 py-2 font-medium text-sm ${isActive
-                  ? "border-b-2 border-orange-500 text-orange-600"
-                  : "text-gray-500 hover:text-gray-700"
-                  }`}
+                className={`px-4 py-2 font-medium text-sm ${
+                  isActive
+                    ? "border-b-2 border-orange-500 text-orange-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
                 onClick={() => router.push(tab.href)}
               >
                 {tab.label}
