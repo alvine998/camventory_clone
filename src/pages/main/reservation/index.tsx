@@ -38,12 +38,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    // Fetch notifications for SSR
-    const [notificationsData, unreadNotificationsData] = await Promise.all([
-      fetchNotificationsServer(token),
-      fetchUnreadNotificationsServer(token),
-    ]);
-
+    // Build query params first
     const {
       page = 1,
       limit = 10,
@@ -150,14 +145,19 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       params.set("order_by", orderByParam);
     }
 
-    const table = await axios.get(
-      `${CONFIG.API_URL}/v1/reservation?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `${token}`,
+    // Fetch notifications and table data in parallel, customers separately
+    const [notificationsData, unreadNotificationsData, table] = await Promise.all([
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+      axios.get(
+        `${CONFIG.API_URL}/v1/reservation?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
         },
-      },
-    );
+      ),
+    ]);
 
     const customers = await axios.get(
       `${CONFIG.API_URL}/v1/customers?page=1&limit=10${

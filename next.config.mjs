@@ -32,6 +32,19 @@ const nextConfig = {
     });
     return config;
   },
+  async headers() {
+    return [
+      {
+        source: "/main/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=60, stale-while-revalidate=120",
+          },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

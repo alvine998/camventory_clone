@@ -59,7 +59,7 @@ export default async function handler(
       // Check for date conflicts with existing reservations
       try {
         const existingReservations = await axios.get(
-          CONFIG.API_URL + "/v1/reservation",
+          CONFIG.API_URL + "/v1/reservation?limit=100",
           {
             headers: {
               "Content-Type": "application/json",
