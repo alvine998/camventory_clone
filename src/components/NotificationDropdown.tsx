@@ -79,7 +79,7 @@ export default function NotificationDropdown({
         };
 
         fetchNotifications();
-    }, [isOpen, limit, unreadLimit, token, initialNotifications, initialUnreadNotifications, activeTab]);
+    }, [isOpen, limit, unreadLimit, token, initialNotifications, initialUnreadNotifications, activeTab, notifications.length, unreadNotifications.length]);
 
     if (!isOpen) return null;
 

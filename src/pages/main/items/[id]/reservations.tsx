@@ -35,7 +35,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     let resultPromise;
     let reservationPromise;
-    let logs = null;
 
     if (query.type === "bulk" && params) {
       resultPromise = axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
@@ -68,35 +67,28 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           },
         }
       );
-
-      // Fetch logs for single items
-      try {
-        const logsResponse = await axios.get(
-          `${CONFIG.API_URL}/v1/single-items/${params.id}/logs?limit=100&page=1`,
-          {
-            headers: {
-              Authorization: `${token}`,
-            },
-          }
-        );
-        if (logsResponse.status === 200) {
-          logs = logsResponse.data;
-        }
-      } catch (logsError: any) {
-        console.log("Error fetching logs:", logsError);
-        // Logs are optional, so we continue even if they fail
-        logs = null;
-      }
     } else {
       throw new Error(`Invalid query.type: ${query.type}`);
     }
 
-    const [result, reservationRes, notificationsData, unreadNotificationsData] = await Promise.all([
+    // Fetch logs for single items in parallel with other requests
+    const logsPromise = query.type === "single" && params 
+      ? axios.get(
+          `${CONFIG.API_URL}/v1/single-items/${params.id}/logs?limit=100&page=1`,
+          { headers: { Authorization: `${token}` } }
+        ).catch(() => null)
+      : Promise.resolve(null);
+
+    // Execute all requests in parallel
+    const [result, reservationRes, notificationsData, unreadNotificationsData, logsResponse] = await Promise.all([
       resultPromise,
       reservationPromise,
       fetchNotificationsServer(token),
       fetchUnreadNotificationsServer(token),
+      logsPromise,
     ]);
+
+    const logs = logsResponse?.data || null;
 
     if (reservationRes.status !== 200) {
       throw new Error(

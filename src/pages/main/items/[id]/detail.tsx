@@ -33,18 +33,19 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    let resultPromise, bulkItems;
+    let resultPromise;
+    
+    // Create promises for bulk items fetch if needed (for single items, it's not fetched)
+    const bulkItemsPromise = query.type === "bulk" && params
+      ? axios.get(
+          `${CONFIG.API_URL}/v1/bulk-items?page=1&limit=100`,
+          { headers: { Authorization: `${token}` } }
+        ).catch(() => null)
+      : Promise.resolve(null);
+
     if (query.type === "bulk" && params) {
       resultPromise = axios.get(
         `${CONFIG.API_URL}/v1/bulk-items/${params.id}`,
-        {
-          headers: {
-            Authorization: `${token}`,
-          },
-        },
-      );
-      bulkItems = await axios.get(
-        `${CONFIG.API_URL}/v1/bulk-items?page=1&limit=100`,
         {
           headers: {
             Authorization: `${token}`,
@@ -64,12 +65,15 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       throw new Error(`Invalid query.type: ${query.type}`);
     }
 
-    const [result, notificationsData, unreadNotificationsData] =
-      await Promise.all([
-        resultPromise,
-        fetchNotificationsServer(token),
-        fetchUnreadNotificationsServer(token),
-      ]);
+    // Fetch all data in parallel
+    const [result, notificationsData, unreadNotificationsData, bulkItemsRes] = await Promise.all([
+      resultPromise,
+      fetchNotificationsServer(token),
+      fetchUnreadNotificationsServer(token),
+      bulkItemsPromise,
+    ]);
+
+    const bulkItems = bulkItemsRes?.data?.data || [];
 
     if (result.status !== 200) {
       throw new Error(`API request failed with status code ${result.status}`);
@@ -82,7 +86,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         query,
         notifications: notificationsData?.data || [],
         unreadNotifications: unreadNotificationsData?.data || [],
-        bulkItems: bulkItems?.data?.data || [],
+        bulkItems: bulkItems || [],
       },
     };
   } catch (error: any) {

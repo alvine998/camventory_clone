@@ -30,13 +30,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       };
     }
 
-    let resultPromise;
-    let logs = null;
-    let reservations = null;
-
     // Calculate date range for dashboard API (current month)
     const startOfMonth = moment().startOf('month').unix();
     const endOfMonth = moment().endOf('month').unix();
+
+    let resultPromise;
 
     if (query.type === "bulk" && params) {
       resultPromise = axios.get(`${CONFIG.API_URL}/v1/bulk-items/${params.id}`, {
@@ -44,18 +42,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           Authorization: `${token}`,
         },
       });
-
-      try {
-        const resResponse = await axios.get(
-          `${CONFIG.API_URL}/v1/bulk-items/${params.id}/detail/dashboard?startDate=${startOfMonth}&endDate=${endOfMonth}`,
-          {
-            headers: { Authorization: `${token}` },
-          }
-        );
-        reservations = resResponse.data?.data;
-      } catch (e) {
-        console.log("Error fetching bulk dashboard:", e);
-      }
     } else if (query.type === "single" && params) {
       resultPromise = axios.get(
         `${CONFIG.API_URL}/v1/single-items/${params.id}`,
@@ -65,46 +51,47 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
           },
         }
       );
-
-      try {
-        const resResponse = await axios.get(
-          `${CONFIG.API_URL}/v1/single-items/${params.id}/detail/dashboard?startDate=${startOfMonth}&endDate=${endOfMonth}`,
-          {
-            headers: { Authorization: `${token}` },
-          }
-        );
-        reservations = resResponse.data?.data;
-      } catch (e) {
-        console.log("Error fetching single dashboard:", e);
-      }
-
-      // Fetch logs for single items
-      try {
-        const logsResponse = await axios.get(
-          `${CONFIG.API_URL}/v1/single-items/${params.id}/logs?limit=100&page=1`,
-          {
-            headers: {
-              Authorization: `${token}`,
-            },
-          }
-        );
-        if (logsResponse.status === 200) {
-          logs = logsResponse.data;
-        }
-      } catch (logsError: any) {
-        console.log("Error fetching logs:", logsError);
-        // Logs are optional, so we continue even if they fail
-        logs = null;
-      }
     } else {
       throw new Error(`Invalid query.type: ${query.type}`);
     }
 
-    const [result, notificationsData, unreadNotificationsData] = await Promise.all([
-      resultPromise,
-      fetchNotificationsServer(token),
-      fetchUnreadNotificationsServer(token),
-    ]);
+    // Build promises array - include optional requests safely
+    const requestsArray: any[] = [resultPromise, fetchNotificationsServer(token), fetchUnreadNotificationsServer(token)];
+
+    // Add dashboard request based on type
+    if (query.type === "bulk" && params) {
+      requestsArray.push(
+        axios.get(
+          `${CONFIG.API_URL}/v1/bulk-items/${params.id}/detail/dashboard?startDate=${startOfMonth}&endDate=${endOfMonth}`,
+          { headers: { Authorization: `${token}` } }
+        ).catch(e => { console.log("Error fetching bulk dashboard:", e); return null; })
+      );
+    } else if (query.type === "single") {
+      requestsArray.push(
+        axios.get(
+          `${CONFIG.API_URL}/v1/single-items/${params.id}/detail/dashboard?startDate=${startOfMonth}&endDate=${endOfMonth}`,
+          { headers: { Authorization: `${token}` } }
+        ).catch(e => { console.log("Error fetching single dashboard:", e); return null; })
+      );
+      // Add logs for single items
+      requestsArray.push(
+        axios.get(
+          `${CONFIG.API_URL}/v1/single-items/${params.id}/logs?limit=100&page=1`,
+          { headers: { Authorization: `${token}` } }
+        ).catch(e => { console.log("Error fetching logs:", e); return null; })
+      );
+    }
+
+    // Execute all requests in parallel
+    const results = await Promise.all(requestsArray);
+    const result = results[0];
+    const notificationsData = results[1];
+    const unreadNotificationsData = results[2];
+    const dashboardRes = results[3] || null;
+    const logsResponse = results[4] || null;
+
+    const reservations = dashboardRes?.data?.data || null;
+    const logs = logsResponse?.data || null;
 
     if (result.status !== 200) {
       throw new Error(`API request failed with status code ${result.status}`);

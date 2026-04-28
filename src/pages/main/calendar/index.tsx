@@ -57,28 +57,17 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     const startDate = query.startDate ? Number(query.startDate) : moment().startOf("month").unix();
     const endDate = query.endDate ? Number(query.endDate) : moment().endOf("month").unix();
 
-    // Fetch timeline data
-    const response = await axios.get(`${CONFIG.API_URL}/v1/calender`, {
-      params: {
-        startDate: startDate,
-        endDate: endDate,
-      },
-      headers: {
-        Authorization: token,
-      },
-    });
-
-    if (response?.status === 401) {
-      return {
-        redirect: {
-          destination: "/",
-          permanent: false,
+    // Fetch timeline data and notifications in parallel
+    const [response, notificationsData, unreadNotificationsData] = await Promise.all([
+      axios.get(`${CONFIG.API_URL}/v1/calender`, {
+        params: {
+          startDate: startDate,
+          endDate: endDate,
         },
-      };
-    }
-
-    // Fetch notifications for SSR
-    const [notificationsData, unreadNotificationsData] = await Promise.all([
+        headers: {
+          Authorization: token,
+        },
+      }),
       fetchNotificationsServer(token),
       fetchUnreadNotificationsServer(token),
     ]);
